@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Karta · Krislåda</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icon-180.png">
+<meta name="apple-mobile-web-app-title" content="Krislåda">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b5cad">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%97%BA%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="lib/maplibre-gl.css">
+<link rel="stylesheet" href="../lib/kit.css">
+<style>
+  html, body { margin: 0; height: 100%; }
+  #map { position: absolute; inset: 0; }
+  #panel {
+    position: absolute; top: 12px; left: 12px; z-index: 2; width: 360px; max-width: calc(100vw - 70px);
+    background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.08); font-size: 14px; padding: 12px;
+  }
+  #panel .head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+  #panel .head a { color: var(--muted); text-decoration: none; font-size: 13px; }
+  #panel .head b { font-size: 17px; font-weight: 650; }
+  #panel .head .grow { flex: 1; }
+  form#find { display: flex; gap: 6px; }
+  #q { flex: 1; min-width: 0; padding: 8px 10px; font-size: 16px; }
+  #panel button { font-size: 13.5px; padding: 6px 10px; }
+  details.near { margin-top: 10px; }
+  details.near > summary { cursor: pointer; color: var(--muted); font-size: 13.5px; list-style: none; }
+  details.near > summary::-webkit-details-marker { display: none; }
+  .cats { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  #results { list-style: none; margin: 8px 0 0; padding: 0; max-height: 42vh; overflow-y: auto; }
+  #results li { padding: 7px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+  #results li:hover, #results li:focus { background: var(--soft); outline: none; }
+  #results small { color: var(--muted); display: block; font-size: 12.5px; }
+  #note { margin-top: 8px; }
+  #coords { margin-top: 8px; color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+  .bar { display: flex; gap: 6px; align-items: center; margin-top: 10px; }
+  .bar .grow { flex: 1; }
+  #zoom { font-size: 12px; color: var(--muted); }
+  #err { color: var(--red); margin-top: 6px; display: none; }
+  #toggle { display: none; }
+  .maplibregl-ctrl-group button.gps-btn { color: #1b1b1b; font-size: 19px; line-height: 1; padding: 0; border-radius: 0; }
+  .maplibregl-ctrl-group button.gps-btn.on { background: #dbe9ff; }
+  .gps-dot { width: 18px; height: 18px; border-radius: 50%; background: #1a73e8; border: 3px solid #fff; box-shadow: 0 0 0 2px rgba(26,115,232,.35), 0 1px 4px rgba(0,0,0,.4); }
+  @media (max-width: 520px) {
+    #panel { left: 8px; right: 56px; width: auto; max-width: none; top: 8px; padding: 10px; }
+    #panel.min .hide-min { display: none; }
+    #toggle { display: inline-block; }
+    #zoom { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="panel">
+  <div class="head"><a href="../">← Krislåda</a><b>Karta</b><span class="grow"></span><span id="zoom"></span></div>
+  <form id="find" autocomplete="off">
+    <input id="q" placeholder="Sök ort, gata eller adress" aria-label="Sök på kartan">
+    <button type="submit">Sök</button>
+  </form>
+  <div class="hide-min">
+    <details class="near"><summary>+ Närmaste sjukhus, apotek, vatten …</summary>
+      <div class="cats" id="cats" aria-label="Närmaste">
+        <button type="button" class="plain" data-t="Sjukhus">Sjukhus</button>
+        <button type="button" class="plain" data-t="Vårdcentral,Läkare">Vårdcentral</button>
+        <button type="button" class="plain" data-t="Apotek">Apotek</button>
+        <button type="button" class="plain" data-t="Polis">Polis</button>
+        <button type="button" class="plain" data-t="Brandstation">Brand</button>
+        <button type="button" class="plain" data-t="Dricksvatten,Vattenpost">Vatten</button>
+        <button type="button" class="plain" data-t="Livsmedel,Närbutik">Mat</button>
+        <button type="button" class="plain" data-t="Bensinstation">Bensin</button>
+      </div>
+    </details>
+    <ul id="results"></ul>
+    <div id="note"></div>
+    <div id="coords">Tryck på kartan för att se koordinater.</div>
+  </div>
+  <div class="bar">
+    <button type="button" class="plain" id="sthlm">Stockholm</button>
+    <button type="button" class="plain" id="swe">Sverige</button>
+    <span class="grow"></span>
+    <button type="button" class="plain" id="toggle" aria-label="Visa eller dölj panelen">▾</button>
+  </div>
+  <div id="err"></div>
+</div>
+<script src="lib/maplibre-gl.js"></script>
+<script src="lib/pmtiles.js"></script>
+<script>
+  const protocol = new pmtiles.Protocol();
+  maplibregl.addProtocol('pmtiles', protocol.tile);
+
+  const base = new URL('.', location.href).href;
+  const root = new URL('../tiles/', location.href).href;   // where the .pmtiles live
+  const $ = s => document.querySelector(s);
+  const note = t => { $('#note').textContent = t || ''; };
+  const noteHtml = h => { $('#note').innerHTML = h; };   // only for the kit's own messages with a link
+
+  // A map file is usable only if it starts with the PMTiles magic bytes.
+  const isReady = url => fetch(url, { headers: { Range: 'bytes=0-6' } })
+    .then(r => r.ok ? r.text() : '').then(t => t === 'PMTiles').catch(() => false);
+
+  // Zoom to use when jumping to a result of each type.
+  const ZOOM = { 'Adress': 18.5, 'Stad': 12, 'Tätort': 13.5, 'Stadsdel': 14.5, 'Område': 15, 'By': 15, 'Småort': 15, 'Ort': 15.5, 'Gård': 16, 'Gata': 17 };
+  const zoomFor = t => ZOOM[t] || (t && t.startsWith('Ungefär') ? 18.5 : 18);
+
+  // ---------- place search (offline files made by scripts/build-map-index.py) ----------
+  // data/places.json: towns, villages and services for all of Sweden, always loaded.
+  // data/letters/<a-z0-9>.json: streets, addresses, farms and landmarks, by first letter,
+  // so a phone only loads the one small file it needs.
+  const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  const prep = d => {
+    d.items.forEach(e => { e.t = d.types[e[1]]; e.a = d.areas[e[4]]; e.n = norm(e[0]); e.h = e.n + ' ' + norm(e.a); });
+    return d;
+  };
+  let index = null;
+  function loadIndex() {
+    if (!index) index = fetch('data/places.json').then(r => r.json()).then(d => prep(d).items).catch(() => []);
+    return index;
+  }
+  const letters = {};
+  const letterOf = s => { const c = norm(s).charAt(0); return /[a-z0-9]/.test(c) ? c : '_'; };
+  function loadLetter(text) {
+    const c = letterOf(text);
+    if (!letters[c]) letters[c] = fetch(`data/letters/${c}.json`).then(r => r.json()).then(d => {
+      prep(d);
+      d.list = Object.entries(d.addresses || {}).map(([name, nums]) => [norm(name), name, nums]);
+      return d;
+    }).catch(() => ({ items: [], list: [], cities: [] }));
+    return letters[c];
+  }
+  const km = (a, b) => {
+    const dx = (a[0] - b[0]) * 111.32 * Math.cos(a[1] * Math.PI / 180), dy = (a[1] - b[1]) * 110.57;
+    return Math.hypot(dx, dy);
+  };
+  const fmtKm = d => d < 1 ? Math.round(d * 100) * 10 + ' m' : (d < 10 ? d.toFixed(1) : Math.round(d)) + ' km';
+
+  function show(list, map, withDistance, from) {
+    const ul = $('#results');
+    ul.innerHTML = '';
+    const c = map.getCenter(), shown = [];
+    const origin = from || [c.lng, c.lat], fromText = from && gps.here && from === gps.here ? ' från dig' : ' från kartans mitt';
+    for (const e of list) {
+      // the same place is often mapped twice (a point and a building): show it once
+      if (shown.some(o => o[0] === e[0] && o.t === e.t && km([o[2], o[3]], [e[2], e[3]]) < 0.4)) continue;
+      shown.push(e);
+      const li = document.createElement('li');
+      li.tabIndex = 0;
+      const where = [e.t, e.a, withDistance ? fmtKm(km([e[2], e[3]], origin)) + fromText : ''].filter(Boolean).join(' · ');
+      li.innerHTML = '<b></b><small></small>';
+      li.querySelector('b').textContent = e[0];
+      li.querySelector('small').textContent = where;
+      const go = () => jump(map, e);
+      li.onclick = go;
+      li.onkeydown = ev => { if (ev.key === 'Enter') go(); };
+      ul.appendChild(li);
+    }
+  }
+
+  let pin = null;
+  function jump(map, e, label) {
+    pin.setLngLat([e[2], e[3]]).addTo(map);
+    map.flyTo({ center: [e[2], e[3]], zoom: label ? 18.5 : zoomFor(e.t), speed: 1.6 });
+    setCoords(e[2], e[3], label || e[0] + (e.a ? ', ' + e.a : ''));
+    if (matchMedia('(max-width: 520px)').matches) $('#panel').classList.add('min');
+  }
+
+  // Which neighbourhood a point is in, for addresses that do not name their town.
+  let areaPlaces = null;
+  function areaNear(items, pt) {
+    areaPlaces = areaPlaces || items.filter(e => ['Stadsdel', 'Område', 'Tätort', 'By', 'Småort'].includes(e.t));
+    let best = '', bd = 3;
+    for (const e of areaPlaces) { const d = km(pt, [e[2], e[3]]); if (d < bd) { bd = d; best = e[0]; } }
+    return best;
+  }
+
+  // Addresses are local: rank by distance from the map (up to 100 km), then by the area typed.
+  async function findAddress(map, streetText, number, areaText) {
+    const [A, items] = await Promise.all([loadLetter(streetText), loadIndex()]);   // A: {list, cities}
+    const qs = norm(streetText), qa = norm(areaText || ''), want = number.toUpperCase(), n = parseInt(want, 10);
+    if (!qs) return [];
+    const areaSpots = qa ? items.filter(e => e.n.startsWith(qa)).slice(0, 300) : [];
+    const c = map.getCenter(), here = [c.lng, c.lat];
+    const miss = (pt, city) => !!qa && !(norm(city).includes(qa) || areaSpots.some(e => km(pt, [e[2], e[3]]) < 2.5));
+    const score = (pt, city, extra) => extra + Math.min(km(pt, here), 100) / 50 + (miss(pt, city) ? 3 : 0);
+    const out = [];
+    for (const [ns, street, nums] of A.list) {
+      if (ns !== qs && !ns.startsWith(qs)) continue;
+      const exactName = ns === qs ? 0 : 1, exact = [];
+      for (const a of nums) {
+        const got = a[0].toUpperCase().replace(/\s/g, '');
+        // "50" also finds 50A, 50B or 50AC when there is no plain 50
+        const near = got !== want && /^\d+$/.test(want) && parseInt(got, 10) === n && /^\d+[A-Z]/.test(got);
+        if (got !== want && !near) continue;
+        const e = [`${street} ${a[0]}`, 0, a[1], a[2]];
+        e.t = 'Adress'; e.a = A.cities[a[3]] || ''; e.miss = miss([a[1], a[2]], e.a);
+        exact.push(e);
+        out.push([score([a[1], a[2]], e.a, exactName + (near ? 0.3 : 0)), e]);
+      }
+      // A number missing from the data: place it between its neighbours on the same side
+      // of the street (in Sweden odd numbers are on one side, even on the other).
+      if (!n || exactName) continue;
+      const side = nums.map(a => [parseInt(a[0], 10), a]).filter(([k]) => k && k % 2 === n % 2);
+      for (const [lo, la] of side) {
+        if (lo >= n) continue;
+        for (const [hi, ha] of side) {
+          if (hi <= n || hi - lo > 12 || km([la[1], la[2]], [ha[1], ha[2]]) > 0.6) continue;
+          const f = (n - lo) / (hi - lo), pt = [la[1] + f * (ha[1] - la[1]), la[2] + f * (ha[2] - la[2])];
+          if (exact.some(x => km(pt, [x[2], x[3]]) < 1)) continue;   // the real address is right there
+          const e = [`${street} ${want}`, 0, pt[0], pt[1]];
+          e.t = `Ungefärligt läge, mellan nr ${la[0]} och ${ha[0]}`; e.a = A.cities[la[3]] || ''; e.miss = miss(pt, e.a);
+          out.push([score(pt, e.a, 0.5 + (hi - lo) / 24), e]);
+        }
+      }
+    }
+    const list = [];
+    for (const [, e] of out.sort((x, y) => x[0] - y[0])) {   // one guess per spot
+      if (list.length < 12 && !list.some(o => o[0] === e[0] && km([o[2], o[3]], [e[2], e[3]]) < 0.15)) list.push(e);
+    }
+    list.forEach(e => { if (!e.a || /^\d+$/.test(e.a)) e.a = areaNear(items, [e[2], e[3]]); });
+    return list;
+  }
+
+  // Search ranking: emergency places and towns first, bus stops last.
+  const PRIO = { 'Stad': -0.8, 'Sjukhus': -0.6, 'Tätort': -0.5, 'Vårdcentral': -0.4, 'Apotek': -0.4, 'Polis': -0.4,
+                 'Brandstation': -0.4, 'Stadsdel': -0.2, 'Område': -0.1, 'Gård': 0.3, 'Ort': 0.3 };
+
+  async function search(map, text) {
+    note('');
+    const m = text.match(/^\s*(-?\d+(?:[.,]\d+)?)\s*[,; ]\s*(-?\d+(?:[.,]\d+)?)\s*$/);
+    if (m) {  // coordinates: lat, lon
+      const lat = parseFloat(m[1].replace(',', '.')), lng = parseFloat(m[2].replace(',', '.'));
+      pin.setLngLat([lng, lat]).addTo(map);
+      map.flyTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), 15) });
+      setCoords(lng, lat);
+      $('#results').innerHTML = '';
+      return;
+    }
+    let words = text, house = null;
+    const hm = text.match(/^(.*?[^\d\s,])\s+(\d+(?:\s?[a-zA-Z](?![a-zA-ZåäöÅÄÖéü]))?)\s*,?\s*(.*)$/);   // "Hornsgatan 50", "Hornsgatan 50B, Södermalm"
+    if (hm) {
+      house = hm[2].replace(/\s/g, '').toUpperCase();
+      const found = await findAddress(map, hm[1], house, hm[3]);
+      if (found.length) {
+        show(found, map, true);
+        jump(map, found[0], `${found[0][0]}${found[0].a ? ', ' + found[0].a : ''}`);
+        if (found[0].miss) note(`Hittade inget ${found[0][0]} i ${hm[3]}. Visar det närmaste. Se listan.`);
+        else if (found[0].t.startsWith('Ungefär')) note(`${found[0][0]} finns inte i kartdatan. Nålen visar ungefärligt läge, mellan grannhusen.`);
+        return;
+      }
+      words = (hm[1] + ' ' + hm[3]).trim();
+    }
+    const [base, extra] = await Promise.all([loadIndex(), loadLetter(words)]);
+    const items = base.concat(extra.items);
+    if (!items.length) { note('Sökningen saknas. Kör scripts/build-map-index.py.'); return; }
+    const q = norm(words);
+    if (!q) return;
+    const qw = q.split(' ');
+    const c = map.getCenter(), here = [c.lng, c.lat];
+    const hits = [];
+    for (const e of items) {
+      let s;
+      if (e.n === q) s = 0;
+      else if (e.n.startsWith(q)) s = 2;
+      else if (qw.every(w => e.h.startsWith(w) || e.h.includes(' ' + w))) s = 3;
+      else if (e.h.includes(q)) s = 4;
+      else continue;
+      if (house && e.t !== 'Gata') s += 2;
+      hits.push([s + (PRIO[e.t] || 0) + Math.min(km([e[2], e[3]], here), 400) / 400, e]);
+    }
+    hits.sort((a, b) => a[0] - b[0]);
+    const list = hits.slice(0, 30).map(h => h[1]);
+    if (!list.length) { $('#results').innerHTML = ''; note('Inget hittades. Prova en del av namnet, eller zooma in på kartan.'); return; }
+    show(list, map, true);
+    if (house && list[0].t === 'Gata') { jump(map, list[0]); note(`Husnummer ${house} hittades inte. Visar gatan.`); }
+  }
+
+  async function nearest(map, types) {
+    note('');
+    const items = await loadIndex();
+    const want = new Set(types.split(','));
+    const c = map.getCenter(), here = gps.on && gps.here ? gps.here : [c.lng, c.lat];
+    const list = items.filter(e => want.has(e.t)).map(e => [km([e[2], e[3]], here), e]).sort((a, b) => a[0] - b[0]).slice(0, 20).map(x => x[1]);
+    show(list, map, true, here);
+    if (!list.length) note('Inga hittades.');
+  }
+
+  function setCoords(lng, lat, label) {
+    $('#coords').textContent = (label ? label + ': ' : '') +
+      `${lat.toFixed(5)}, ${lng.toFixed(5)}  (${Math.abs(lat).toFixed(4)}°${lat >= 0 ? 'N' : 'S'} ${Math.abs(lng).toFixed(4)}°${lng >= 0 ? 'E' : 'W'})`;
+  }
+
+  // ---------- where am I (GPS) ----------
+  // First choice: a USB GPS receiver in the Mac, read by the kit's web server (/ai-api/gps).
+  // Otherwise the browser's own location: a phone's GPS (on https), or a Mac with internet.
+  const gps = {
+    on: false, timer: null, here: null, centre: true, usb: false, watch: null, dot: null, btn: null,
+    start(map) {
+      this.on = true; this.centre = true; this.btn && this.btn.classList.add('on');
+      $('#panel').classList.remove('min');
+      note('Söker din position…');
+      this.poll(map); this.timer = setInterval(() => this.poll(map), 2000);
+    },
+    stop() {
+      this.on = false; clearInterval(this.timer); this.btn && this.btn.classList.remove('on');
+      if (this.watch !== null) { navigator.geolocation.clearWatch(this.watch); this.watch = null; }
+      note('');
+    },
+    click(map) {
+      if (!this.on) return this.start(map);
+      if (!this.centre && this.here) { this.centre = true; map.flyTo({ center: this.here, zoom: Math.max(map.getZoom(), 16) }); return; }
+      this.stop();
+    },
+    async poll(map) {
+      let g = { device: null };
+      try { g = await (await fetch('/ai-api/gps', { cache: 'no-store' })).json(); } catch {}
+      if (!this.on) return;
+      this.usb = !!g.device;
+      if (g.device && g.fix) {
+        const acc = g.accuracy_m ? `, ±${Math.round(g.accuracy_m)} m` : '';
+        const what = g.source === 'phone' ? 'mobilens GPS' : `GPS, ${g.sats || '?'} satelliter`;
+        return this.show(map, g.lon, g.lat, g.accuracy_m, `Du är här (${what}${acc})`);
+      }
+      if (g.device) {
+        return note(`GPS-mottagaren söker satelliter${g.sats_in_view ? ` (${g.sats_in_view} syns)` : ''}. Ställ datorn vid ett fönster eller gå ut. Första gången kan det ta några minuter.`);
+      }
+      if (navigator.geolocation && window.isSecureContext) {
+        if (this.watch === null) this.watch = navigator.geolocation.watchPosition(
+          p => { if (!this.usb) this.show(map, p.coords.longitude, p.coords.latitude, p.coords.accuracy, `Du är här (±${Math.round(p.coords.accuracy)} m)`); },
+          () => { if (!this.usb && !this.here) noteHtml(NO_GPS); },
+          { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 });
+        return;
+      }
+      if (!this.here) noteHtml(NO_GPS + (('ontouchend' in document) ? ' På mobilen: <a href="/mobil/">ställ in GPS</a>.' : ''));
+    },
+    show(map, lon, lat, acc, label) {
+      this.here = [lon, lat];
+      if (!this.dot) {
+        const el = document.createElement('div'); el.className = 'gps-dot';
+        this.dot = new maplibregl.Marker({ element: el }).setLngLat(this.here).addTo(map);
+      } else this.dot.setLngLat(this.here);
+      const ring = circle(lon, lat, Math.max(acc || 0, 3));
+      if (map.getSource('gps-acc')) map.getSource('gps-acc').setData(ring);
+      else {
+        map.addSource('gps-acc', { type: 'geojson', data: ring });
+        map.addLayer({ id: 'gps-acc', type: 'fill', source: 'gps-acc', paint: { 'fill-color': '#1a73e8', 'fill-opacity': 0.15 } });
+      }
+      if (this.centre) map.easeTo({ center: this.here, zoom: Math.max(map.getZoom(), 16), duration: 800 });
+      setCoords(lon, lat, label);
+      note('');
+    },
+  };
+  const NO_GPS = 'Ingen GPS hittades. Macen har ingen egen GPS: koppla in en USB GPS-mottagare, eller låt mobilen vara GPS: öppna <b>/mobil/</b> på mobilen och tryck <b>Dela min position med Macen</b>. Utan GPS: sök på en gata, adress eller plats du ser omkring dig.';
+  const circle = (lon, lat, m) => {
+    const pts = [];
+    for (let i = 0; i <= 48; i++) {
+      const a = i / 48 * 2 * Math.PI;
+      pts.push([lon + (m / (111320 * Math.cos(lat * Math.PI / 180))) * Math.cos(a), lat + (m / 110574) * Math.sin(a)]);
+    }
+    return { type: 'Feature', geometry: { type: 'Polygon', coordinates: [pts] } };
+  };
+  class WhereAmI {
+    constructor(map) { this.map = map; }
+    onAdd() {
+      const el = document.createElement('div');
+      el.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+      el.innerHTML = '<button type="button" class="gps-btn" title="Var är jag? (GPS)" aria-label="Var är jag?">⌖</button>';
+      gps.btn = el.querySelector('button');
+      gps.btn.onclick = () => gps.click(this.map);
+      this.map.on('dragstart', () => { gps.centre = false; });
+      return el;
+    }
+    onRemove() {}
+  }
+
+  // ---------- map ----------
+  fetch('style.json').then(r => r.json()).then(async style => {
+    style.sprite = base + 'assets/sprites/v4/light';
+    style.glyphs = base + 'assets/fonts/{fontstack}/{range}.pbf';
+    const missing = [];
+    for (const [name, src] of Object.entries(style.sources)) {
+      const url = root + name + '.pmtiles';
+      if (await isReady(url)) {
+        src.url = 'pmtiles://' + url;
+      } else {
+        missing.push(name);
+        delete style.sources[name];
+        style.layers = style.layers.filter(l => l.source !== name);
+      }
+    }
+    if (missing.length) {
+      const el = $('#err');
+      el.style.display = 'block';
+      el.textContent = 'Kartfil saknas: ' + missing.join(', ');
+    }
+
+    const map = new maplibregl.Map({
+      container: 'map',
+      style,
+      center: [16.5, 62.5],
+      zoom: 4.3,
+      maxZoom: 20,       // the map data has full detail at 15; beyond that it is enlarged, down to single houses
+      hash: true,
+    });
+    window.kitMap = map;
+    map.addControl(new maplibregl.NavigationControl(), 'top-right');
+    map.addControl(new WhereAmI(map), 'top-right');
+    if (new URLSearchParams(location.search).has('gps')) map.once('load', () => gps.start(map));
+    map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-left');
+    pin = new maplibregl.Marker({ color: '#d32f2f' });
+
+    const zoomText = () => { $('#zoom').textContent = 'Zoom ' + map.getZoom().toFixed(1); };
+    map.on('zoom', zoomText); zoomText();
+
+    map.on('click', e => { pin.setLngLat(e.lngLat).addTo(map); setCoords(e.lngLat.lng, e.lngLat.lat); });
+
+    $('#find').addEventListener('submit', e => { e.preventDefault(); const t = $('#q').value.trim(); if (t) search(map, t); });
+    $('#q').addEventListener('focus', () => { loadIndex(); $('#panel').classList.remove('min'); });
+    $('#q').addEventListener('input', () => { if ($('#q').value.trim()) loadLetter($('#q').value); });   // fetch while typing
+    document.querySelectorAll('#cats button').forEach(b => b.onclick = () => nearest(map, b.dataset.t));
+    $('#sthlm').onclick = () => map.flyTo({ center: [18.0686, 59.3293], zoom: 12 });
+    $('#swe').onclick = () => map.flyTo({ center: [16.5, 62.5], zoom: 4.3 });
+    $('#toggle').onclick = () => $('#panel').classList.toggle('min');
+    if (matchMedia('(max-width: 520px)').matches) $('#panel').classList.add('min');   // phones: more map, less panel
+
+    map.on('error', e => {
+      const el = $('#err');
+      el.style.display = 'block';
+      el.textContent = 'Kartfel: ' + (e.error && e.error.message || e.error || 'okänt');
+    });
+  });
+</script>
+</body>
+</html>

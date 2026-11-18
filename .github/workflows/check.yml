@@ -1,0 +1,20 @@
+name: Check the scripts
+on:
+  push:
+  pull_request:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Shell syntax
+        run: for f in install.sh hamta.sh scripts/*.sh *.command; do bash -n "$f" || exit 1; done
+      - name: ShellCheck (errors only)
+        run: shellcheck -S error install.sh hamta.sh scripts/*.sh
+      - name: Python syntax
+        run: python3 -m py_compile scripts/*.py
+      - name: Config files
+        run: |
+          python3 -c "import json; json.load(open('config/document-names.json'))"
+          grep -q '^https://download.kiwix.org/zim/' config/libraries.txt
+          grep -q '^https://' config/swedish-pages.txt

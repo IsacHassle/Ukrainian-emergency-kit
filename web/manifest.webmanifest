@@ -1,0 +1,15 @@
+{
+  "name": "Krislåda",
+  "short_name": "Krislåda",
+  "description": "Sjukvård, AI på svenska och karta över Sverige, utan internet.",
+  "lang": "sv",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0b5cad",
+  "theme_color": "#0b5cad",
+  "icons": [
+    { "src": "/icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

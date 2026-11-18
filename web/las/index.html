@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Läs · Krislåda</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icon-180.png">
+<meta name="apple-mobile-web-app-title" content="Krislåda">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b5cad">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%E2%9B%91%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../lib/kit.css">
+<style>
+  .page { max-width: 700px; }
+  .tools { display: flex; gap: 8px; margin: 0 0 18px; align-items: center; }
+  .tools .grow { flex: 1; }
+  article { font-size: 18px; line-height: 1.6; }
+  article h1 { font-size: 28px; line-height: 1.2; margin: 0 0 6px; }
+  article h4 { font-size: 19px; margin: 28px 0 6px; }
+  article ul, article ol { padding-left: 24px; } article li { margin: 4px 0; }
+  article table { border-collapse: collapse; font-size: 16px; display: block; overflow-x: auto; }
+  article td, article th { border-bottom: 1px solid var(--line); padding: 4px 8px 4px 0; text-align: left; vertical-align: top; }
+  .src { color: var(--muted); font-size: 13px; }
+  .err { color: var(--red); }
+  @media print { .tools, .emergency { display: none; } }
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="tools"><a class="back" style="margin:0" href="/">← Krislåda</a><span class="grow"></span><a class="button plain" href="../ai/">Fråga AI</a><a class="button plain" href="#" onclick="print(); return false">Skriv ut</a></div>
+  <article id="doc"><p>Laddar…</p></article>
+</main>
+<script src="../lib/md.js"></script>
+<script>
+(() => {
+  // Shows a saved text document (Markdown) from documents/, for reading without internet.
+  const f = new URLSearchParams(location.search).get('f') || '';
+  const box = document.getElementById('doc');
+  if (!/^docs\/[^?#]+\.(md|txt)$/.test(f) || f.includes('..')) { box.innerHTML = '<p class="err">Okänt dokument.</p>'; return; }
+  fetchDoc(f)
+    .then(t => { const d = renderMarkdown(t); box.innerHTML = d.html; if (d.title) document.title = d.title + ' · Krislåda'; })
+    .catch(() => { box.innerHTML = '<p class="err">Dokumentet hittades inte. Kör installationen igen för att hämta det.</p>'; });
+})();
+</script>
+</body>
+</html>

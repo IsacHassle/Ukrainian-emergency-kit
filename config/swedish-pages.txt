@@ -1,0 +1,79 @@
+# Svenska myndigheters råd som krislådan sparar för läsning utan internet (och som AI:n läser).
+# Hämtas av scripts/fetch-swedish-pages.py. En adress per rad. Rader som börjar med # hoppas över.
+
+# Myndigheten för civilt försvar (MCF): hemberedskap
+https://www.mcf.se/sv/rad-till-privatpersoner/hemberedskap---preppa-for-en-vecka/
+https://www.mcf.se/sv/rad-till-privatpersoner/hemberedskap---preppa-for-en-vecka/grunder-i-hemberedskap/
+https://www.mcf.se/sv/rad-till-privatpersoner/hemberedskap---preppa-for-en-vecka/vatten/
+https://www.mcf.se/sv/rad-till-privatpersoner/hemberedskap---preppa-for-en-vecka/vatten/tillgang-till-vatten-i-kris/
+https://www.mcf.se/sv/rad-till-privatpersoner/hemberedskap---preppa-for-en-vecka/vatten/hygien-tvatt-och-toalett/
+https://www.mcf.se/sv/rad-till-privatpersoner/hemberedskap---preppa-for-en-vecka/tillgang-till-varme-i-kris/
+https://www.mcf.se/sv/rad-till-privatpersoner/hemberedskap---preppa-for-en-vecka/mat/
+https://www.mcf.se/sv/rad-till-privatpersoner/hemberedskap---preppa-for-en-vecka/mat/tillgang-till-mat-i-kris/
+https://www.mcf.se/sv/rad-till-privatpersoner/hemberedskap---preppa-for-en-vecka/mat/att-odla-sjalv/
+https://www.mcf.se/sv/rad-till-privatpersoner/hemberedskap---preppa-for-en-vecka/medicin-for-en-manad-hemma/
+https://www.mcf.se/sv/rad-till-privatpersoner/hemberedskap---preppa-for-en-vecka/tillgang-till-kommunikation-i-kris/
+https://www.mcf.se/sv/rad-till-privatpersoner/hemberedskap---preppa-for-en-vecka/betalningar-och-kontanter-i-kris/
+https://www.mcf.se/sv/rad-till-privatpersoner/hemberedskap---preppa-for-en-vecka/beredskap-for-dina-husdjur/
+https://www.mcf.se/sv/rad-till-privatpersoner/engagera-dig/grannsamarbete-i-kris/
+
+# MCF: varningar, skyddsrum, utrymning, höjd beredskap
+https://www.mcf.se/sv/rad-till-privatpersoner/skyddsrum-utrymning-och-varningssystem/bra-att-veta-om-skyddsrum/
+https://www.mcf.se/sv/rad-till-privatpersoner/skyddsrum-utrymning-och-varningssystem/om-du-behover-utrymma-eller-evakuera/
+https://www.mcf.se/sv/rad-till-privatpersoner/skyddsrum-utrymning-och-varningssystem/viktigt-meddelande-till-allmanheten-vma-och-andra-varningar/
+https://www.mcf.se/sv/rad-till-privatpersoner/skyddsrum-utrymning-och-varningssystem/viktigt-meddelande-till-allmanheten-vma-och-andra-varningar/vad-ar-vma-och-hur-gar-en-varning-till/
+https://www.mcf.se/sv/rad-till-privatpersoner/skyddsrum-utrymning-och-varningssystem/viktigt-meddelande-till-allmanheten-vma-och-andra-varningar/utomhusvarning--hesa-fredrik/
+https://www.mcf.se/sv/rad-till-privatpersoner/skyddsrum-utrymning-och-varningssystem/viktigt-meddelande-till-allmanheten-vma-och-andra-varningar/varning-kring-sveriges-karnkraftverk/
+https://www.mcf.se/sv/rad-till-privatpersoner/sa-fungerar-vart-forsvar/hojd-beredskap/
+https://www.mcf.se/sv/rad-till-privatpersoner/sa-fungerar-vart-forsvar/psykologiskt-forsvar/
+
+# MCF: våld, brand, väder
+https://www.mcf.se/sv/rad-till-privatpersoner/rad-vid-pagaende-dodligt-vald/stoppa-en-blodning/
+https://www.mcf.se/sv/rad-till-privatpersoner/rad-vid-pagaende-dodligt-vald/terrorattentat-och-annat-pagaende-vald---sa-har-kan-du-agera/
+https://www.mcf.se/sv/rad-till-privatpersoner/rad-vid-pagaende-dodligt-vald/misstankt-farligt-foremal--sa-har-kan-du-agera/
+https://www.mcf.se/sv/rad-till-privatpersoner/brandsakerhet/brandsakerhet-i-hemmet/brandsakerhet-vid-kris-och-krig/
+https://www.mcf.se/sv/rad-till-privatpersoner/brandsakerhet/brandsakerhet-i-hemmet/om-det-borjar-brinna-hemma/
+https://www.mcf.se/sv/rad-till-privatpersoner/brandsakerhet/brandsakerhet-i-hemmet/elda-i-kamin-och-andra-eldstader/
+https://www.mcf.se/sv/rad-till-privatpersoner/brandsakerhet/brandfarliga-gaser-och-vatskor-i-hem--och-fritidsmiljo/gasol-hemma/
+https://www.mcf.se/sv/rad-till-privatpersoner/extremvader-och-naturolyckor/oversvamning/
+https://www.mcf.se/sv/rad-till-privatpersoner/extremvader-och-naturolyckor/forbered-dig-for-varmebolja/
+
+# Livsmedelsverket: vatten och mat
+https://www.livsmedelsverket.se/beredskap/hemberedskap-privatperson/
+https://www.livsmedelsverket.se/beredskap/hemberedskap-privatperson/dricksvatten-i-dunk/
+https://www.livsmedelsverket.se/beredskap/hemberedskap-privatperson/laga-mat-utan-el/
+https://www.livsmedelsverket.se/beredskap/hemberedskap-privatperson/matforrad/
+
+# 1177: första hjälpen
+https://www.1177.se/olyckor--skador/akuta-rad---forsta-hjalpen/hjart-lungraddning-hlr/
+https://www.1177.se/olyckor--skador/akuta-rad---forsta-hjalpen/hjart-lungraddning-hlr-pa-barn/
+https://www.1177.se/olyckor--skador/akuta-rad---forsta-hjalpen/stabilt-sidolage-pa-barn/
+https://www.1177.se/olyckor--skador/akuta-rad---forsta-hjalpen/nar-nagon-satter-i-halsen/
+https://www.1177.se/olyckor--skador/akuta-rad---forsta-hjalpen/stoppa-blodning/
+https://www.1177.se/olyckor--skador/akuta-rad---forsta-hjalpen/chock/
+https://www.1177.se/olyckor--skador/akuta-rad---forsta-hjalpen/allergisk-chock--anafylaxi/
+https://www.1177.se/olyckor--skador/akuta-rad---forsta-hjalpen/forgiftning/
+https://www.1177.se/olyckor--skador/akuta-rad---forsta-hjalpen/inandning-av-farlig-gas/
+https://www.1177.se/olyckor--skador/akuta-rad---forsta-hjalpen/drunkningsolyckor/
+https://www.1177.se/olyckor--skador/akuta-rad---forsta-hjalpen/elolyckor/
+https://www.1177.se/olyckor--skador/akuta-rad---forsta-hjalpen/varmeslag/
+https://www.1177.se/olyckor--skador/akuta-rad---forsta-hjalpen/psykisk-livraddning---sa-kan-du-hjalpa-nagon-som-mar-daligt/
+
+# 1177: skador
+https://www.1177.se/olyckor--skador/brannskador-och-koldskador/brannskador/
+https://www.1177.se/olyckor--skador/brannskador-och-koldskador/koldskador/
+https://www.1177.se/olyckor--skador/sar-och-blamarken/behandling-av-sma-sar/
+https://www.1177.se/olyckor--skador/sar-och-blamarken/behandling-av-stora-sar/
+https://www.1177.se/olyckor--skador/sar-och-blamarken/blodningar/
+https://www.1177.se/olyckor--skador/skador-pa-huvud-och-ogon/hjarnskakning/
+https://www.1177.se/olyckor--skador/skador-pa-huvud-och-ogon/nar-barn-slar-i-huvudet/
+https://www.1177.se/olyckor--skador/skador-pa-huvud-och-ogon/ogonskador/
+https://www.1177.se/olyckor--skador/skador-pa-armar-och-ben/brutet-underben/
+https://www.1177.se/olyckor--skador/skador-pa-hander-och-fotter/benbrott-i-handled-och-underarm/
+https://www.1177.se/olyckor--skador/bett-stick-och-vaxter/huggormsbett/
+https://www.1177.se/olyckor--skador/bett-stick-och-vaxter/fastingbett/
+https://www.1177.se/olyckor--skador/bett-stick-och-vaxter/getingstick-och-bistick/
+https://www.1177.se/olyckor--skador/bett-stick-och-vaxter/hund--och-kattbett/
+
+# Krisinformation.se
+https://www.krisinformation.se/din-beredskap/hemberedskap/

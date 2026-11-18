@@ -1,1 +1,29 @@
+# Only the kit's own code is in git. Everything downloaded or personal stays out:
+# ignore everything at the top level, then list what belongs in the repository.
+/*
+!/.gitignore
+!/README.md
+!/LICENSE
+!/CREDITS.md
+!/install.sh
+!/Starta Krislåda.command
+!/Installera Krislåda.command
+!/Kontrollera Krislåda.command
+!/Krislåda - guide att skriva ut.pdf
+!/hamta.sh
+!/config/
+!/scripts/
+!/web/
+!/docs/
+!/CONTEXT.md
+!/CLAUDE.md
+!/.github/
+
+# Built or downloaded inside web/
+/web/index.html
+/web/map/data/
+.DS_Store
+__pycache__/
+
+# Agent working files stay local
 .scratch/

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skriv ut · Krislåda</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icon-180.png">
+<meta name="apple-mobile-web-app-title" content="Krislåda">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b5cad">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%96%A8%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="../lib/kit.css">
+<style>
+  * { box-sizing: border-box; }
+
+  main { max-width: 820px; margin: 0 auto; padding: 16px; }
+  a { color: var(--accent); }
+  .bar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom: 12px; }
+  .bar a { text-decoration:none; }
+
+  .sub { color: var(--muted); }
+  section { border-top: 1px solid var(--line); padding: 6px 0 14px; margin: 18px 0; }
+  section h1 { font-size: 22px; margin: 14px 0 6px; } h4 { font-size: 17px; margin: 16px 0 4px; }
+  ul, ol { padding-left: 22px; } li { margin: 2px 0; }
+  table { border-collapse: collapse; } td, th { border:1px solid var(--line); padding: 3px 6px; text-align:left; vertical-align: top; }
+  .src { color: var(--muted); font-size: 13px; }
+  .cover h1 { font-size: 30px; }
+  .nums { font-size: 20px; line-height: 1.8; }
+  .toc { columns: 2; font-size: 15px; }
+  @media print {
+    @page { size: A4; margin: 14mm; }
+    body { background: #fff; color: #000; font-size: 10.5pt; line-height: 1.38; }
+    main { max-width: none; padding: 0; }
+    .bar, .noprint, .back, main > h1 { display: none; }
+    body { font-size: 9.5pt; line-height: 1.32; }
+    section { border: 0; padding: 0; margin: 0; break-before: page; column-count: 2; column-gap: 8mm; }
+    section.cover { break-before: auto; column-count: 1; }
+    section h1, section .src { column-span: all; }
+    h1 { font-size: 15pt; margin: 0 0 4pt; } h4 { font-size: 11pt; margin: 8pt 0 2pt; break-after: avoid; }
+    p, ul, ol { margin: 3pt 0; } li { break-inside: avoid; }
+    .nums { font-size: 15pt; }
+    .src { color: #444; }
+  }
+</style>
+</head>
+<main class="page">
+  <a class="back" href="/">← Krislåda</a>
+  <h1>Skriv ut</h1>
+  <div class="bar" style="margin-top:14px"><button onclick="print()">Skriv ut nu</button></div>
+  <p class="sub noprint">Det viktigaste från 1177, MCF och Livsmedelsverket, på papper. Skriv ut nu, medan det finns ström, och lägg papperen hos din hemberedskap. Tryck <b>Skriv ut</b> (eller Cmd + P).</p>
+  <div id="pack"><p>Laddar…</p></div>
+</main>
+<script src="../lib/md.js"></script>
+<script>
+(() => {
+  const DIR = 'docs/library/Svenska myndigheter/';
+  const PAGES = [
+    '1177 - Hjärt-lungräddning', '1177 - Hjärt-lungräddning på barn', '1177 - Stabilt sidoläge',
+    '1177 - Om någon sätter i halsen', '1177 - Stoppa en blödning', '1177 - Chock', '1177 - Brännskador',
+    '1177 - Förgiftning', '1177 - Inandning av skadlig gas', '1177 - Köldskador – förfrysning',
+    'MCF - Vad är VMA och hur går en varning till-', 'MCF - Utomhusvarning – Hesa Fredrik',
+    'MCF - Grunder i hemberedskap', 'MCF - Tillgång till vatten i kris', 'MCF - Tillgång till värme i kris',
+    'Livsmedelsverket - Dricksvatten i dunk', 'Livsmedelsverket - Laga mat under ett elavbrott',
+  ];
+  // On paper, keep what to do; leave out background, hospital care, history and page furniture.
+  const SKIP = /^(På den här sidan|Vad händer i kroppen|På akutmottagningen|Behandling|Komplikationer|Påverka och delta|Mer information|Hur kan jag (minska risken|förebygga)|Orsaker|Vad är en |Varför|Relaterad|Dela sidan|Frågor och svar|Om du känner dig orolig|Film:|Kurser|Ansvar för|Byte till|Här finns|Ombyggnation|Jag hör inte|Falsklarm|Test av|VMA i reklamradion|Starkare befolkningsskydd|Utmana dig|Undersökning|Vård och behandling|Vad beror|Hur länge|Läs mer|Hitta|Vad kan jag göra själv för att lindra klåda)/i;
+  const trim = md => md.split(/\n(?=## )/).filter((part, i) => i === 0 || !SKIP.test(part.slice(3).trim())).join('\n');
+  const today = new Date().toLocaleDateString('sv-SE');
+  Promise.all(PAGES.map(p => fetchDoc(DIR + p + '.md').then(t => renderMarkdown(trim(t))).catch(() => null))).then(docs => {
+    const ok = docs.map((d, i) => d && { ...d, name: PAGES[i] }).filter(Boolean);
+    let html = `<section class="cover"><h1>Krislåda: att ha på papper</h1>
+      <p class="nums"><b>112</b> nödsituation · <b>1177</b> sjukvårdsrådgivning<br><b>113 13</b> information vid kris · <b>114 14</b> polisen, ej akut<br>Radio: <b>Sveriges Radio P4</b> (batteri- eller vevradio)</p>
+      <p>Utskrivet ${today}. Råden är sparade från myndigheternas webbplatser. Kontrollera de senaste råden på 1177.se, mcf.se och krisinformation.se när det går.</p>
+      <h4>Innehåll</h4><ol class="toc">${ok.map(d => `<li>${d.title || d.name.split(' - ')[1]} <span class="src">(${d.name.split(' - ')[0]})</span></li>`).join('')}</ol></section>`;
+    html += ok.map(d => `<section>${d.html}</section>`).join('');
+    if (!ok.length) html = '<p>Myndigheternas sidor saknas. Kör installationen igen med internet.</p>';
+    document.getElementById('pack').innerHTML = html;
+  });
+})();
+</script>
+</body>
+</html>

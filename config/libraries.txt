@@ -1,0 +1,38 @@
+# The offline libraries in the kit (Kiwix .zim files), downloaded by install.sh.
+# Every file is checked against the SHA-256 that Kiwix publishes next to it.
+# To add a library, put its URL from https://download.kiwix.org/zim/ on a new line
+# (or remove the # in front of one of the extras below) and run: bash scripts/download-library.sh
+
+# Medicine: the most important part
+https://download.kiwix.org/zim/wikipedia/wikipedia_en_medicine_maxi_2026-10.zim
+https://download.kiwix.org/zim/other/mdwiki_en_all_maxi_2025-11.zim
+https://download.kiwix.org/zim/zimit/medlineplus.gov_en_all_2025-01.zim
+https://download.kiwix.org/zim/other/zimgit-medicine_en_2024-08.zim
+https://download.kiwix.org/zim/zimit/irp.fas.org_en_military-medicine_2026-10.zim
+https://download.kiwix.org/zim/zimit/nhs.uk_en_medicines_2025-12.zim
+https://download.kiwix.org/zim/zimit/wwwnc.cdc.gov_en_all_2024-11.zim
+
+# Water, food, shelter, and what to do in each kind of emergency
+https://download.kiwix.org/zim/other/zimgit-water_en_2024-08.zim
+https://download.kiwix.org/zim/other/zimgit-food-preparation_en_2025-04.zim
+https://download.kiwix.org/zim/other/zimgit-knots_en_2024-08.zim
+https://download.kiwix.org/zim/other/zimgit-post-disaster_en_2024-05.zim
+https://download.kiwix.org/zim/zimit/www.ready.gov_en_2024-12.zim
+https://download.kiwix.org/zim/zimit/solar.lowtechmagazine.com_mul_all_2025-01.zim
+
+# Swedish Wikipedia, every article (the opening section of each)
+https://download.kiwix.org/zim/wikipedia/wikipedia_sv_all_mini_2026-11.zim
+
+# Extras, not in the standard kit. Remove the # to add one.
+# https://download.kiwix.org/zim/wikipedia/wikipedia_sv_all_maxi_2026-11.zim   # Swedish Wikipedia in full, with images (17 GB, instead of the mini one)
+# https://download.kiwix.org/zim/wikipedia/wikipedia_en_all_mini_2026-09.zim   # English Wikipedia, opening sections (13 GB)
+# https://download.kiwix.org/zim/wikipedia/wikipedia_en_all_nopic_2026-06.zim  # English Wikipedia, full text (49 GB)
+# https://download.kiwix.org/zim/ifixit/ifixit_en_all_2025-12.zim
+# https://download.kiwix.org/zim/stack_exchange/diy.stackexchange.com_en_all_2026-10.zim
+# https://download.kiwix.org/zim/stack_exchange/mechanics.stackexchange.com_en_all_2026-10.zim
+# https://download.kiwix.org/zim/stack_exchange/gardening.stackexchange.com_en_all_2026-10.zim
+# https://download.kiwix.org/zim/stack_exchange/cooking.stackexchange.com_en_all_2026-10.zim
+# https://download.kiwix.org/zim/stack_exchange/outdoors.stackexchange.com_en_all_2026-10.zim
+# https://download.kiwix.org/zim/stack_exchange/ham.stackexchange.com_en_all_2026-10.zim
+# https://download.kiwix.org/zim/other/appropedia_en_all_maxi_2026-02.zim
+# https://download.kiwix.org/zim/zimit/cd3wdproject.org_en_all_2025-11.zim

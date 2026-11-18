@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fråga AI · Krislåda</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icon-180.png">
+<meta name="apple-mobile-web-app-title" content="Krislåda">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b5cad">
+<link rel="icon" href="/icon-180.png">
+<link rel="stylesheet" href="../lib/kit.css">
+<style>
+  .page { max-width: 760px; }
+  .modes { display: flex; gap: 22px; margin: 22px 0 6px; border-bottom: 1px solid var(--line); }
+  .mode { cursor: pointer; padding: 8px 0; margin-bottom: -1px; color: var(--muted); border-bottom: 2px solid transparent; font-weight: 500; }
+  .mode input { position: absolute; opacity: 0; pointer-events: none; }
+  .mode:has(input:checked) { color: var(--fg); border-bottom-color: var(--fg); }
+  .mode:has(input:disabled) { opacity: .4; cursor: not-allowed; }
+  .mode:has(input:focus-visible) { outline: 2px solid var(--fg); outline-offset: 2px; }
+  #modehint { font-size: 14px; color: var(--muted); margin: 6px 0 0; }
+  #status { margin-top: 14px; }
+  #fix { color: var(--red); font-size: 14px; margin: 6px 0 0; }
+  #log { display: flex; flex-direction: column; gap: 18px; margin: 26px 0 16px; }
+  .msg { scroll-margin-top: 16px; overflow-wrap: anywhere; }
+  .me { align-self: flex-end; max-width: 85%; white-space: pre-wrap; background: var(--soft); padding: 9px 13px; border-radius: 10px; }
+  .me img { display: block; max-width: 220px; max-height: 220px; margin-top: 8px; border-radius: 6px; }
+  .ai { padding-left: 14px; border-left: 2px solid var(--line); }
+  .ai p, .ai ul, .ai ol { margin: 6px 0; } .ai ul, .ai ol { padding-left: 22px; } .ai li { margin: 3px 0; }
+  .ai h4 { margin: 14px 0 4px; font-size: 16px; }
+  .ai table { border-collapse: collapse; margin: 8px 0; font-size: 14px; display: block; overflow-x: auto; }
+  .ai td, .ai th { border: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+  .meta { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+  .wait { color: var(--muted); font-size: 15px; }
+  .src { margin-top: 10px; font-size: 13.5px; color: var(--muted); }
+  .src a, .src span { display: inline-block; margin-right: 12px; color: var(--muted); }
+  .sep { font-size: 13px; color: var(--muted); text-align: center; }
+  .err { color: var(--red); }
+  form#ask { position: sticky; bottom: 0; background: var(--bg); padding: 10px 0 14px; border-top: 1px solid var(--line); }
+  textarea { width: 100%; resize: vertical; min-height: 64px; }
+  .row { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
+  .row .grow { flex: 1; }
+  label.button input { display: none; }
+  button.stop { background: var(--red); border-color: var(--red); color: #fff; }
+  #thumbs { display: flex; gap: 6px; flex-wrap: wrap; }
+  #thumbs div { position: relative; } #thumbs img { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; }
+  #thumbs button { position: absolute; top: -8px; right: -8px; font-size: 12px; padding: 2px 6px; border-radius: 10px; }
+  details.more { border-top: 1px solid var(--line); }
+  details.more:last-of-type { border-bottom: 1px solid var(--line); }
+  details.more > summary { list-style: none; cursor: pointer; padding: 14px 0; display: flex; justify-content: space-between; font-weight: 600; }
+  details.more > summary::-webkit-details-marker { display: none; }
+  details.more > summary::after { content: "+"; color: var(--muted); font-weight: 400; }
+  details.more[open] > summary::after { content: "–"; }
+  details.more > .inner { padding: 0 0 20px; }
+  #examples { list-style: none; margin: 0; padding: 0; }
+  #examples button { display: block; width: 100%; text-align: left; background: none; color: var(--fg); border: 0; border-bottom: 1px solid var(--line); border-radius: 0; padding: 9px 0; font-size: 15px; }
+  #examples button:hover { text-decoration: underline; }
+  .guide ol { padding-left: 20px; } .guide ol > li { margin: 10px 0; }
+  .guide table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 8px 0; }
+  .guide td, .guide th { border-bottom: 1px solid var(--line); padding: 6px 8px 6px 0; text-align: left; vertical-align: top; }
+  .example { color: var(--muted); font-size: 15px; margin-top: 4px; }
+  @media (max-width: 560px) { .long { display: none; } .modes { gap: 16px; } }
+</style>
+</head>
+<body>
+<main class="page">
+  <a class="back" href="../">← Krislåda</a>
+  <h1>Fråga AI</h1>
+  <p class="meta">Körs på den här datorn, utan internet. Livsfara? Ring 112 först, och använd Akut på startsidan.</p>
+
+  <div id="status" class="lamps">Kontrollerar AI:n…</div>
+  <div id="fix"></div>
+
+  <div class="modes" role="radiogroup" aria-label="Välj läge">
+    <label class="mode" data-hint="Läser krislådans böcker och de medicinska biblioteken (WikiMed, MedlinePlus) och visar källorna. 10 till 40 sekunder."><input type="radio" name="mode" value="books">Ur böckerna</label>
+    <label class="mode" data-hint="Samma AI utan böckerna. Snabbare, och kan titta på foton."><input type="radio" name="mode" value="crisis">Snabbt svar</label>
+    <label class="mode" data-hint="Mindre AI som drar mindre ström. Enklare svar."><input type="radio" name="mode" value="crisis-small">Spara batteri</label>
+  </div>
+  <p id="modehint"></p>
+
+  <div id="log" aria-live="polite"></div>
+
+  <form id="ask">
+    <div id="thumbs"></div>
+    <textarea id="q" rows="3" placeholder="Beskriv läget: vem (ålder), vad hände, när, vad du ser och vad du har hemma." aria-label="Din fråga"></textarea>
+    <div class="row">
+      <label class="button plain" title="Bifoga foto">Foto<input id="photo" type="file" accept="image/*" multiple></label>
+      <button type="button" class="plain" id="new">Ny<span class="long"> konversation</span></button>
+      <span class="grow"></span>
+      <button type="submit" id="send">Skicka</button>
+    </div>
+  </form>
+
+  <section>
+    <details class="more"><summary>Exempel på frågor</summary><div class="inner">
+      <div id="examples">
+        <button type="button">Någon har bränt handen på spisen. Vad gör jag nu?</button>
+        <button type="button">Hur renar jag vatten om kranvattnet inte går att dricka?</button>
+        <button type="button">Ett barn på 4 år har haft 39,5 graders feber i två dagar. När måste vi söka vård?</button>
+        <button type="button">Elen har varit borta i ett dygn och det är minus 10 ute. Hur håller vi lägenheten varm på ett säkert sätt?</button>
+        <button type="button">Vad betyder signalen Viktigt meddelande till allmänheten och vad ska jag göra när jag hör den?</button>
+        <button type="button">Vad behöver vi hemma för att klara en vecka utan el och vatten? Vi är två vuxna och ett barn.</button>
+        <button type="button">Hur lagar jag mat säkert utan el?</button>
+        <button type="button" data-photo="1">Vad är det här? (bifoga ett foto av ett sår, utslag, en växt eller en trasig sak)</button>
+      </div>
+    </div></details>
+    <details class="more guide"><summary>Så använder du AI:n</summary><div class="inner">
+      <ol>
+        <li><b>Välj läge.</b> <i>Ur böckerna</i> för det mesta: svaret bygger på krislådans böcker och de medicinska biblioteken, och du ser källorna under svaret. <i>Snabbt svar</i> när det är bråttom eller för foton. <i>Spara batteri</i> när datorn går på batteri.</li>
+        <li><b>Skriv som när du ringer 1177.</b> Vem (ålder, vikt för barn), vad som hände, när, vad du ser och vad du har hemma.
+          <div class="example">Exempel: Min pappa är 72 år. Han föll i trappan för 20 minuter sedan och slog i huvudet. Han blöder lite från pannan och verkar förvirrad. Vi har plåster, kompresser och Alvedon. Vad ska vi göra?</div></li>
+        <li><b>Fortsätt fråga.</b> AI:n minns samtalet. Tryck <i>Ny konversation</i> när du byter ämne.</li>
+        <li><b>Kontrollera det viktiga.</b> AI kan ha fel. Öppna källan under svaret, särskilt för doser. Ät aldrig en svamp eller växt för att AI:n säger att den är ätlig.</li>
+        <li><b>Foto.</b> Tryck <i>Foto</i> (byter till Snabbt svar). Bra ljus, nära, en sak per bild.</li>
+        <li><b>Prata i stället för att skriva.</b> Datorns diktering (mikrofontangenten, eller Fn två gånger), eller mikrofonen på mobilens tangentbord.</li>
+        <li><b>Från mobilen.</b> Samma wifi som datorn, öppna <b id="lanurl">adressen som Terminal-fönstret visar</b>.</li>
+        <li><b>Om det inte fungerar.</b> Raden högst upp visar vad som är igång. Öppna appen Ollama för AI-motorn eller AnythingLLM för böckerna. Hjälper inget: dubbelklicka <i>Starta Krislåda.command</i> igen.</li>
+      </ol>
+      <h3>Andra sätt på datorn</h3>
+      <table>
+        <tr><td>AnythingLLM, arbetsytan Crisis</td><td>Svarar ur böckerna, men inte ur WikiMed och MedlinePlus. Du kan dra in egna filer där.</td></tr>
+        <tr><td>Ollama, modellen crisis</td><td>Samma som Snabbt svar. Dra in ett foto för att fråga om det.</td></tr>
+        <tr><td>Terminal</td><td><code>ollama run crisis</code>, avsluta med <code>/bye</code>.</td></tr>
+      </table>
+    </div></details>
+  </section>
+
+  <footer class="kit">AI-modeller: Gemma 4 26B och E4B. Sökning: AnythingLLM och bge-m3 i böckerna, Kiwix i WikiMed, MDWiki och MedlinePlus.</footer>
+</main>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const log = $('#log'), q = $('#q'), sendBtn = $('#send'), thumbs = $('#thumbs');
+  const LABEL = { 'books': 'Ur böckerna', 'crisis': 'Snabbt svar', 'crisis-small': 'Spara batteri' };
+  const KIWIX = `http://${location.hostname}:8090`;   // the libraries (always http)
+  let status = null, mode = null, history = [], photos = [], busy = null;
+
+  // ---------- status ----------
+  async function checkStatus() {
+    try { status = await (await fetch('/ai-api/status', { cache: 'no-store' })).json(); }
+    catch { status = { ollama: false, models: [], books: false, libraries: false }; }
+    const avail = { 'books': status.models.includes('crisis') && (status.books || status.libraries), 'crisis': status.models.includes('crisis'), 'crisis-small': status.models.includes('crisis-small') };
+    document.querySelectorAll('input[name=mode]').forEach(i => { i.disabled = !avail[i.value]; });
+    const s = [], fix = [];
+    s.push(status.ollama ? '<span class="lamp">AI-motor: igång</span>' : '<span class="lamp off">AI-motor: av</span>');
+    s.push(status.books ? '<span class="lamp">Böckerna: igång</span>' : '<span class="lamp off">Böckerna: av</span>');
+    s.push(status.libraries ? '<span class="lamp">Biblioteken: igång</span>' : '<span class="lamp off">Biblioteken: av</span>');
+    if (!status.ollama) fix.push('Öppna appen Ollama och vänta tio sekunder.');
+    if (!status.books) fix.push('För svar ur böckerna: öppna appen AnythingLLM.');
+    if (!status.libraries) fix.push('Biblioteken är av: dubbelklicka Starta Krislåda.command.');
+    const b = status.battery;
+    if (b && b.on_battery) {
+      s.push(`<span class="lamp warn">Batteri: ${b.percent} %</span>`);
+      if (b.percent < 40 && mode !== 'crisis-small') fix.push('Lite batteri: välj Spara batteri, så räcker strömmen längre.');
+    }
+    $('#status').innerHTML = s.join('');
+    $('#fix').textContent = fix.join(' ');
+    if (status.name || status.lan) $('#lanurl').textContent = [status.name, status.lan].filter(Boolean).map(h => `http://${h}:${status.port}/ai/`).join(' eller ');
+    if (!mode || !avail[mode]) {
+      const first = ['books', 'crisis', 'crisis-small'].find(m => avail[m]);
+      if (first) setMode(first, true);
+    }
+  }
+
+  function setMode(m, quiet) {
+    const input = document.querySelector(`input[name=mode][value="${m}"]`);
+    if (!input || input.disabled) return false;
+    input.checked = true;
+    $('#modehint').textContent = input.closest('label').dataset.hint || '';
+    if (mode && mode !== m && log.children.length && !quiet) {
+      add('div', 'sep', 'Nytt läge: ' + LABEL[m] + '. AI:n börjar om utan det tidigare samtalet.');
+    }
+    if (mode !== m) history = [];
+    mode = m;
+    return true;
+  }
+  document.querySelectorAll('input[name=mode]').forEach(i => i.addEventListener('change', () => setMode(i.value)));
+
+  // ---------- rendering ----------
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const inline = s => esc(s)
+    .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+    .replace(/(^|[^*\w])\*(?!\s)([^*]+?)\*(?!\w)/g, '$1<i>$2</i>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>');
+  function md(src) {
+    let out = '', list = null, para = [], table = [];
+    const flushP = () => { if (para.length) { out += '<p>' + para.map(inline).join('<br>') + '</p>'; para = []; } };
+    const closeL = () => { if (list) { out += `</${list}>`; list = null; } };
+    const flushT = () => {
+      if (!table.length) return;
+      const rows = table.filter(r => !/^\s*\|?\s*:?-{2,}/.test(r)).map(r => r.trim().replace(/^\||\|$/g, '').split('|'));
+      out += '<table>' + rows.map((c, i) => '<tr>' + c.map(x => `<${i ? 'td' : 'th'}>${inline(x.trim())}</${i ? 'td' : 'th'}>`).join('') + '</tr>').join('') + '</table>';
+      table = [];
+    };
+    for (const line of src.split('\n')) {
+      let m;
+      if (/^\s*\|/.test(line)) { flushP(); closeL(); table.push(line); continue; } else flushT();
+      if (!line.trim()) { flushP(); closeL(); continue; }
+      if ((m = line.match(/^\s{0,3}#{1,6}\s+(.*)/))) { flushP(); closeL(); out += '<h4>' + inline(m[1]) + '</h4>'; continue; }
+      if ((m = line.match(/^\s*[-*•]\s+(.*)/))) { flushP(); if (list !== 'ul') { closeL(); out += '<ul>'; list = 'ul'; } out += '<li>' + inline(m[1]) + '</li>'; continue; }
+      if ((m = line.match(/^\s*(\d+)[.)]\s+(.*)/))) { flushP(); if (list !== 'ol') { closeL(); out += `<ol start="${m[1]}">`; list = 'ol'; } out += '<li>' + inline(m[2]) + '</li>'; continue; }
+      if (/^\s*(-{3,}|\*{3,})\s*$/.test(line)) { flushP(); closeL(); out += '<hr>'; continue; }
+      closeL(); para.push(line);
+    }
+    flushT(); flushP(); closeL();
+    return out;
+  }
+  // Some models write their reasoning between <think> tags first: hide it.
+  const visible = raw => raw.replace(/<think>[\s\S]*?(<\/think>|$)/g, '').replace(/^\s+/, '');
+
+  function add(tag, cls, text) {
+    const el = document.createElement(tag);
+    el.className = cls;
+    if (text != null) el.textContent = text;
+    log.appendChild(el);
+    el.scrollIntoView({ block: 'end', behavior: 'smooth' });
+    return el;
+  }
+
+  // ---------- photos ----------
+  async function shrink(file) {
+    const img = await createImageBitmap(file);
+    const k = Math.min(1, 1280 / Math.max(img.width, img.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', 0.85);
+  }
+  function drawThumbs() {
+    thumbs.innerHTML = '';
+    photos.forEach((p, i) => {
+      const d = document.createElement('div');
+      d.innerHTML = `<img src="${p}" alt="Bifogat foto"><button type="button" aria-label="Ta bort foto">✕</button>`;
+      d.querySelector('button').onclick = () => { photos.splice(i, 1); drawThumbs(); };
+      thumbs.appendChild(d);
+    });
+  }
+  $('#photo').addEventListener('change', async e => {
+    for (const f of [...e.target.files].slice(0, 4 - photos.length)) {
+      try { photos.push(await shrink(f)); } catch { alertLine('Kunde inte läsa bilden. Prova att ta en ny.'); }
+    }
+    e.target.value = '';
+    if (photos.length && mode === 'books') {
+      if (setMode('crisis', true) || setMode('crisis-small', true)) add('div', 'sep', 'Foton fungerar i ' + LABEL[mode] + ', så jag bytte läge.');
+    }
+    drawThumbs();
+  });
+  const alertLine = t => add('div', 'sep err', t);
+
+  // ---------- asking ----------
+  async function readStream(resp, onLine) {
+    const reader = resp.body.getReader(), dec = new TextDecoder();
+    let buf = '';
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let i;
+      while ((i = buf.indexOf('\n')) >= 0) { const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1); if (line) onLine(line); }
+    }
+    if (buf.trim()) onLine(buf.trim());
+  }
+
+  async function ask(text) {
+    if (busy || (!text && !photos.length)) return;
+    if (!mode) { alertLine('Ingen AI är igång. Se raden högst upp.'); return; }
+    text = text || 'Vad ser du på bilden, och vad ska jag göra?';
+    const me = add('div', 'msg me', text);
+    const imgs = photos.map(p => p.split(',')[1]);
+    photos.forEach(p => { const im = document.createElement('img'); im.src = p; im.alt = 'Bifogat foto'; me.appendChild(im); });
+    photos = []; drawThumbs(); q.value = '';
+
+    const box = add('div', 'msg ai');
+    const t0 = Date.now(), used = mode;
+    let raw = '', sources = [], failed = null, shown = false, doing = used === 'books' ? 'Söker i böckerna' : 'Tänker';
+    box.innerHTML = `<div class="wait">${doing}… 0 s</div>`;
+    const tick = setInterval(() => { if (!shown) box.querySelector('.wait').textContent = `${doing}… ${Math.round((Date.now() - t0) / 1000)} s`; }, 1000);
+    const paint = () => { const v = visible(raw); if (v) { shown = true; box.innerHTML = md(v); } };
+
+    const ctrl = new AbortController();
+    busy = ctrl; sendBtn.textContent = 'Stopp'; sendBtn.className = 'stop';
+    try {
+      // "Ur böckerna" first sends the sources it found (one line), then the answer, like the other modes.
+      history.push({ role: 'user', content: text, ...(imgs.length ? { images: imgs } : {}) });
+      const books = used === 'books';
+      const r = await fetch(books ? '/ai-api/books-chat' : '/ai-api/chat', { method: 'POST', signal: ctrl.signal,
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(books ? { messages: history } : { model: used, messages: history }) });
+      if (!r.ok) { history.pop(); throw new Error('ollama'); }
+      await readStream(r, line => {
+        let d; try { d = JSON.parse(line); } catch { return; }
+        if (d.sources) { sources = d.sources; doing = sources.length ? `Läser ${sources.length} källor` : 'Tänker'; }
+        if (d.error) failed = d.error;
+        if (d.message && d.message.content) { raw += d.message.content; paint(); }
+      });
+      if (raw) history.push({ role: 'assistant', content: visible(raw) });
+      else history.pop();
+    } catch (e) {
+      if (e.name === 'AbortError') failed = 'stopped';
+      else failed = 'AI-motorn svarar inte. Öppna appen Ollama, vänta tio sekunder och försök igen.';
+    } finally {
+      clearInterval(tick);
+      busy = null; sendBtn.textContent = 'Skicka'; sendBtn.className = '';
+    }
+
+    if (!visible(raw)) box.innerHTML = '';
+    if (failed === 'stopped') box.insertAdjacentHTML('beforeend', '<div class="meta">Stoppad.</div>');
+    else if (failed) box.insertAdjacentHTML('beforeend', `<div class="err">${esc(String(failed))}</div>`);
+    const secs = Math.round((Date.now() - t0) / 1000);
+    box.insertAdjacentHTML('beforeend', `<div class="meta">${LABEL[used]} · ${secs} s</div>`);
+
+    // The kit's books open as PDFs or in the reader; library articles open in Kiwix.
+    const seen = new Set(), list = sources.filter(s => s.title && !seen.has(s.title + s.library) && seen.add(s.title + s.library));
+    if (list.length) {
+      const src = document.createElement('div');
+      src.className = 'src';
+      src.innerHTML = '<b>Källor:</b> ';
+      box.appendChild(src);
+      for (const s of list) {
+        if (s.href) {
+          const a = document.createElement('a');
+          a.target = '_blank'; a.href = KIWIX + s.href; a.textContent = `${s.library}: ${s.title}`;
+          src.appendChild(a);
+          continue;
+        }
+        const name = s.title.replace(/\.json$/, '');
+        let el;
+        try {
+          const r = await fetch('/ai-api/doc?name=' + encodeURIComponent(name));
+          if (r.ok) {
+            const href = (await r.json()).href;
+            el = document.createElement('a'); el.target = '_blank';
+            el.href = /\.(md|txt)$/i.test(href) ? '../las/?f=' + encodeURIComponent(decodeURIComponent(href)) : '../' + href;   // text opens in the reader
+          }
+        } catch {}
+        el = el || document.createElement('span');
+        el.textContent = name.replace(/\.(pdf|md)$/i, '');
+        src.appendChild(el);
+      }
+    }
+    box.scrollIntoView({ block: 'start', behavior: 'smooth' });   // show the start of the answer
+  }
+
+  $('#ask').addEventListener('submit', e => {
+    e.preventDefault();
+    if (busy) { busy.abort(); return; }
+    ask(q.value.trim());
+  });
+  q.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && !matchMedia('(pointer: coarse)').matches) {
+      e.preventDefault(); $('#ask').requestSubmit();
+    }
+  });
+  $('#new').addEventListener('click', () => {
+    if (busy) busy.abort();
+    history = []; photos = []; drawThumbs(); log.innerHTML = ''; q.value = ''; q.focus();
+  });
+  document.querySelectorAll('#examples button').forEach(b => b.addEventListener('click', () => {
+    if (b.dataset.photo) { setMode(status && status.models.includes('crisis') ? 'crisis' : 'crisis-small'); $('#photo').click(); return; }
+    q.value = b.textContent; $('#ask').requestSubmit();
+  }));
+
+  checkStatus();
+  setInterval(() => { if (!busy) checkStatus(); }, 15000);
+})();
+</script>
+</body>
+</html>
