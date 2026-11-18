@@ -22,6 +22,11 @@ _Avoid_: hub, station, shelter (as a general term)
 The person who runs a Kit Mac at a Community Point.
 _Avoid_: admin, operator, host
 
+**Lent position**:
+A position a Visitor device sends to the Kit Mac, because the Kit Mac has no GPS of its own. Only accepted after
+the Keeper or owner turns lending on at the Kit Mac.
+_Avoid_: phone share, shared GPS
+
 ## Content
 
 **Library**:
