@@ -120,10 +120,14 @@ def main():
     seen = set()
     for i, t in enumerate(topics):
         w = f"emergency_topics[{i}]"
-        art = get(w, t, "article", str)
-        if art in seen:
-            bad(w + ".article", f"{art} is listed twice")
-        seen.add(art)
+        tid = get(w, t, "id", str)
+        if tid in seen:
+            bad(w + ".id", f"{tid} is listed twice")
+        seen.add(tid)
+        # The article in each language's WikiMed Library. Official Guides come first when a topic has one.
+        wm = get(w, t, "wikimed", dict) or {}
+        for code in (lang, "en"):
+            get(w + ".wikimed", wm, code, str)
         texts(w + ".label", t.get("label") if isinstance(t, dict) else None, lang)
         guide = t.get("official_guide") if isinstance(t, dict) else None
         if guide is not None:
@@ -154,16 +158,6 @@ def main():
     texts("checklist.official_list.heading", ol.get("heading"), lang)
     for i, a in enumerate(get("checklist", cl, "additions", list) or []):
         texts(f"checklist.additions[{i}]", a, lang)
-
-    # Ready.gov.
-    rg = get("", c, "ready_gov", dict) or {}
-    get("ready_gov", rg, "note", str)
-    pat = get("ready_gov", rg, "skip_pattern", str)
-    if pat:
-        try:
-            re.compile(pat)
-        except re.error as e:
-            bad("ready_gov.skip_pattern", f"is not a valid pattern ({e})")
 
     # The map.
     m = get("", c, "map", dict) or {}

@@ -48,8 +48,10 @@ OPTIONS = {"num_ctx": 16384}   # room for the instructions, the excerpts and the
 # Kiwix libraries searched (from the country config), by the start of their file name. The "encyclopedia"
 # ones use Wikipedia's article titles. (Sweden leaves CDC's library out: it is travel advice by country, too noisy.)
 _LIBS = kit_country.COUNTRY["ai"]["libraries"]
-WIKIS = [(l["prefix"], l["label"]) for l in _LIBS if l["kind"] == "encyclopedia"]
-PLAIN = [(l["prefix"], l["label"]) for l in _LIBS if l["kind"] == "plain"]
+# Only the English Libraries for now: the planning call returns English titles. Looking up Ukrainian titles in
+# the Ukrainian Libraries is a later step.
+WIKIS = [(l["prefix"], l["label"]) for l in _LIBS if l["kind"] == "encyclopedia" and l["language"] == "en"]
+PLAIN = [(l["prefix"], l["label"]) for l in _LIBS if l["kind"] == "plain" and l["language"] == "en"]
 
 PLAN_PROMPT = (
     "You prepare two searches for an offline crisis kit. Reply with exactly two lines and nothing else.\n"
