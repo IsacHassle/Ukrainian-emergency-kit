@@ -6,6 +6,8 @@
 # Run after the libraries are downloaded. Safe to re-run.
 set -eu
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=country.sh
+. "$KIT/scripts/country.sh"   # the country's facts (config/country.json)
 D="$KIT/documents"
 mkdir -p "$D"
 
@@ -15,8 +17,9 @@ get() {   # url, file name
   curl -fsSL -o "$D/$2.part" "$1" && mv "$D/$2.part" "$D/$2" \
     || echo "Kunde inte hämta $2 just nu. Kör installationen igen senare."
 }
-get "https://rib.msb.se/filer/pdf/30828.pdf" "Om-krisen-eller-kriget-kommer.pdf"
-get "https://rib.msb.se/filer/pdf/31523.pdf" "In-case-of-crisis-or-war.pdf"
+# The government brochures (brochures in the country config): one address and one file name each.
+while IFS='|' read -r url file; do get "$url" "$file"; done < <(
+  /usr/bin/python3 -c 'import json,sys; [print(b["url"] + "|" + b["file"]) for b in json.load(open(sys.argv[1], encoding="utf-8"))["brochures"]]' "${EK_COUNTRY:-$KIT/config/country.json}")
 
 # The kit's own guide, so the AI can explain how to use the kit.
 cp "$KIT/README.md" "$D/Krislåda - guide.md"

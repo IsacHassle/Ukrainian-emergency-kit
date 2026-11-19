@@ -1,7 +1,7 @@
 #!/bin/bash
 # Downloads the small programs the kit runs on (into tools/):
 #   kiwix-serve  serves the offline libraries          (download.kiwix.org)
-#   pmtiles      cuts the Sweden map out of the world map (github.com/protomaps/go-pmtiles)
+#   pmtiles      cuts the country's map out of the world map (github.com/protomaps/go-pmtiles)
 #   a Python environment with libzim, used to take the books out of the libraries
 # Safe to re-run: anything already there is skipped.
 set -eu

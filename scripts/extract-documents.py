@@ -23,6 +23,8 @@ import json
 import os
 import re
 
+import kit_country
+
 from bs4 import BeautifulSoup
 from libzim.reader import Archive
 from markdownify import markdownify
@@ -117,7 +119,7 @@ NOT_ENGLISH = re.compile(r"(spanish|esp|arabic|chinese|korean|vietnamese|haitian
                          r"portuguese|japanese|hindi|urdu|polish|_es\b|-es\b)", re.I)
 READY_PDF = re.compile(r"are-you-ready-guide\.pdf$|nuclear-detonation|info[-_]sheet|"
                        r"taking-shelter-building-a-safe-room|safe-rooms-shelters", re.I)
-NOT_SWEDEN = re.compile(r"hurricane|tornado|tsunami|volcano|earthquake|landslide|climate.change|full.suite", re.I)
+NOT_RELEVANT = re.compile(kit_country.COUNTRY["ready_gov"]["skip_pattern"], re.I)   # hazards the country does not have
 LANGUAGES = {"العربية", "English", "Español", "Français", "Kreyòl", "日本語", "한국어", "Русский", "Tagalog",
              "Tiếng Việt", "简体中文", "繁體中文"}
 
@@ -135,7 +137,7 @@ def ready_gov():
             if title not in pages or it.size > pages[title][1]:
                 pages[title] = (e.path, it.size)
         elif it.mimetype == "application/pdf" and READY_PDF.search(e.path) \
-                and not NOT_ENGLISH.search(e.path) and not NOT_SWEDEN.search(e.path):
+                and not NOT_ENGLISH.search(e.path) and not NOT_RELEVANT.search(e.path):
             pdfs.setdefault(bytes(it.content)[:4096] + str(it.size).encode(), e.path)   # same file under two names: once
     n = 0
     for title, (path, _) in sorted(pages.items()):
@@ -149,8 +151,7 @@ def ready_gov():
         md = re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
         if len(md) > 400:
             n += save(os.path.join(OUT, "Ready.gov", f"Ready.gov - {safe(title)}.md"),
-                      f"# {title} (Ready.gov, US FEMA)\n\nSource: Ready.gov, https://{path}. US advice: in Sweden call 112, "
-                      f"and follow Swedish authorities (MCF, Krisinformation.se, Sveriges Radio P4).\n\n{md}\n")
+                      f"# {title} (Ready.gov, US FEMA)\n\nSource: Ready.gov, https://{path}. " + kit_country.COUNTRY["ready_gov"]["note"] + f"\n\n{md}\n")
     for path in sorted(pdfs.values()):
         name = os.path.basename(path)
         if name == "are-you-ready-guide.pdf":

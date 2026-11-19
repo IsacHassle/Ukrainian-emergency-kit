@@ -74,6 +74,10 @@ def main():
         get("ai.base_models", bases, k, str)
     for k in ("workspace", "workspace_name", "answer_language", "authorities", "example_source"):
         get("ai", ai, k, str)
+    # AnythingLLM makes a workspace's address from its name, so the two must agree.
+    if isinstance(ai.get("workspace"), str) and isinstance(ai.get("workspace_name"), str) \
+            and re.sub(r"[^a-z0-9]+", "-", ai["workspace_name"].lower()).strip("-") != ai["workspace"]:
+        bad("ai.workspace", "must be what AnythingLLM makes of ai.workspace_name (lower case, dashes between words)")
     chk = get("ai", ai, "check", dict) or {}
     for k in ("question", "expect"):
         get("ai.check", chk, k, str)
@@ -103,6 +107,7 @@ def main():
     get("official_guides", og, "folder", str)
     for i, s in enumerate(get("official_guides", og, "sources", list) or []):
         get(f"official_guides.sources[{i}]", s, "id", str)
+        get(f"official_guides.sources[{i}]", s, "host", str)
         texts(f"official_guides.sources[{i}].label", s.get("label") if isinstance(s, dict) else None, lang)
     pages = get("official_guides", og, "print_pages", list) or []
     if not all(isinstance(p, str) and " - " in p for p in pages):
@@ -132,6 +137,9 @@ def main():
         for j, lib in enumerate(get(f"library_groups[{i}]", g, "libraries", list) or []):
             get(f"library_groups[{i}].libraries[{j}]", lib, "prefix", str)
             texts(f"library_groups[{i}].libraries[{j}].description", lib.get("description") if isinstance(lib, dict) else None, lang)
+    for i, b in enumerate(get("", c, "brochures", list) or []):
+        get(f"brochures[{i}]", b, "url", str)
+        get(f"brochures[{i}]", b, "file", str)
     sl = get("", c, "search_languages", dict) or {}
     for k in ("main", "country"):
         get("search_languages", sl, k, str)

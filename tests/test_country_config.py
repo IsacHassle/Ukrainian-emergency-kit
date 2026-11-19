@@ -38,6 +38,7 @@ def testland(c):
     """Another country: nothing in it is shared with the Swedish facts."""
     c = copy.deepcopy(c)
     c["kit_name"] = {"sv": "Testlådan", "en": "Testkit"}
+    c["kit_description"] = {"sv": "Testbeskrivning."}
     c["ai"]["models"] = {"main": "alpha", "small": "alpha-small"}
     c["ai"]["workspace"] = "ws-alpha"
     c["ai"]["answer_language"] = "Testish"
@@ -96,6 +97,13 @@ class ConfigIsValidTest(unittest.TestCase):
         code, out = check(c)
         self.assertNotEqual(code, 0)
         self.assertIn("map.bbox", out)
+
+    def test_a_workspace_address_that_is_not_made_from_its_name_is_refused(self):
+        c = real()
+        c["ai"]["workspace_name"] = "Emergency kit"   # AnythingLLM would make "emergency-kit"
+        code, out = check(c)
+        self.assertNotEqual(code, 0)
+        self.assertIn("ai.workspace", out)
 
     def test_two_models_with_one_name_are_refused(self):
         c = real()
@@ -174,6 +182,51 @@ class OtherCountryTest(unittest.TestCase):
         self.assertNotIn("Swedish", system)
         self.assertIn("ws-alpha", self.kit.ai.searched_workspaces)
         self.assertEqual(set(self.kit.ai.searched_workspaces), {"ws-alpha"})
+
+    def test_the_web_app_manifest_carries_the_config_s_name(self):
+        manifest = json.loads(get(self.kit, "/manifest.webmanifest"))
+        self.assertEqual(manifest["name"], "Testlådan")
+        self.assertEqual(manifest["short_name"], "Testlådan")
+        self.assertEqual(manifest["lang"], "sv")
+        self.assertEqual(manifest["description"], "Testbeskrivning.")
+
+
+def shell(kit_dir, config, snippet):
+    """Runs a bash snippet that has sourced scripts/country.sh, as the install scripts do."""
+    env = dict(os.environ, KIT=kit_dir)
+    if config:
+        env["EK_COUNTRY"] = config
+    run = subprocess.run(["bash", "-c", '. "$KIT/scripts/country.sh"; ' + snippet], env=env, capture_output=True, text=True)
+    assert run.returncode == 0, run.stderr
+    return run.stdout.strip()
+
+
+class ShellScriptsReadTheConfigTest(unittest.TestCase):
+    """The install and start scripts get their facts from scripts/country.sh. Their steps need a Mac, Ollama
+    and the internet, so what is tested is what they would be told."""
+
+    def test_sweden_s_facts_are_what_the_scripts_used_to_have_written_in(self):
+        self.assertEqual(shell(REPO, None, "country ai.models.main"), "crisis")
+        self.assertEqual(shell(REPO, None, "country ai.models.small"), "crisis-small")
+        self.assertEqual(shell(REPO, None, "country ai.base_models.main"), "gemma4:26b")
+        self.assertEqual(shell(REPO, None, "country ai.base_models.small"), "gemma4:e4b")
+        self.assertEqual(shell(REPO, None, "country ai.workspace"), "crisis")
+        self.assertEqual(shell(REPO, None, "country ai.workspace_name"), "Crisis")
+        self.assertEqual(shell(REPO, None, "country map.pmtiles"), "sweden")
+        self.assertEqual(shell(REPO, None, "country map.bbox | paste -sd, -"), "10.5,55.0,24.3,69.2")
+        self.assertEqual(shell(REPO, None, "country map.search_release_repo"), "IsacHassle/Swedish-doomsdaykit")
+        self.assertEqual(shell(REPO, None, "country kit_name"), "Krislåda")
+        self.assertEqual(shell(REPO, None, "country ai.check.expect"), "112")
+
+    def test_another_config_changes_what_the_scripts_are_told(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "country.json")
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(testland(real()), f, ensure_ascii=False)
+            self.assertEqual(shell(REPO, path, "country ai.models.main"), "alpha")
+            self.assertEqual(shell(REPO, path, "country ai.workspace"), "ws-alpha")
+            self.assertEqual(shell(REPO, path, "country kit_name"), "Testlådan")
+            self.assertEqual(shell(REPO, path, "country map.regions.0.slug"), "sweden")   # unchanged in testland
 
 
 if __name__ == "__main__":

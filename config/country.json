@@ -102,25 +102,29 @@
     "id": "1177",
     "label": {
      "sv": "1177 · Första hjälpen och skador"
-    }
+    },
+    "host": "www.1177.se"
    },
    {
     "id": "MCF",
     "label": {
      "sv": "MCF · Hemberedskap, varningar, skyddsrum, brand"
-    }
+    },
+    "host": "www.mcf.se"
    },
    {
     "id": "Livsmedelsverket",
     "label": {
      "sv": "Livsmedelsverket · Vatten och mat"
-    }
+    },
+    "host": "www.livsmedelsverket.se"
    },
    {
     "id": "Krisinformation",
     "label": {
      "sv": "Krisinformation.se"
-    }
+    },
+    "host": "www.krisinformation.se"
    }
   ],
   "print_pages": [
@@ -498,6 +502,16 @@
     "sv": "Dressings, slings and splints"
    },
    "path": "library/Military Medicine/Bandaging and Splinting.pdf"
+  }
+ ],
+ "brochures": [
+  {
+   "url": "https://rib.msb.se/filer/pdf/30828.pdf",
+   "file": "Om-krisen-eller-kriget-kommer.pdf"
+  },
+  {
+   "url": "https://rib.msb.se/filer/pdf/31523.pdf",
+   "file": "In-case-of-crisis-or-war.pdf"
   }
  ],
  "library_groups": [

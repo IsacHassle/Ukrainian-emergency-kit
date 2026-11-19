@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Builds the offline search for the map, for all of Sweden, from OpenStreetMap.
+"""Builds the offline search for the map, for the country in config/country.json, from OpenStreetMap.
 
-Input:  maps/osm/sweden-latest.osm.pbf  (OpenStreetMap Sweden, download.geofabrik.de)
+Input:  maps/osm/<region>-latest.osm.pbf  (the full-detail region, download.geofabrik.de)
 Output: web/map/data/places.json         towns, villages, neighbourhoods and services
                                          (hospitals, pharmacies, police, water, food, fuel...)
                                          used by every search and by the "nearest" buttons
@@ -22,33 +22,30 @@ import time
 import unicodedata
 from collections import defaultdict
 
+import kit_country
+
 KIT = os.environ.get("KIT_DIR") or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OSM = os.path.join(KIT, "maps", "osm", "sweden-latest.osm.pbf")
+REGION = next(r for r in kit_country.COUNTRY["map"]["regions"] if r["detail"] == "full")   # the Geofabrik extract
+OSM = os.path.join(KIT, "maps", "osm", REGION["slug"] + "-latest.osm.pbf")
 OUT = os.path.join(KIT, "web", "map", "data")
 
-# What a place is called in the search results (Swedish).
-PLACE = {"city": "Stad", "town": "Tätort", "village": "By", "hamlet": "Småort", "suburb": "Stadsdel",
-         "borough": "Stadsdel", "quarter": "Område", "neighbourhood": "Område", "island": "Ö",
-         "islet": "Ö", "isolated_dwelling": "Gård", "farm": "Gård", "locality": "Ort"}
-BASE_PLACES = {"Stad", "Tätort", "By", "Småort", "Stadsdel", "Område", "Ö"}   # always loaded
-SERVICE = {  # (key, value) -> label; always loaded, used by the "nearest" buttons
-    ("amenity", "hospital"): "Sjukhus", ("amenity", "clinic"): "Vårdcentral", ("amenity", "doctors"): "Läkare",
-    ("amenity", "dentist"): "Tandläkare", ("amenity", "pharmacy"): "Apotek", ("amenity", "police"): "Polis",
-    ("amenity", "fire_station"): "Brandstation", ("amenity", "drinking_water"): "Dricksvatten",
-    ("amenity", "water_point"): "Vattenpost", ("amenity", "fuel"): "Bensinstation",
-    ("amenity", "townhall"): "Kommunhus", ("amenity", "veterinary"): "Veterinär",
-    ("shop", "supermarket"): "Livsmedel", ("shop", "convenience"): "Närbutik", ("shop", "hardware"): "Järnhandel",
-}
-LANDMARK = {  # named places that help find your way; loaded per letter
-    ("railway", "station"): "Station", ("public_transport", "station"): "Station",
-    ("amenity", "school"): "Skola", ("amenity", "place_of_worship"): "Kyrka", ("amenity", "shelter"): "Vindskydd",
-    ("leisure", "park"): "Park", ("leisure", "nature_reserve"): "Naturreservat", ("natural", "peak"): "Topp",
-    ("natural", "beach"): "Strand", ("tourism", "camp_site"): "Camping", ("leisure", "marina"): "Hamn",
-    ("amenity", "ferry_terminal"): "Färja", ("aeroway", "aerodrome"): "Flygplats",
-}
+# What a place is called in the search results, and which tags make something a service or a landmark:
+# all from the country config (map.labels), the same words the map page uses to rank and zoom.
+LABELS = kit_country.COUNTRY["map"]["labels"]
+PLACE = LABELS["place"]
+BASE_PLACES = set(LABELS["base_places"])   # always loaded
+STREET = LABELS["street"]
+pair = lambda table: {tuple(k.split("=", 1)): v for k, v in table.items()}
+SERVICE = pair(LABELS["service"])    # (key, value) -> label; always loaded, used by the "nearest" buttons
+LANDMARK = pair(LABELS["landmark"])  # named places that help find your way; loaded per letter
+STATION = LANDMARK.get(("railway", "station"))
+TOWN_TYPES = LABELS["town_types"]    # cities and towns: they name the area of what is near them
+CITY = TOWN_TYPES[0]                 # a city needs no area name
+HOOD_TYPES = [t for t in LABELS["area_types"] if t not in TOWN_TYPES]   # neighbourhoods and villages
 ROADS = {"motorway", "trunk", "primary", "secondary", "tertiary", "unclassified", "residential",
          "living_street", "pedestrian", "road"}
-TAGS = ["name", "name:sv", "place", "highway", "amenity", "shop", "railway", "public_transport", "leisure",
+NAME_TAGS = kit_country.COUNTRY["map"]["name_tags"]   # the first one that is set names the place
+TAGS = sorted(set(NAME_TAGS) | {"name"}) + ["place", "highway", "amenity", "shop", "railway", "public_transport", "leisure",
         "natural", "tourism", "aeroway", "addr:street", "addr:place", "addr:housenumber", "addr:city"]
 
 
@@ -94,7 +91,7 @@ def export(work, pbf, *filters):
 
 def main():
     if not os.path.exists(OSM):
-        sys.exit(f"Missing {OSM}. Download https://download.geofabrik.de/europe/sweden-latest.osm.pbf there first.")
+        sys.exit(f"Missing {OSM}. Download https://download.geofabrik.de/{REGION['geofabrik']}-latest.osm.pbf there first.")
     t0 = time.time()
     work = tempfile.mkdtemp(prefix="kit-map-")
     base, per_letter = [], defaultdict(list)          # [name, type, lon, lat]
@@ -102,7 +99,7 @@ def main():
 
     # 1. Places.
     for tags, (lon, lat) in export(work, OSM, "n/place"):
-        name = tags.get("name:sv") or tags.get("name")
+        name = next((tags[t] for t in NAME_TAGS if tags.get(t)), None)
         typ = PLACE.get(tags.get("place"))
         if not name or not typ:
             continue
@@ -115,7 +112,7 @@ def main():
     filters = sorted({f"nwr/{k}={v}" for k, v in list(SERVICE) + list(LANDMARK)})
     for tags, (lon, lat) in export(work, OSM, *filters):
         label = next((SERVICE[(k, tags[k])] for k in ("amenity", "shop") if (k, tags.get(k)) in SERVICE), None)
-        name = tags.get("name:sv") or tags.get("name")
+        name = next((tags[t] for t in NAME_TAGS if tags.get(t)), None)
         if label:
             base.append([name or label, label, round(lon, 5), round(lat, 5)])
             continue
@@ -139,7 +136,7 @@ def main():
         for cell in grid.values():
             cx, cy = sum(p[0] for p in cell) / len(cell), sum(p[1] for p in cell) / len(cell)
             mid = min(cell, key=lambda p: km(p, (cx, cy)))
-            per_letter[letter(name)].append([name, "Gata", round(mid[0], 5), round(mid[1], 5)])
+            per_letter[letter(name)].append([name, STREET, round(mid[0], 5), round(mid[1], 5)])
             streets += 1
     print(f"streets: {streets} ({time.time() - t0:.0f}s)", flush=True)
 
@@ -167,8 +164,8 @@ def main():
         for it in items:
             g[(int(it[0] / cell), int(it[1] / cell))].append(it)
         return g
-    hoods = grid_of([p for p in places if p[3] in ("Stadsdel", "Område", "By", "Småort")], 0.05)
-    towns = grid_of([p for p in places if p[3] in ("Stad", "Tätort")], 0.25)
+    hoods = grid_of([p for p in places if p[3] in HOOD_TYPES], 0.05)
+    towns = grid_of([p for p in places if p[3] in TOWN_TYPES], 0.25)
 
     def nearest(g, cell, lon, lat, limit):
         best, bd = None, limit
@@ -191,10 +188,10 @@ def main():
     def pack(items):
         seen, out = set(), []
         for name, typ, lon, lat in items:
-            key = (name, typ, round(lon, 2 if typ in ("Gata", "Station") else 3), round(lat, 2 if typ in ("Gata", "Station") else 3))
+            key = (name, typ, round(lon, 2 if typ in (STREET, STATION) else 3), round(lat, 2 if typ in (STREET, STATION) else 3))
             if key not in seen and any(ch.isalpha() for ch in name):
                 seen.add(key)
-                out.append([name, typ, lon, lat, "" if typ == "Stad" else area(name, lon, lat)])
+                out.append([name, typ, lon, lat, "" if typ == CITY else area(name, lon, lat)])
         types = sorted({e[1] for e in out})
         areas = sorted({e[4] for e in out})
         ti, ai = {t: i for i, t in enumerate(types)}, {a: i for i, a in enumerate(areas)}

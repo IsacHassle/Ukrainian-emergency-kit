@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Sparar svenska myndigheters råd (MCF, 1177, Livsmedelsverket, Krisinformation) som text i
-documents/library/Svenska myndigheter/, så att de går att läsa utan internet och AI:n kan svara ur dem.
+documents/<mappen i landets konfiguration>/, så att de går att läsa utan internet och AI:n kan svara ur dem.
 
 Sidorna står i config/swedish-pages.txt. Varje sida hämtas från myndighetens egen webbplats.
 Sidor som redan är sparade hoppas över; kör med --uppdatera för att hämta om allt.
@@ -18,10 +18,12 @@ import urllib.request
 from bs4 import BeautifulSoup
 from markdownify import markdownify
 
+import kit_country
+
 KIT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT = os.path.join(KIT, "documents", "library", "Svenska myndigheter")
-SOURCES = {"www.mcf.se": "MCF", "www.1177.se": "1177", "www.livsmedelsverket.se": "Livsmedelsverket",
-           "www.krisinformation.se": "Krisinformation"}
+GUIDES = kit_country.COUNTRY["official_guides"]   # where they are saved and which sites they come from (country config)
+OUT = os.path.join(KIT, "documents", GUIDES["folder"])
+SOURCES = {s["host"]: s["id"] for s in GUIDES["sources"]}
 REFRESH = "--uppdatera" in sys.argv
 DROP = ("nav, header, footer, aside, script, style, noscript, form, button, svg, img, picture, figure, iframe, video, "
         "[role=navigation], [aria-label=Brödsmulor], .breadcrumb, .breadcrumbs, .c-breadcrumbs, .share, .c-share, "
@@ -29,7 +31,7 @@ DROP = ("nav, header, footer, aside, script, style, noscript, form, button, svg,
 
 
 def page(url):
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Macintosh) Krislada/1.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Macintosh) " + kit_country.slug() + "/1.0"})
     html = urllib.request.urlopen(req, timeout=30).read()
     soup = BeautifulSoup(html, "html.parser")
     h1 = soup.find("h1")

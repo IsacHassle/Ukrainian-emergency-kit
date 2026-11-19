@@ -20,13 +20,15 @@ if [[ "$KIT" == "$HOME/Downloads/"* ]] && [ ! -e "$HOME/Krislåda" ]; then
   exec bash "$HOME/Krislåda/install.sh" "$@"
 fi
 cd "$KIT"
+# shellcheck source=country.sh
+. "$KIT/scripts/country.sh"   # the country's facts (config/country.json)
 
 if [ "$(uname -s)" != Darwin ] || [ "$(uname -m)" != arm64 ]; then
   echo "Krislådan kräver en Mac med Apple-chip (M1 eller nyare)."; exit 1
 fi
 free_gb=$(df -g "$KIT" | awk 'NR==2 {print $4}')
 need=$([ $AI = 1 ] && echo 50 || echo 22)
-if [ ! -f "$KIT/maps/sweden.pmtiles" ] && [ "$free_gb" -lt "$need" ]; then
+if [ ! -f "$KIT/maps/$(country map.pmtiles).pmtiles" ] && [ "$free_gb" -lt "$need" ]; then
   echo "Bara $free_gb GB ledigt här, Krislådan behöver cirka $need GB. Frigör utrymme och kör igen."; exit 1
 fi
 chmod +x "$KIT"/scripts/*.sh "$KIT"/*.command
@@ -52,7 +54,7 @@ if tail -n 60 logs/download.log | grep -q "^FAIL"; then
   echo "Några bibliotek kunde inte hämtas. Kör installationen igen så försöker den på nytt."
 fi
 
-step "3/5 Kartor över Sverige och världen (cirka 4,5 GB)"
+step "3/5 Kartor över $(country map.overview_label) och världen (cirka 4,5 GB)"
 bash scripts/get-maps.sh
 
 step "4/5 Dokument och böcker"

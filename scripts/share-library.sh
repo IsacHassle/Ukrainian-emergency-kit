@@ -10,6 +10,8 @@
 # incoming connections. Click Allow, or other devices cannot connect.
 
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # the kit folder (where this repo is)
+# shellcheck source=country.sh
+. "$KIT/scripts/country.sh"   # the country's facts (config/country.json)
 LIB="$KIT/library"
 SERVE="$KIT/tools/kiwix-tools/kiwix-serve"
 # The ports can be chosen (EK_LIBRARY_PORT, EK_WEB_PORT) so a second kit or a test can run beside a kit
@@ -43,7 +45,7 @@ python3 "$KIT/scripts/build-home.py" >/dev/null
 IP=$(ipconfig getifaddr en0 || ipconfig getifaddr en1)
 NAME=$(scutil --get LocalHostName 2>/dev/null)   # e.g. "Annas-MacBook-Air": stays the same when the IP changes
 echo ""
-echo "  KRISLÅDA är igång (${#zims[@]} bibliotek)."
+echo "  $(country kit_name | tr '[:lower:]' '[:upper:]') är igång (${#zims[@]} bibliotek)."
 echo ""
 echo "  På den här Macen:        http://localhost:$WEB_PORT"
 [ -n "$NAME" ] && echo "  På mobiler (samma wifi): http://$NAME.local:$WEB_PORT   (fungerar alltid på iPhone)"

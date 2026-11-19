@@ -160,6 +160,7 @@ def main():
         "%BOOKS%": "".join(books_html),
         "%GROUPS%": "".join(groups_html) or "<p>Inga bibliotek hittades. Kör share-library.sh.</p>",
         "%KITNAME%": html.escape(kit_country.kit_name()),
+        "%OVERVIEW%": html.escape(text(C["map"]["overview_label"])),
         "%LANG%": kit_country.LANG,
         "%LOCALE%": kit_country.LOCALE,
         "%PRIMARY%": html.escape(PRIMARY["number"]),
@@ -236,7 +237,7 @@ TEMPLATE = r"""<!doctype html>
 
   <div class="primary">
     <a class="big dark" href="ai/"><b>Fråga AI</b><span>Fråga på svenska om skador, sjukdom, vatten, mat och värme. Svaret bygger på krislådans böcker.</span><i>→</i></a>
-    <a class="big" href="map/"><b>Karta</b><span>Hela Sverige, utan internet. Sök adress och hitta närmaste sjukhus, apotek och vatten.</span><i>→</i></a>
+    <a class="big" href="map/"><b>Karta</b><span>Hela %OVERVIEW%, utan internet. Sök adress och hitta närmaste sjukhus, apotek och vatten.</span><i>→</i></a>
   </div>
   <p class="where"><a href="map/?gps=1">Var är jag? →</a><small>Din position på kartan, med USB GPS-mottagare eller mobilen</small></p>
 

@@ -5,12 +5,14 @@
 # Kör: dubbelklicka på "Kontrollera Krislåda.command", eller: bash scripts/kontroll.sh
 set -u
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=country.sh
+. "$KIT/scripts/country.sh"   # the country's facts (config/country.json)
 OK=0; BAD=0
 ok()  { echo "  ✅ $*"; OK=$((OK + 1)); }
 bad() { echo "  ⚠️  $*"; BAD=$((BAD + 1)); }
 section() { printf '\n\033[1m%s\033[0m\n' "$*"; }
 
-echo "Krislåda: kontroll $(date '+%Y-%m-%d %H:%M')"
+echo "$(country kit_name): kontroll $(date '+%Y-%m-%d %H:%M')"
 if curl -fs -o /dev/null --max-time 3 https://www.google.com 2>/dev/null; then
   echo "(Internet är på. Stäng gärna av wifi och kör igen, så vet du att allt fungerar utan internet.)"
 fi
@@ -27,7 +29,7 @@ else bad "$have av $want bibliotek finns. Saknas:$missing. Kör installationen i
 [ -x "$KIT/tools/kiwix-tools/kiwix-serve" ] && ok "kiwix-serve (visar biblioteken) finns" || bad "kiwix-serve saknas. Kör installationen igen."
 
 section "Kartor"
-for m in world sweden; do
+for m in world $(country map.pmtiles); do
   f="$KIT/maps/$m.pmtiles"
   if [ -f "$f" ] && [ "$(head -c 7 "$f")" = "PMTiles" ]; then ok "Karta: $m ($(du -h "$f" | cut -f1))"; else bad "Kartan $m saknas eller är trasig. Kör installationen igen."; fi
 done
@@ -63,18 +65,19 @@ if [ -d /Applications/Ollama.app ]; then
   curl -fs -o /dev/null --max-time 3 http://127.0.0.1:11434/api/version || { open -g -a Ollama; sleep 8; }
   if curl -fs -o /dev/null --max-time 3 http://127.0.0.1:11434/api/version; then
     ok "AI-motorn Ollama är igång"
-    for m in crisis crisis-small bge-m3; do
+    for m in $(country ai.models.main) $(country ai.models.small) bge-m3; do
       "$OLLAMA" show "$m" >/dev/null 2>&1 && ok "AI-modellen $m finns" || bad "AI-modellen $m saknas. Kör installationen igen."
     done
     echo "  …frågar AI:n en testfråga (tar upp till en minut)"
-    answer=$(curl -fs --max-time 120 http://127.0.0.1:11434/api/chat -d '{"model":"crisis-small","stream":false,"think":false,"messages":[{"role":"user","content":"Svara bara med siffrorna: vilket nummer ringer man vid nödsituation i Sverige?"}]}' \
+    answer=$(curl -fs --max-time 120 http://127.0.0.1:11434/api/chat -d "$(python3 -c 'import json,sys; print(json.dumps({"model": sys.argv[1], "stream": False, "think": False, "messages": [{"role": "user", "content": sys.argv[2]}]}))' "$(country ai.models.small)" "$(country ai.check.question)")" \
       | python3 -c "import json,sys; print(json.load(sys.stdin)['message']['content'])" 2>/dev/null)
-    if echo "$answer" | grep -q 112; then ok "AI:n svarar (testfråga: 112)"; else bad "AI:n svarade inte som väntat: ${answer:-inget svar}"; fi
+    expect=$(country ai.check.expect)
+    if echo "$answer" | grep -q "$expect"; then ok "AI:n svarar (testfråga: $expect)"; else bad "AI:n svarade inte som väntat: ${answer:-inget svar}"; fi
   else bad "AI-motorn Ollama startar inte. Öppna appen Ollama och kör kontrollen igen."; fi
 else bad "Appen Ollama saknas. Kör installationen igen (eller ./install.sh --utan-ai om du inte vill ha AI)."; fi
 if [ -d /Applications/AnythingLLM.app ]; then
   if curl -fs -o /dev/null --max-time 3 http://localhost:3001/api/ping; then
-    docs=$(curl -fs http://localhost:3001/api/workspace/crisis | python3 -c "import json,sys; print(len(json.load(sys.stdin)['workspace']['documents']))" 2>/dev/null || echo 0)
+    docs=$(curl -fs "http://localhost:3001/api/workspace/$(country ai.workspace)" | python3 -c "import json,sys; print(len(json.load(sys.stdin)['workspace']['documents']))" 2>/dev/null || echo 0)
     [ "$docs" -gt 100 ] && ok "Böckerna i AI:n (AnythingLLM): $docs dokument" || bad "Bara $docs dokument i AI:n. Kör: bash scripts/embed-documents.sh"
   else
     echo "  ℹ️  AnythingLLM är inte igång (startas av Starta Krislåda.command). Svar ur böckerna kontrolleras då inte."

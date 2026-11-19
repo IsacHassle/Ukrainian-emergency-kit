@@ -11,6 +11,9 @@
 # So even if its key leaked, it could not be used to impersonate any internet site.
 set -eu
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=country.sh
+. "$KIT/scripts/country.sh"   # the country's facts (config/country.json)
+KIT_NAME=$(country kit_name)
 C="$KIT/tools/certs"
 SSL=/usr/bin/openssl   # macOS's own LibreSSL, present on every Mac
 mkdir -p "$C"
@@ -26,8 +29,8 @@ distinguished_name = dn
 prompt = no
 x509_extensions = v3_ca
 [dn]
-CN = Krislåda på $NAME
-O = Krislåda
+CN = $KIT_NAME på $NAME
+O = $KIT_NAME
 [v3_ca]
 basicConstraints = critical, CA:true, pathlen:0
 keyUsage = critical, keyCertSign, cRLSign
@@ -38,7 +41,7 @@ EOF
   chmod 600 "$C/ca.key"
   "$SSL" req -x509 -new -key "$C/ca.key" -sha256 -days 3650 -config "$C/ca.cnf" -out "$C/ca.crt"
   rm -f "$C/server.crt"
-  echo "Gjorde Krislådans certifikat (för GPS på mobilen)."
+  echo "Gjorde certifikatet för mobilens GPS."
 fi
 
 # The https certificate must name this Mac and its current address; renew it if not.
