@@ -209,6 +209,13 @@ class RefusedTest(SaverTestCase):
         self.assertNotIn(UK[2], self.saver.files())
         self.assertIn(UK[3], self.saver.files())
 
+    def test_an_optional_source_that_breaks_the_connection_is_skipped_too(self):
+        self.net.stumble(DSNS, 9)   # answers 502 every time
+        code, out = self.saver.run()
+        self.assertEqual(code, 0, out)
+        self.assertIn(DSNS, out)
+        self.assertRegex(out, r"(?i)skipped")
+
     def test_an_optional_source_that_answers_is_saved(self):
         # Inside Ukraine the State Emergency Service answers; its article is saved like the others.
         self.net.page(DSNS, "dovidka-article.html")

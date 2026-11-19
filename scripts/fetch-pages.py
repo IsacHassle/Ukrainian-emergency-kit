@@ -90,10 +90,12 @@ def main():
             else:
                 data, why = text_guide(guide, result, today)
         if data is None:
-            if result.state == "refused" and kit_guides.optional(guide.url):
+            # An optional source that does not give its page, for any reason from outside Ukraine (a refusal, a reset
+            # connection, a timeout), is skipped: the install must not fail because of it.
+            if kit_guides.optional(guide.url) and result.state in ("refused", "error"):
                 counts["skipped"] += 1
                 say(f"Пропущено (сайт не відповідає з цієї країни): {guide.url}",
-                    f"Skipped (the site refuses requests from here): {guide.url}")
+                    f"Skipped (the site does not answer from here): {guide.url}")
             else:
                 counts["failed"] += 1
                 say(f"Не вдалося зберегти: {guide.url} ({why})", f"Failed to save: {guide.url} ({why})")
