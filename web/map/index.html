@@ -130,13 +130,13 @@
   const SR = KitSearch, norm = SR.norm;
   let index = null;
   function loadIndex() {
-    if (!index) index = fetch('data/places.json').then(r => r.json()).then(d => SR.prepare(d).items).catch(() => []);
+    if (!index) index = fetch('data/places.json').then(r => r.json()).then(d => SR.prepare(d, LABELS.street).items).catch(() => []);
     return index;
   }
   const letters = {};
   function loadLetter(text) {
     const c = SR.letterOf(text);
-    if (!letters[c]) letters[c] = fetch(`data/letters/${c}.json`).then(r => r.json()).then(d => SR.prepare(d)).catch(() => ({ items: [], list: [], cities: [] }));
+    if (!letters[c]) letters[c] = fetch(`data/letters/${c}.json`).then(r => r.json()).then(d => SR.prepare(d, LABELS.street)).catch(() => ({ items: [], list: [], cities: [] }));
     return letters[c];
   }
   // What an entry is called and what kind it is, in the page language. A service without a name is called by its kind.
@@ -192,7 +192,7 @@
   async function findAddress(map, q) {
     const [A, items] = await Promise.all([loadLetter(q.street), loadIndex()]);
     const c = map.getCenter();
-    const list = SR.findAddress(A, items, q, { here: [c.lng, c.lat], address: LABELS.address });
+    const list = SR.findAddress(A, items, q, { here: [c.lng, c.lat], address: LABELS.address, areaKinds: LABELS.area_types });
     list.forEach(e => { if (!e.a || /^\d+$/.test(e.a)) e.a = areaNear(items, [e[2], e[3]]); });
     return list;
   }
@@ -214,6 +214,7 @@
     let words = text, house = null;
     const hm = SR.parseQuery(text);   // "Хрещатик 22", "Садова 12-А, Львів"
     if (hm) {
+      hm.area = SR.canonicalArea(await loadIndex(), hm.area, LABELS.area_types);   // "Киев" means Київ
       house = hm.number.replace(/\s/g, '').toUpperCase();
       const found = await findAddress(map, hm);
       if (found.length) {

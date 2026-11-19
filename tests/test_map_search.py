@@ -57,6 +57,7 @@ class BuilderTest(unittest.TestCase):
         self.assertEqual(b.shown_name({"name": "улица Ленина", "name:en": "Lenin Street"}), "Lenin Street")
         self.assertEqual(b.shown_name({"name": "Первомайская"}), None)
         self.assertEqual(b.shown_name({"name": "Bălți", "name:ru": "Бельцы"}), "Bălți")
+        self.assertEqual(b.shown_name({"name": "Матрёшка", "name:uk": "Матрёшка"}), None)   # a Russian name in name:uk
 
     def test_russian_and_older_names_are_keys_not_shown(self):
         b = self.b

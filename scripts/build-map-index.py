@@ -84,7 +84,7 @@ def cyrillic(s):
 def shown_name(tags):
     """The name to show: Ukrainian, or the local name when it is not Russian, else the English name; None if none."""
     uk = tags.get("name:uk")
-    if uk:
+    if uk and not RU_LETTERS.search(uk):   # name:uk is sometimes a Russian name by mistake
         return uk
     name = tags.get("name")
     if name and not looks_russian(name, endings=True):

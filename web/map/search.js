@@ -103,22 +103,34 @@
   // ---------- keys ----------
   // Every spelling an entry can be found under, in the compared form: its name, the transliteration of its name,
   // its English name, and its other names (with the older Latin form of each Cyrillic one: Киев is also Kiev).
-  const keysOf = e => {
-    const raw = [e[0], stripType(e[0] || '')];
+  const keyCache = new Map();   // the same street name is on thousands of entries: work it out once
+  const keysOf = (e, street) => {
+    const id = e[0] + '\u0001' + (e[5] || '') + '\u0001' + (e[6] || '') + (street ? '\u0001s' : '');
+    let out = keyCache.get(id);
+    if (out) return out;
+    const raw = street ? [e[0], stripType(e[0] || '')] : [e[0]];
     if (e[6]) raw.push(e[6]);
-    const out = new Set();
-    for (const r of raw) if (r) { out.add(norm(r)); out.add(norm(translit(r))); }
+    const set = new Set();
+    for (const r of raw) if (r) { set.add(norm(r)); set.add(norm(translit(r))); }
     if (e[5]) for (const a of e[5].split('|')) {
-      out.add(norm(a));
-      out.add(norm(hasCyrillic(a) ? translitRu(a) : a));
-      out.add(norm(translit(stripType(a))));
+      set.add(norm(a));
+      set.add(norm(hasCyrillic(a) ? translitRu(a) : a));
+      set.add(norm(translit(street ? stripType(a) : a)));
     }
-    out.delete('');
-    return [...out];
+    set.delete('');
+    out = [...set];
+    if (keyCache.size > 400000) keyCache.clear();
+    keyCache.set(id, out);
+    return out;
   };
 
-  function prepare(d) {
-    d.items.forEach(e => { e.t = d.types[e[1]]; e.a = d.areas ? d.areas[e[4]] : ''; e.k = keysOf(e); e.ha = norm(e.a) + ' ' + norm(translit(e.a)); });
+  // streetKind: the kind code of streets, whose names also match without their type ("Хрещатик" for "вулиця Хрещатик")
+  function prepare(d, streetKind) {
+    const areaKeys = (d.areas || []).map(a => norm(a) + ' ' + norm(translit(a)));
+    d.items.forEach(e => {
+      e.t = d.types[e[1]]; e.a = d.areas ? d.areas[e[4]] : '';
+      e.k = keysOf(e, e.t === streetKind); e.ha = areaKeys[e[4]] || '';
+    });
     if (d.addresses) d.list = Object.entries(d.addresses).map(([street, nums]) => {
       const plain = stripType(street);
       return { street, nums, keys: [...new Set([norm(plain), norm(translit(plain)), norm(street)])].filter(Boolean) };
@@ -169,6 +181,14 @@
     return hits.slice(0, opts.limit || 30).map(h => h[1]);
   }
 
+  // The place a typed area means ("Киев" is Київ): the best match among places of the given kinds, else the text as typed.
+  function canonicalArea(items, text, kinds) {
+    const q = norm(text);
+    if (!q) return text;
+    const hit = items.find(e => kinds.includes(e.t) && e.k.includes(q));
+    return hit ? hit[0] : text;
+  }
+
   // ---------- addresses ----------
   // Latin letters that look like Cyrillic ones are mixed in the data (22A, 22А): compare them as one.
   const LOOK = { A: 'А', B: 'В', C: 'С', E: 'Е', H: 'Н', I: 'І', K: 'К', M: 'М', O: 'О', P: 'Р', T: 'Т', X: 'Х' };
@@ -180,7 +200,7 @@
     const qs = norm(stripType(q.street)), qsl = norm(translit(stripType(q.street)));
     const qa = norm(q.area || ''), want = houseKey(q.number), n = parseInt(want, 10), here = opts.here;
     if (!qs) return [];
-    const areaSpots = qa ? items.filter(e => e.k.some(k => k.startsWith(qa))).slice(0, 300) : [];
+    const areaSpots = qa ? items.filter(e => (!opts.areaKinds || opts.areaKinds.includes(e.t)) && e.k.some(k => k.startsWith(qa))).slice(0, 300) : [];
     const cityIn = c => { const k = norm(c), l = norm(translit(c)); return k.includes(qa) || l.includes(qa); };
     const miss = (pt, city) => !!qa && !(cityIn(city) || areaSpots.some(e => km(pt, [e[2], e[3]]) < 2.5));
     const score = (pt, city, extra) => extra + (here ? Math.min(km(pt, here), 100) / 50 : 0) + (miss(pt, city) ? 3 : 0);
@@ -222,5 +242,5 @@
   }
 
   return { translit, translitRu, norm, stripType, letterOf, parseQuery, TYPES, displayName, displayArea,
-           prepare, searchItems, findAddress, houseKey, km };
+           prepare, searchItems, findAddress, canonicalArea, houseKey, km };
 });

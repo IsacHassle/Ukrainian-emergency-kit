@@ -21,7 +21,7 @@ each('a query splits into street, number and area', cases.parse, q => {
 
 // ---- searching the small test search file (tests/kit/map-data) ----
 const fs = require('fs');
-const load = f => S.prepare(JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'kit', 'map-data', f), 'utf8')));
+const load = f => S.prepare(JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'kit', 'map-data', f), 'utf8')), 'street');
 const base = load('places.json'), K = load('letters/k.json');
 const opts = { prio: { city: -0.8, town: -0.5 }, street: 'street' };
 const find = (q, lang) => S.searchItems(base.items.concat(K.items), q, opts).map(e => S.displayName(e, lang || 'uk', e.t));
@@ -63,7 +63,7 @@ same(first('Kyi', 'uk'), 'Київ', 'prefix of a name');
 // Addresses.
 const addr = (q, lang) => {
   const p = S.parseQuery(q);
-  const list = S.findAddress(K, base.items, p, { here: [30.52, 50.45], address: 'address' });
+  const list = S.findAddress(K, base.items, p, { here: [30.52, 50.45], address: 'address', areaKinds: ['city', 'town', 'village'] });
   return list.map(e => e[0] + '|' + e.a + '|' + !!e.miss + '|' + !!e.approx);
 };
 same(addr('Хрещатик 22, Київ')[0], 'вулиця Хрещатик 22|Київ|false|false', 'Хрещатик 22, Київ');
@@ -75,3 +75,11 @@ same(addr('Хрещатик 5, Черкаси')[0], 'вулиця Хрещати
 same(addr('Хрещатик 5, Київ')[0].split('|')[2], 'true', 'a town that does not fit is flagged');
 same(addr('Хрещатик 23, Київ')[0].split('|')[3], 'true', 'a missing number is placed between neighbours');
 console.log('ok - "Хрещатик 22, Київ" finds the address, in either script, with the street type or without');
+
+// A Russian town name typed as the area means the Ukrainian town.
+const kinds = ['city', 'town', 'village'];
+same(S.canonicalArea(base.items, 'Киев', kinds), 'Київ', 'Киев as an area');
+same(S.canonicalArea(base.items, 'Kyiv', kinds), 'Київ', 'Kyiv as an area');
+same(S.canonicalArea(base.items, 'Nowhere', kinds), 'Nowhere', 'an unknown area stays');
+same(S.searchItems(K.items, 'Крещатик ' + S.canonicalArea(base.items, 'Киев', kinds), opts).map(e => e.a)[0], 'Київ', 'a Russian street name and town find the street');
+console.log('ok - a Russian town name typed as the area means the Ukrainian town');

@@ -755,10 +755,11 @@
    "address": "address",
    "border_crossing": "border_crossing",
    "area_types": [
+    "city",
+    "town",
     "suburb",
     "quarter",
     "neighbourhood",
-    "town",
     "village",
     "hamlet"
    ],
