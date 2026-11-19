@@ -59,6 +59,22 @@ class BuilderTest(unittest.TestCase):
         self.assertEqual(b.shown_name({"name": "Bălți", "name:ru": "Бельцы"}), "Bălți")
         self.assertEqual(b.shown_name({"name": "Матрёшка", "name:uk": "Матрёшка"}), None)   # a Russian name in name:uk
 
+    def test_real_ukrainian_names_that_end_like_russian_adjectives_are_shown(self):
+        """Story 48. Real streets from the 2026-11-18 extract that the first rule left out: a person's name in the
+        genitive ends in -ая (Нечай, Гайдай, Бородай, Вересай, Миколай)."""
+        b = self.b
+        for name in ("вулиця Олександра Бородая", "вулиця Михайла Нечая", "вулиця Андрія Гайдая", "Остапа Вересая",
+                     "вул. Дмитра Нечая", "вулиця Святого Миколая", "вулиця Олександра Мамлая"):
+            self.assertEqual(b.shown_name({"name": name}), name, name)
+            self.assertFalse(b.looks_russian(name, endings=True), name)
+
+    def test_names_that_are_only_russian_adjectives_are_still_left_out(self):
+        b = self.b
+        for name in ("Красная", "Малая Садовая", "Поперечная-Подгорная", "вулиця Красная", "9 Мая", "проспект 1 Мая",
+                     "Пролетарский", "ул.Луговая", "переулок Чернышевского"):
+            self.assertTrue(b.looks_russian(name, endings=True), name)
+            self.assertIsNone(b.shown_name({"name": name}), name)
+
     def test_russian_and_older_names_are_keys_not_shown(self):
         b = self.b
         tags = {"name": "Київ", "name:uk": "Київ", "name:en": "Kyiv", "name:ru": "Киев", "old_name": "Kiev"}

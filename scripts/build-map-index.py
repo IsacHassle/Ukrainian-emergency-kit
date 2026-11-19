@@ -135,15 +135,24 @@ OTHER = LABELS["other_language"]
 RU_LETTERS = re.compile("[%s]" % (OTHER["letters"] + OTHER["letters"].upper()) if OTHER["letters"] else NEVER)
 RU_TYPES = set(OTHER["street_types"])
 RU_ENDINGS = tuple(OTHER["endings"])
+RU_WORDS = set(OTHER.get("words", []))
 
 
 def looks_russian(s, endings=False):
+    """True when a name is written in the other language. Letters, street types and whole words only that language
+    has settle it. The adjective endings (Красная, Садовый) only count for a name that is one adjective, or two
+    that both end so (Малая Садовая): a person's name in the genitive ends the same way in Ukrainian
+    (вулиця Олександра Бородая, Остапа Вересая, Михайла Нечая), and those streets must stay."""
     if RU_LETTERS.search(s):
         return True
     w = s.lower().split()
     if w and (w[0].rstrip(".") in RU_TYPES or w[-1].rstrip(".") in RU_TYPES):
         return True
-    return endings and bool(w) and w[-1].endswith(RU_ENDINGS) and cyrillic(w[-1])
+    if any(x.rstrip(".") in RU_WORDS for x in w):
+        return True
+    name = T.strip_type(s).lower().split()   # without a street type in front of it or behind it
+    return endings and bool(name) and cyrillic(name[-1]) and name[-1].endswith(RU_ENDINGS) \
+        and (len(name) == 1 or name[0].endswith(RU_ENDINGS))
 
 
 def cyrillic(s):

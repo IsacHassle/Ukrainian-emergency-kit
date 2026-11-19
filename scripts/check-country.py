@@ -313,6 +313,8 @@ def main():
     if not isinstance(other, dict) or not isinstance(other.get("letters"), str) \
             or not all(isinstance(other.get(k), list) for k in ("street_types", "endings")):
         bad("map.labels.other_language", "needs letters (a string), street_types and endings (lists), all may be empty")
+    elif not isinstance(other.get("words", []), list):
+        bad("map.labels.other_language.words", "must be a list of whole words")
     crossing = get("map.labels", lab, "unnamed_crossing", dict) or {}
     for k in ("name", "en"):
         get("map.labels.unnamed_crossing", crossing, k, str)
