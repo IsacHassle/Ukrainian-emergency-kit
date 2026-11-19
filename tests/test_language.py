@@ -105,17 +105,17 @@ class ServedTextsTest(unittest.TestCase):
         page = get(self.kit, "/")
         self.assertIn('<html lang="uk"', page)
         self.assertIn("<title>Тривожна валіза</title>", page)
-        self.assertIn("<h1>Тривожна валіза</h1>", page)
+        self.assertIn("<h1 data-kit>Тривожна валіза</h1>", page)
         self.assertIn("Запитати ШІ", page)
         self.assertIn("Загроза життю? Телефонуйте 112.", page)
         for swedish in SWEDISH:
             self.assertNotIn(swedish, page)
 
-    def test_the_start_page_carries_the_english_texts_too(self):
+    def test_the_start_page_marks_its_texts_by_key_and_carries_the_config_texts_in_both_languages(self):
         page = get(self.kit, "/")
         self.assertIn('data-t="home.ai.title"', page)
-        self.assertIn("Emergency Kit", page)   # the kit's name in English, hidden until the page switches
-        self.assertIn("Ukraine", page)
+        self.assertIn('<span data-l="en">police</span>', page)   # from the country config, hidden until the page switches
+        self.assertIn("Ukraine", page)   # the map card's {place}, a text per language
 
     def test_emergency_numbers_come_from_the_country_config_in_both_languages(self):
         page = get(self.kit, "/")

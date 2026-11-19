@@ -38,7 +38,7 @@ class ServedKitTest(unittest.TestCase):
         page = body.decode("utf-8")
         self.assertEqual(status, 200)
         self.assertIn("<title>", page)
-        self.assertIn("Tryckförband, tourniquet", page)   # an emergency topic found in the test Library
+        self.assertIn("Джгут, тиснуча пов’язка", page)   # an emergency topic found in the test Library
 
     def test_status_reports_ai_engine_book_index_and_libraries(self):
         status, body = get(self.kit, "/ai-api/status")
@@ -47,11 +47,12 @@ class ServedKitTest(unittest.TestCase):
         self.assertTrue(data["ollama"])
         self.assertTrue(data["books"])
         self.assertTrue(data["libraries"])
-        self.assertIn("crisis", data["models"])
+        self.assertIn("emergency", data["models"])
+        self.assertNotIn("crisis", data["models"])   # the Swedish kit's model is never this kit's
         self.assertEqual(data["library_port"], self.kit.library_port)
 
     def test_quick_answer_streams_from_the_stand_in_ai(self):
-        lines = post_lines(self.kit, "/ai-api/chat", {"model": "crisis", "messages": [{"role": "user", "content": "A cut"}]})
+        lines = post_lines(self.kit, "/ai-api/chat", {"model": "emergency", "messages": [{"role": "user", "content": "A cut"}]})
         text = "".join(l.get("message", {}).get("content", "") for l in lines)
         self.assertEqual(text, ANSWER)
         self.assertTrue(lines[-1]["done"])

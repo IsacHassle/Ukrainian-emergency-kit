@@ -35,28 +35,30 @@ def real():
 
 
 def testland(c):
-    """Another country: nothing in it is shared with the Swedish facts."""
+    """Another country: nothing in it is shared with Ukraine's facts."""
     c = copy.deepcopy(c)
-    c["kit_name"] = {"sv": "Testlådan", "en": "Testkit"}
-    c["kit_description"] = {"sv": "Testbeskrivning."}
+    c["country"] = "testland"
+    c["kit_name"] = {"uk": "Testlådan", "en": "Testkit"}
+    c["kit_description"] = {"uk": "Testbeskrivning."}
     c["ai"]["models"] = {"main": "alpha", "small": "alpha-small"}
     c["ai"]["workspace"] = "ws-alpha"
     c["ai"]["answer_language"] = "Testish"
     c["ai"]["authorities"] = "the Testland authorities (TL1, TL2)"
     c["ai"]["example_source"] = "TL1 - Stop bleeding"
     c["emergency_numbers"] = [
-        {"number": "999", "primary": True, "label": {"sv": "nödläge"}, "print_label": {"sv": "nödläge"}},
-        {"number": "7000", "label": {"sv": "testråd"}, "print_label": {"sv": "testrådgivning"}},
+        {"number": "999", "primary": True, "label": {"uk": "nödläge", "en": "emergency"}, "print_label": {"uk": "nödläge", "en": "emergency"}},
+        {"number": "7000", "label": {"uk": "testråd", "en": "test advice"}, "print_label": {"uk": "testrådgivning", "en": "test advice line"}},
     ]
-    c["radio"] = {"label": {"sv": "Radio Test"}, "print_label": {"sv": "Testradion"}}
+    c["radio"] = {"label": {"uk": "Radio Test"}, "print_label": {"uk": "Testradion"}}
     c["official_guides"]["folder"] = "Testguides"
     c["official_guides"]["print_pages"] = ["TL1 - Stop bleeding"]
-    c["official_guides"]["sources"] = [{"id": "TL1", "label": {"sv": "TL1 · Testråd"}}]
-    c["emergency_topics"] = [{"article": "Bleeding", "label": {"sv": "Testblödning", "en": "Test bleeding"},
-                              "official_guide": {"sv": "TL1 - Stop bleeding"}, "first": 1}]
-    c["checklist"]["additions"] = [{"sv": "Ett testföremål"}]
-    c["map"]["shortcuts"] = [{"label": {"sv": "Testby"}, "center": [1.5, 2.5], "zoom": 9}]
-    c["map"]["overview_label"] = {"sv": "Testland"}
+    c["official_guides"]["sources"] = [{"id": "TL1", "label": {"uk": "TL1 · Testråd"}}]
+    c["emergency_topics"] = [{"article": "Bleeding", "label": {"uk": "Testblödning", "en": "Test bleeding"},
+                              "official_guide": {"uk": "TL1 - Stop bleeding"}, "first": 1}]
+    c["checklist"]["additions"] = [{"uk": "Ett testföremål"}]
+    c["map"]["shortcuts"] = [{"label": {"uk": "Testby"}, "center": [1.5, 2.5], "zoom": 9}]
+    c["map"]["overview_label"] = {"uk": "Testland"}
+    c["checklist"]["official_list"]["heading"] = {"uk": "Hemma"}
     return c
 
 
@@ -86,10 +88,24 @@ class ConfigIsValidTest(unittest.TestCase):
 
     def test_text_missing_in_the_default_language_is_refused(self):
         c = real()
-        c["kit_name"] = {"en": "Crisis kit"}
+        c["kit_name"] = {"en": "Emergency Kit"}
         code, out = check(c)
         self.assertNotEqual(code, 0)
         self.assertIn("kit_name", out)
+
+    def test_a_kit_name_without_english_is_refused(self):
+        c = real()
+        c["kit_name"] = {"uk": "Тривожна валіза"}
+        code, out = check(c)
+        self.assertNotEqual(code, 0)
+        self.assertIn("kit_name", out)
+
+    def test_an_emergency_number_label_without_english_is_refused(self):
+        c = real()
+        c["emergency_numbers"][1]["label"] = {"uk": "поліція"}
+        code, out = check(c)
+        self.assertNotEqual(code, 0)
+        self.assertIn("emergency_numbers[1].label", out)
 
     def test_a_map_box_the_wrong_way_round_is_refused(self):
         c = real()
@@ -100,7 +116,7 @@ class ConfigIsValidTest(unittest.TestCase):
 
     def test_a_workspace_address_that_is_not_made_from_its_name_is_refused(self):
         c = real()
-        c["ai"]["workspace_name"] = "Emergency kit"   # AnythingLLM would make "emergency-kit"
+        c["ai"]["workspace_name"] = "Emergency kits"   # AnythingLLM would make "emergency-kits"
         code, out = check(c)
         self.assertNotEqual(code, 0)
         self.assertIn("ai.workspace", out)
@@ -132,25 +148,25 @@ class OtherCountryTest(unittest.TestCase):
     def test_start_page_shows_the_config_s_name_numbers_and_topics(self):
         page = get(self.kit, "/")
         self.assertIn("<title>Testlådan</title>", page)
-        self.assertIn("<h1>Testlådan</h1>", page)
-        self.assertIn("Ring 999", page)
-        self.assertIn("7000 testråd", page)
+        self.assertIn("<h1 data-kit>Testlådan</h1>", page)
+        self.assertIn("Телефонуйте 999", page)
+        self.assertIn("testråd", page)
         self.assertIn("Radio Test", page)
         self.assertIn("Testblödning", page)
         self.assertIn("TL1 · Testråd", page)   # the Official Guides, grouped by the config's sources
         self.assertIn("las/?f=docs/Testguides/TL1%20-%20Stop%20bleeding.md", page)   # the topic opens its guide
-        for swedish in ("<title>Krislåda", "Ring 112", "1177 sjukvårdsråd", "Radio P4", "Tryckförband"):
-            self.assertNotIn(swedish, page)
+        for ukraine in ("<title>Тривожна", "Телефонуйте 112", "пожежно-рятувальна", "Українське радіо", "Джгут"):
+            self.assertNotIn(ukraine, page)
 
     def test_pages_get_the_config_from_the_web_server(self):
         script = get(self.kit, "/lib/country.js")
         first = script.splitlines()[0]   # window.COUNTRY = {...};
         facts = json.loads(first[first.index("{"):first.rindex("}") + 1])
-        self.assertEqual(facts["kit_name"]["sv"], "Testlådan")
+        self.assertEqual(facts["kit_name"]["uk"], "Testlådan")
         self.assertEqual(facts["ai"]["models"], {"main": "alpha", "small": "alpha-small"})
         self.assertEqual(facts["emergency_numbers"][0]["number"], "999")
-        self.assertEqual(facts["map"]["shortcuts"][0]["label"]["sv"], "Testby")
-        self.assertEqual(facts["checklist"]["additions"], [{"sv": "Ett testföremål"}])
+        self.assertEqual(facts["map"]["shortcuts"][0]["label"]["uk"], "Testby")
+        self.assertEqual(facts["checklist"]["additions"], [{"uk": "Ett testföremål"}])
         self.assertNotIn("ready_gov", facts)   # build-time facts do not go to Visitor devices
 
     def test_status_reports_the_config_s_models_and_workspace(self):
@@ -162,7 +178,7 @@ class OtherCountryTest(unittest.TestCase):
         lines = post(self.kit, "/ai-api/chat", {"model": "alpha-small", "messages": [{"role": "user", "content": "A cut"}]})
         self.assertEqual("".join(l.get("message", {}).get("content", "") for l in lines), ANSWER)
         with self.assertRaises(urllib.error.HTTPError) as refused:
-            post(self.kit, "/ai-api/chat", {"model": "crisis", "messages": [{"role": "user", "content": "A cut"}]})
+            post(self.kit, "/ai-api/chat", {"model": "emergency", "messages": [{"role": "user", "content": "A cut"}]})
         self.assertEqual(refused.exception.code, 400)
 
     def test_from_sources_uses_the_config_in_the_ai_request(self):
@@ -187,7 +203,7 @@ class OtherCountryTest(unittest.TestCase):
         manifest = json.loads(get(self.kit, "/manifest.webmanifest"))
         self.assertEqual(manifest["name"], "Testlådan")
         self.assertEqual(manifest["short_name"], "Testlådan")
-        self.assertEqual(manifest["lang"], "sv")
+        self.assertEqual(manifest["lang"], "uk")
         self.assertEqual(manifest["description"], "Testbeskrivning.")
 
 
@@ -205,17 +221,17 @@ class ShellScriptsReadTheConfigTest(unittest.TestCase):
     """The install and start scripts get their facts from scripts/country.sh. Their steps need a Mac, Ollama
     and the internet, so what is tested is what they would be told."""
 
-    def test_sweden_s_facts_are_what_the_scripts_used_to_have_written_in(self):
-        self.assertEqual(shell(REPO, None, "country ai.models.main"), "crisis")
-        self.assertEqual(shell(REPO, None, "country ai.models.small"), "crisis-small")
+    def test_ukraine_s_facts_are_what_the_scripts_are_told(self):
+        self.assertEqual(shell(REPO, None, "country ai.models.main"), "emergency")
+        self.assertEqual(shell(REPO, None, "country ai.models.small"), "emergency-small")
         self.assertEqual(shell(REPO, None, "country ai.base_models.main"), "gemma4:26b")
         self.assertEqual(shell(REPO, None, "country ai.base_models.small"), "gemma4:e4b")
-        self.assertEqual(shell(REPO, None, "country ai.workspace"), "crisis")
-        self.assertEqual(shell(REPO, None, "country ai.workspace_name"), "Crisis")
+        self.assertEqual(shell(REPO, None, "country ai.workspace"), "emergency-kit")
+        self.assertEqual(shell(REPO, None, "country ai.workspace_name"), "Emergency Kit")
         self.assertEqual(shell(REPO, None, "country map.pmtiles"), "sweden")
         self.assertEqual(shell(REPO, None, "country map.bbox | paste -sd, -"), "10.5,55.0,24.3,69.2")
         self.assertEqual(shell(REPO, None, "country map.search_release_repo"), "IsacHassle/Swedish-doomsdaykit")
-        self.assertEqual(shell(REPO, None, "country kit_name"), "Krislåda")
+        self.assertEqual(shell(REPO, None, "country kit_name"), "Тривожна валіза")
         self.assertEqual(shell(REPO, None, "country ai.check.expect"), "112")
 
     def test_another_config_changes_what_the_scripts_are_told(self):
