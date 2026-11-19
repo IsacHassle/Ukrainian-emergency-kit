@@ -206,7 +206,7 @@ class ServedKit:
         shutil.copytree(os.path.join(REPO, "web"), self.web_dir, symlinks=True)
         data = os.path.join(self.web_dir, "map", "data")
         os.makedirs(data, exist_ok=True)
-        shutil.copy(os.path.join(TESTS, "kit", "map-data", "places.json"), data)
+        shutil.copytree(os.path.join(TESTS, "kit", "map-data"), data, dirs_exist_ok=True)   # places.json, letters/
         # The start page is built from the Library, as share-library.sh does.
         subprocess.run([sys.executable, os.path.join(REPO, "scripts", "build-home.py")], env=self.env(), check=True,
                        stdout=subprocess.DEVNULL)

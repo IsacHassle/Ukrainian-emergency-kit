@@ -80,6 +80,7 @@
 </div>
 <script src="lib/maplibre-gl.js"></script>
 <script src="lib/pmtiles.js"></script>
+<script src="search.js"></script>
 <script>
   const protocol = new pmtiles.Protocol();
   maplibregl.addProtocol('pmtiles', protocol.tile);
@@ -120,37 +121,28 @@
   // Zoom to use when jumping to a result of each type.
   const MAP = COUNTRY.map, LABELS = MAP.labels;   // the country's place types, labels and start view (country config)
   const ZOOM = MAP.zoom_by_type;
-  const zoomFor = t => ZOOM[t] || (t && t.startsWith(LABELS.approximate_prefix) ? ZOOM[LABELS.address] : 18);
+  const zoomFor = t => ZOOM[t] || 18;
 
-  // ---------- place search (offline files made by scripts/build-map-index.py) ----------
+  // ---------- place search (offline files made by scripts/build-map-index.py; the rules are in search.js) ----------
   // data/places.json: towns, villages and services for the whole country, always loaded.
-  // data/letters/<a-z0-9>.json: streets, addresses, farms and landmarks, by first letter,
-  // so a phone only loads the one small file it needs.
-  const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
-  const prep = d => {
-    d.items.forEach(e => { e.t = d.types[e[1]]; e.a = d.areas[e[4]]; e.n = norm(e[0]); e.h = e.n + ' ' + norm(e.a); });
-    return d;
-  };
+  // data/letters/<a-z0-9>.json: streets, addresses and landmarks, by first letter of the transliterated name,
+  // so a phone only loads the one small file it needs. Files are made ahead of time and come with each release.
+  const SR = KitSearch, norm = SR.norm;
   let index = null;
   function loadIndex() {
-    if (!index) index = fetch('data/places.json').then(r => r.json()).then(d => prep(d).items).catch(() => []);
+    if (!index) index = fetch('data/places.json').then(r => r.json()).then(d => SR.prepare(d, LABELS.street).items).catch(() => []);
     return index;
   }
   const letters = {};
-  const letterOf = s => { const c = norm(s).charAt(0); return /[a-z0-9]/.test(c) ? c : '_'; };
   function loadLetter(text) {
-    const c = letterOf(text);
-    if (!letters[c]) letters[c] = fetch(`data/letters/${c}.json`).then(r => r.json()).then(d => {
-      prep(d);
-      d.list = Object.entries(d.addresses || {}).map(([name, nums]) => [norm(name), name, nums]);
-      return d;
-    }).catch(() => ({ items: [], list: [], cities: [] }));
+    const c = SR.letterOf(text);
+    if (!letters[c]) letters[c] = fetch(`data/letters/${c}.json`).then(r => r.json()).then(d => SR.prepare(d, LABELS.street)).catch(() => ({ items: [], list: [], cities: [] }));
     return letters[c];
   }
-  const km = (a, b) => {
-    const dx = (a[0] - b[0]) * 111.32 * Math.cos(a[1] * Math.PI / 180), dy = (a[1] - b[1]) * 110.57;
-    return Math.hypot(dx, dy);
-  };
+  // What an entry is called and what kind it is, in the page language. A service without a name is called by its kind.
+  const typeName = t => KIT.t(['map.type', t].join('.'));   // one text per kind, map.type.<kind> in the language files
+  const nameOf = e => SR.displayName(e, KIT.lang, e.t ? typeName(e.t) : '');
+  const km = SR.km;
   const fmtKm = d => d < 1 ? Math.round(d * 100) * 10 + ' ' + KIT.t('map.unit.m') : (d < 10 ? d.toFixed(1) : Math.round(d)) + ' ' + KIT.t('map.unit.km');
 
   function show(list, map, withDistance, from) {
@@ -165,9 +157,9 @@
       shown.push(e);
       const li = document.createElement('li');
       li.tabIndex = 0;
-      const where = [e.t, e.a, withDistance ? KIT.t(fromKey, { distance: fmtKm(km([e[2], e[3]], origin)) }) : ''].filter(Boolean).join(' · ');
+      const where = [kindOf(e), SR.displayArea(e.a, KIT.lang), withDistance ? KIT.t(fromKey, { distance: fmtKm(km([e[2], e[3]], origin)) }) : ''].filter(Boolean).join(' · ');
       li.innerHTML = '<b></b><small></small>';
-      li.querySelector('b').textContent = e[0];
+      li.querySelector('b').textContent = nameOf(e);
       li.querySelector('small').textContent = where;
       const go = () => jump(map, e);
       li.onclick = go;
@@ -176,11 +168,14 @@
     }
   }
 
+  // "Pharmacy", or "Approximate position, between no. 20 and 24" for an address that is a guess
+  const kindOf = e => e.approx ? KIT.t('map.search.between', e.approx) : typeName(e.t);
+
   let pin = null;
   function jump(map, e, label) {
     pin.setLngLat([e[2], e[3]]).addTo(map);
     map.flyTo({ center: [e[2], e[3]], zoom: label ? 18.5 : zoomFor(e.t), speed: 1.6 });
-    setCoords(e[2], e[3], label || e[0] + (e.a ? ', ' + e.a : ''));
+    setCoords(e[2], e[3], label || (() => nameOf(e) + (e.a ? ', ' + SR.displayArea(e.a, KIT.lang) : '')));
     if (matchMedia('(max-width: 520px)').matches) $('#panel').classList.add('min');
   }
 
@@ -194,48 +189,10 @@
   }
 
   // Addresses are local: rank by distance from the map (up to 100 km), then by the area typed.
-  async function findAddress(map, streetText, number, areaText) {
-    const [A, items] = await Promise.all([loadLetter(streetText), loadIndex()]);   // A: {list, cities}
-    const qs = norm(streetText), qa = norm(areaText || ''), want = number.toUpperCase(), n = parseInt(want, 10);
-    if (!qs) return [];
-    const areaSpots = qa ? items.filter(e => e.n.startsWith(qa)).slice(0, 300) : [];
-    const c = map.getCenter(), here = [c.lng, c.lat];
-    const miss = (pt, city) => !!qa && !(norm(city).includes(qa) || areaSpots.some(e => km(pt, [e[2], e[3]]) < 2.5));
-    const score = (pt, city, extra) => extra + Math.min(km(pt, here), 100) / 50 + (miss(pt, city) ? 3 : 0);
-    const out = [];
-    for (const [ns, street, nums] of A.list) {
-      if (ns !== qs && !ns.startsWith(qs)) continue;
-      const exactName = ns === qs ? 0 : 1, exact = [];
-      for (const a of nums) {
-        const got = a[0].toUpperCase().replace(/\s/g, '');
-        // "50" also finds 50A, 50B or 50AC when there is no plain 50
-        const near = got !== want && /^\d+$/.test(want) && parseInt(got, 10) === n && /^\d+[A-Z]/.test(got);
-        if (got !== want && !near) continue;
-        const e = [`${street} ${a[0]}`, 0, a[1], a[2]];
-        e.t = LABELS.address; e.a = A.cities[a[3]] || ''; e.miss = miss([a[1], a[2]], e.a);
-        exact.push(e);
-        out.push([score([a[1], a[2]], e.a, exactName + (near ? 0.3 : 0)), e]);
-      }
-      // A number missing from the data: place it between its neighbours on the same side
-      // of the street (in most countries odd numbers are on one side, even on the other).
-      if (!n || exactName) continue;
-      const side = nums.map(a => [parseInt(a[0], 10), a]).filter(([k]) => k && k % 2 === n % 2);
-      for (const [lo, la] of side) {
-        if (lo >= n) continue;
-        for (const [hi, ha] of side) {
-          if (hi <= n || hi - lo > 12 || km([la[1], la[2]], [ha[1], ha[2]]) > 0.6) continue;
-          const f = (n - lo) / (hi - lo), pt = [la[1] + f * (ha[1] - la[1]), la[2] + f * (ha[2] - la[2])];
-          if (exact.some(x => km(pt, [x[2], x[3]]) < 1)) continue;   // the real address is right there
-          const e = [`${street} ${want}`, 0, pt[0], pt[1]];
-          e.t = KIT.t('map.search.between', { approximate: LABELS.approximate, low: la[0], high: ha[0] }); e.a = A.cities[la[3]] || ''; e.miss = miss(pt, e.a);
-          out.push([score(pt, e.a, 0.5 + (hi - lo) / 24), e]);
-        }
-      }
-    }
-    const list = [];
-    for (const [, e] of out.sort((x, y) => x[0] - y[0])) {   // one guess per spot
-      if (list.length < 12 && !list.some(o => o[0] === e[0] && km([o[2], o[3]], [e[2], e[3]]) < 0.15)) list.push(e);
-    }
+  async function findAddress(map, q) {
+    const [A, items] = await Promise.all([loadLetter(q.street), loadIndex()]);
+    const c = map.getCenter();
+    const list = SR.findAddress(A, items, q, { here: [c.lng, c.lat], address: LABELS.address, areaKinds: LABELS.area_types });
     list.forEach(e => { if (!e.a || /^\d+$/.test(e.a)) e.a = areaNear(items, [e[2], e[3]]); });
     return list;
   }
@@ -255,40 +212,27 @@
       return;
     }
     let words = text, house = null;
-    const hm = text.match(/^(.*?[^\d\s,])\s+(\d+(?:\s?[a-zA-Z](?![a-zA-ZåäöÅÄÖéü]))?)\s*,?\s*(.*)$/);   // "Hornsgatan 50", "Hornsgatan 50B, Södermalm"
+    const hm = SR.parseQuery(text);   // "Хрещатик 22", "Садова 12-А, Львів"
     if (hm) {
-      house = hm[2].replace(/\s/g, '').toUpperCase();
-      const found = await findAddress(map, hm[1], house, hm[3]);
+      hm.area = SR.canonicalArea(await loadIndex(), hm.area, LABELS.area_types);   // "Киев" means Київ
+      house = hm.number.replace(/\s/g, '').toUpperCase();
+      const found = await findAddress(map, hm);
       if (found.length) {
         show(found, map, true);
-        jump(map, found[0], `${found[0][0]}${found[0].a ? ', ' + found[0].a : ''}`);
-        const name = found[0][0];
-        if (found[0].miss) note(() => KIT.t('map.search.areamiss', { name, area: hm[3] }));
-        else if (found[0].t.startsWith(LABELS.approximate_prefix)) note(() => KIT.t('map.search.approximate', { name }));
+        jump(map, found[0], () => `${nameOf(found[0])}${found[0].a ? ', ' + SR.displayArea(found[0].a, KIT.lang) : ''}`);
+        const name = () => nameOf(found[0]);
+        if (found[0].miss) note(() => KIT.t('map.search.areamiss', { name: name(), area: hm.area }));
+        else if (found[0].approx) note(() => KIT.t('map.search.approximate', { name: name() }));
         return;
       }
-      words = (hm[1] + ' ' + hm[3]).trim();
+      words = (hm.street + ' ' + hm.area).trim();
     }
     const [base, extra] = await Promise.all([loadIndex(), loadLetter(words)]);
     const items = base.concat(extra.items);
     if (!items.length) { note(() => KIT.t('map.search.missing')); return; }
-    const q = norm(words);
-    if (!q) return;
-    const qw = q.split(' ');
-    const c = map.getCenter(), here = [c.lng, c.lat];
-    const hits = [];
-    for (const e of items) {
-      let s;
-      if (e.n === q) s = 0;
-      else if (e.n.startsWith(q)) s = 2;
-      else if (qw.every(w => e.h.startsWith(w) || e.h.includes(' ' + w))) s = 3;
-      else if (e.h.includes(q)) s = 4;
-      else continue;
-      if (house && e.t !== LABELS.street) s += 2;
-      hits.push([s + (PRIO[e.t] || 0) + Math.min(km([e[2], e[3]], here), 400) / 400, e]);
-    }
-    hits.sort((a, b) => a[0] - b[0]);
-    const list = hits.slice(0, 30).map(h => h[1]);
+    if (!norm(words)) return;
+    const c = map.getCenter();
+    const list = SR.searchItems(items, words, { prio: PRIO, here: [c.lng, c.lat], house: !!house, street: LABELS.street });
     if (!list.length) { $('#results').innerHTML = ''; resultsSrc = null; note(() => KIT.t('map.search.nothing')); return; }
     show(list, map, true);
     if (house && list[0].t === LABELS.street) { jump(map, list[0]); note(() => KIT.t('map.search.nonumber', { number: house })); }
