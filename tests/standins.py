@@ -71,8 +71,11 @@ class StandInAI:
     """Ollama on one port, AnythingLLM on another. Answers are the same every time.
 
     Settings a test may change: `delay` (seconds between the words of an answer, to keep a request in
-    the queue), `models` (what Ollama says is installed).
-    Things a test may read: `chat_requests` (every /api/chat body received), `searched_workspaces` (the
+    the queue), `models` (what Ollama says is installed), `holds` (a list of threading.Event: each streamed
+    answer takes the first one and stops after its first word until the test sets it, so a test can keep one
+    answer running for as long as it needs, without timing).
+    Things a test may read: `max_active` (the most /api/chat calls ever in progress at once, the planning
+    call of From sources included), `chat_requests` (every /api/chat body received), `searched_workspaces` (the
     Book index workspace of every vector search), `aborted` (answers whose reader went away before the end).
     """
 
@@ -83,6 +86,9 @@ class StandInAI:
         self.chat_requests = []
         self.searched_workspaces = []
         self.aborted = 0
+        self.holds = []
+        self.active = 0
+        self.max_active = 0
         # The Book index's document store, shared by all workspaces as in the real app. Tests may put another
         # kit's files in it (store_add); `uploads` lists the names uploaded, `embedded[workspace]` the files embedded.
         self.storage = tempfile.mkdtemp(prefix="ek-store-")
@@ -107,6 +113,16 @@ class StandInAI:
                 body = self.body_json()
                 with lock:
                     ai.chat_requests.append(body)
+                    ai.active += 1
+                    ai.max_active = max(ai.max_active, ai.active)
+                    hold = ai.holds.pop(0) if ai.holds and body.get("stream") is not False else None
+                try:
+                    self.chat(body, hold)
+                finally:
+                    with lock:
+                        ai.active -= 1
+
+            def chat(self, body, hold):
                 if body.get("stream") is False:   # the quick planning call of "From sources"
                     return self.send_json({"message": {"role": "assistant",
                                            "content": ai.plan_reply}, "done": True})
@@ -114,9 +130,11 @@ class StandInAI:
                 self.send_header("Content-Type", "application/x-ndjson")
                 self.end_headers()
                 try:
-                    for word in re.findall(r"\S+\s*", ANSWER):
+                    for n, word in enumerate(re.findall(r"\S+\s*", ANSWER)):
                         self.wfile.write(json.dumps({"message": {"role": "assistant", "content": word}, "done": False}).encode() + b"\n")
                         self.wfile.flush()
+                        if hold and n == 0:
+                            hold.wait(30)
                         if ai.delay:
                             time.sleep(ai.delay)
                     self.wfile.write(json.dumps({"message": {"role": "assistant", "content": ""}, "done": True}).encode() + b"\n")
