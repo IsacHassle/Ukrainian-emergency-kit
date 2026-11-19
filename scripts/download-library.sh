@@ -18,11 +18,12 @@ LOG="$KIT/logs/download.log"
 mkdir -p "$DIR" "$(dirname "$LOG")"
 
 # The listed URL if Kiwix still has it, otherwise the newest version of the same library.
+# A version is a year and month, sometimes with a letter after (nhs.uk_en_medicines_2026-09b).
 resolve() {
   local url="$1" dir name stem newest
   if curl -sfIL -o /dev/null --max-time 60 "$url"; then echo "$url"; return; fi
   dir="${url%/*}/"; name=$(basename "$url"); stem="${name%_*}"
-  newest=$(curl -sfL --max-time 60 "$dir" | grep -oE "\"${stem//./\\.}_[0-9]{4}-[0-9]{2}\.zim\"" | tr -d '"' | sort | tail -1)
+  newest=$(curl -sfL --max-time 60 "$dir" | grep -oE "\"${stem//./\\.}_[0-9]{4}-[0-9]{2}[a-z]?\.zim\"" | tr -d '"' | sort | tail -1)
   if [ -n "$newest" ]; then echo "$dir$newest"; else echo "$url"; fi
 }
 

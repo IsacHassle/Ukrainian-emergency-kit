@@ -3,5 +3,10 @@
   "name": "wikipedia_en_medicine_test_2026-01",
   "title": "Wikipedia medicine (test)",
   "language": "eng"
+ },
+ {
+  "name": "wikipedia_uk_medicine_test_2026-01",
+  "title": "Вікіпедія медицина (test)",
+  "language": "ukr"
  }
 ]

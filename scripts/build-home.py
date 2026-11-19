@@ -13,6 +13,7 @@ import html
 import json
 import os
 import re
+import urllib.parse
 import urllib.request
 
 import kit_country
@@ -26,19 +27,21 @@ DOCS = os.path.join(HOME, "documents")
 
 # Everything about the country comes from the country config (config/country.json): the Emergency Topics
 # (label, article, Official Guide), the Books, the Library groups, the emergency numbers.
-# Emergency topic articles are looked up in the encyclopedia Libraries the AI also uses, in order.
+# Each Emergency Topic names its WikiMed article in every language ("wikimed": {"uk": ..., "en": ...}); a link
+# opens the article in the page language (Ukrainian WikiMed on УКР, English WikiMed on ENG). A topic's Official
+# Guide ("official_guide", saved by the guide saver) opens first when it has one.
 C = kit_country.COUNTRY
 text = kit_country.text
 TEXTS = kit_lang.load(WEB)   # the language files: every text the page itself says is a key in them
 TOPICS = C["emergency_topics"]
 # Where an Official Guide on the same thing is saved (scripts/fetch-swedish-pages.py), the button opens
 # that guide in the default language, with the encyclopedia article one tap away.
-OFFICIAL = {t["article"]: text(t["official_guide"]) for t in TOPICS if t.get("official_guide")}
+OFFICIAL = {t["id"]: text(t["official_guide"]) for t in TOPICS if t.get("official_guide")}
 OFFICIAL_DIR = C["official_guides"]["folder"]
-# The emergency topics shown straight away; the rest are one tap away under "More".
-FIRST = [t["article"] for t in sorted((t for t in TOPICS if t.get("first")), key=lambda t: t["first"])]
-EMERGENCY = [(t["label"], t["article"]) for t in TOPICS]
-ENCYCLOPEDIAS = [l["prefix"] for l in C["ai"]["libraries"] if l["kind"] == "encyclopedia"]
+# The emergency topics shown straight away; the rest (a country may have more) are one tap away under "More".
+FIRST = [t["id"] for t in sorted((t for t in TOPICS if t.get("first")), key=lambda t: t["first"])]
+# The WikiMed Library of each language, by the start of its name (the newest version is the one installed).
+WIKIMED = {l["language"]: l["prefix"] for l in C["ai"]["libraries"] if l["kind"] == "encyclopedia" and "medicine" in l["prefix"]}
 
 # (label, description, path under documents/)
 BOOKS = [(b["label"], b["description"], b["path"]) for b in C["books"]]
@@ -66,6 +69,9 @@ def both(value):
     return "".join(f'<span data-l="{code}">{html.escape(text(value, code))}</span>' for code in langs)
 
 
+# How a language is named in "home.urgent.<language>": the note on a topic that opens an article in the other language.
+LANGUAGE_WORD = {"uk": "ukrainian", "en": "english"}
+
 PRIMARY = next((n for n in C["emergency_numbers"] if n.get("primary")), C["emergency_numbers"][0])
 
 
@@ -83,7 +89,7 @@ def jattr(data):
 
 def kiwix_ok(path):
     try:
-        req = urllib.request.Request(KIWIX + path, method="HEAD")
+        req = urllib.request.Request(KIWIX + urllib.parse.quote(path, safe="/()"), method="HEAD")
         return urllib.request.urlopen(req, timeout=5).status in (200, 302)
     except Exception:
         return False
@@ -111,14 +117,18 @@ def main():
     eng = [b["name"] for b in books if b["lang"] == C["search_languages"]["main"]]
     local = [b["name"] for b in books if b["lang"] == C["search_languages"]["country"]]
 
-    med_books = [b for b in (by_prefix(p) for p in ENCYCLOPEDIAS) if b]
+    # Each topic's article in each language's WikiMed Library, checked so that a renamed article drops out quietly.
+    # A language without its article opens the other language's, and the link says so.
     emergency = []
-    for label, art in EMERGENCY:
-        for b in med_books:
-            path = f"/content/{b['name']}/{art}"
-            if kiwix_ok(path):
-                emergency.append((label, f"/viewer#{b['name']}/{art}", official_page(OFFICIAL.get(art))))
-                break
+    for t in TOPICS:
+        found = {}
+        for code, prefix in WIKIMED.items():
+            book = by_prefix(prefix)
+            path = t["wikimed"].get(code)
+            if book and path and kiwix_ok(f"/content/{book['name']}/{path}"):
+                found[code] = f"/viewer#{book['name']}/{urllib.parse.quote(path, safe='()')}"
+        if found:
+            emergency.append((t, found, official_page(OFFICIAL.get(t["id"]))))
 
     # The Official Guides, grouped by authority.
     advice = {}
@@ -156,22 +166,34 @@ def main():
         rows = "".join(f'<li><a data-k="/viewer#{b["name"]}">{html.escape(b["title"])}</a><small>{html.escape(b["name"])}</small></li>' for b in extra)
         groups_html.append(f'<h3 data-t="home.libraries.other"></h3><ul class="list rows">{rows}</ul>')
 
-    def topic(label, k, official):
+    def topic(t, found, official):
+        label = t["label"]
         href, source = official
+        # The article link of each language; a language without its article opens the other's and says so.
+        links, notes = {}, ""
+        for code in TEXTS:
+            own = found.get(code)
+            links[code] = own or next(iter(found.values()))
+            if not own:
+                other = next(c for c in TEXTS if c in found)
+                notes += f'<small data-l="{code}" data-t="home.urgent.{LANGUAGE_WORD[other]}"></small>'
+        attrs = "".join(f' data-k-{code}="{html.escape(k)}"' for code, k in links.items())
         if href:   # an Official Guide on the same thing: it opens first, and names its source
-            return f'<li><a href="{href}">{both(label)}</a><small>{html.escape(source)}</small></li>'
-        return f'<li><a data-k="{html.escape(k)}">{both(label)}</a><small data-t="home.urgent.english"></small></li>'
-    first = [e for e in emergency if e[1].rsplit("/", 1)[-1] in FIRST]
-    first.sort(key=lambda e: FIRST.index(e[1].rsplit("/", 1)[-1]))
+            return (f'<li><a href="{href}">{both(label)}</a><small>{html.escape(source)}</small>'
+                    f'<small><a{attrs}><span data-t="home.urgent.article"></span></a></small></li>')
+        return f'<li><a{attrs}>{both(label)}</a>{notes}</li>'
+    first = [e for e in emergency if e[0]["id"] in FIRST]
+    first.sort(key=lambda e: FIRST.index(e[0]["id"]))
     rest = [e for e in emergency if e not in first]
     emergency_html = "".join(topic(*e) for e in first)
     more_html = "".join(topic(*e) for e in rest)
+    more_section = (f'<details class="inline"><summary data-t="home.urgent.more" data-p=\'{{"count": {len(rest)}}}\'></summary>'
+                    f'<ul class="list cols">{more_html}</ul></details>') if rest else ""
 
     page = TEMPLATE
     for key, val in {
         "%EMERGENCY%": emergency_html or '<li data-t="home.urgent.empty"></li>',
-        "%MORE%": more_html,
-        "%MORECOUNT%": str(len(rest)),
+        "%MORE%": more_section,
         "%ADVICECOUNT%": str(advice_count),
         "%ADVICE%": advice_html or '<p data-t="home.guides.empty"></p>',
         "%BOOKS%": "".join(books_html),
@@ -263,7 +285,7 @@ TEMPLATE = r"""<!doctype html>
   <section>
     <h2 data-t="home.urgent.heading"></h2>
     <ul class="list cols">%EMERGENCY%</ul>
-    <details class="inline"><summary data-t="home.urgent.more" data-p='{"count": %MORECOUNT%}'></summary><ul class="list cols">%MORE%</ul></details>
+    %MORE%
   </section>
 
   <section>
@@ -296,6 +318,9 @@ TEMPLATE = r"""<!doctype html>
   const KIWIX = 'http://' + (location.hostname || 'localhost') + ':%LIBPORT%';   // the libraries are always plain http
   const ENG = %ENG%, LOCAL = %LOCAL%;
   document.querySelectorAll('[data-k]').forEach(a => a.href = KIWIX + a.dataset.k);
+  // An Emergency Topic opens its article in the page language (data-k-uk, data-k-en), also after a switch.
+  const topicLinks = () => document.querySelectorAll('[data-k-' + KIT.lang + ']').forEach(a => a.href = KIWIX + a.dataset['k' + KIT.lang[0].toUpperCase() + KIT.lang.slice(1)]);
+  topicLinks();
   const go = books => {
     const q = document.getElementById('q').value.trim();
     if (!q || !books.length) return;
@@ -316,7 +341,7 @@ TEMPLATE = r"""<!doctype html>
     showBattery();
   }).catch(() => {});
   battery(); setInterval(battery, 60000);
-  KIT.onChange(() => { clock(); showBattery(); });
+  KIT.onChange(() => { clock(); showBattery(); topicLinks(); });
 </script>
 </body>
 </html>

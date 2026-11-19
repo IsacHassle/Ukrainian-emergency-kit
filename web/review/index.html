@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Text review</title>
+<link rel="stylesheet" href="../lib/kit.css">
+<style>
+  .page { max-width: 1100px; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th { text-align: left; font-size: 12.5px; color: var(--muted); font-weight: 600; padding: 4px 8px 4px 0; }
+  td { border-top: 1px solid var(--line); padding: 7px 10px 7px 0; vertical-align: top; width: 38%; }
+  td:first-child { width: 24%; font: 12.5px/1.4 var(--mono); color: var(--muted); word-break: break-all; }
+  td:first-child small { display: block; font-family: var(--font); }
+  h2 { margin-top: 36px; }
+  .tag { font-size: 12px; color: var(--amber); }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Text review</h1>
+  <p class="meta">Every text of the kit, Ukrainian beside English, by key. Send corrections by key. This page is for the
+    reviewer and is not linked from the kit's menus.</p>
+  <p class="meta" id="count">Loading...</p>
+  <div id="groups"></div>
+</div>
+<script>
+(async () => {
+  const data = await (await fetch('/review/data.json')).json();
+  const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
+  const root = document.getElementById('groups');
+
+  // A key is <page>.<section>.<name>: the first part is the page it belongs to.
+  const pages = {};
+  data.keys.forEach(r => { (pages[r.key.split('.')[0]] = pages[r.key.split('.')[0]] || []).push(r); });
+
+  function table(title, note, rows, cell) {
+    const h = el('h2', title);
+    if (note) { h.appendChild(document.createTextNode(' ')); h.appendChild(el('span', note, 'tag')); }
+    const t = el('table');
+    const head = t.createTHead().insertRow();
+    ['Key', 'Ukrainian', 'English'].forEach(n => head.appendChild(el('th', n)));
+    const body = t.createTBody();
+    rows.forEach(r => {
+      const tr = body.insertRow();
+      cell(tr, r);
+      const uk = tr.insertCell(); uk.textContent = r.uk; uk.lang = 'uk';
+      const en = tr.insertCell(); en.textContent = r.en; en.lang = 'en';
+    });
+    root.append(h, t);
+  }
+
+  Object.keys(pages).sort().forEach(name => table('Page: ' + name, '', pages[name], (tr, r) => {
+    tr.dataset.key = r.key;
+    tr.insertCell().textContent = r.key;
+  }));
+
+  // Texts that live in the country config, one per language.
+  const sections = {};
+  data.config.forEach(r => { const s = r.path.split('/')[1]; (sections[s] = sections[s] || []).push(r); });
+  Object.keys(sections).forEach(name => table('Country config: ' + name, 'from the country config, not a language file', sections[name], (tr, r) => {
+    tr.dataset.config = r.path;
+    const c = tr.insertCell();
+    c.textContent = r.path.slice(1);
+    if (r.hint) c.appendChild(el('small', r.hint));
+  }));
+
+  document.getElementById('count').textContent = data.keys.length + ' keys in the language files, ' +
+    data.config.length + ' texts from the country config.';
+})();
+</script>
+</body>
+</html>
