@@ -80,7 +80,7 @@ MILITARY_VALUE = {("landuse", "military"), ("building", "military"), ("office", 
 # Words that mark a name or an operator as military (Ukrainian, Russian, English). Short ones must be whole words.
 MILITARY_WORDS = re.compile(
     r"військ|воен|збройн|міністерств[оа] оборони|нацгварді|нацiональна гвардi|казарм|armed forces|military|\barmy\b"
-    r"|\b(зсу|тцк|вч)\b", re.I)
+    r"|служб[аи] безпеки|\b(зсу|тцк|вч|сбу)\b", re.I)
 NAME_AND_OPERATOR = ("name", "name:uk", "name:en", "name:ru", "operator", "official_name", "short_name")
 
 

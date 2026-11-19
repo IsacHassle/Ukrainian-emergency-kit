@@ -116,6 +116,7 @@ class NothingMilitaryTest(unittest.TestCase):
             {"name": "Військовий госпіталь", "amenity": "hospital"},
             {"name": "Військова частина А0000", "amenity": "police"},
             {"name:uk": "Магазин ТЦК", "shop": "convenience"},
+            {"name": "Центральний госпіталь СБУ", "amenity": "hospital"},
             {"name": "Military hospital", "amenity": "hospital"},
             {"name": "Army shop", "shop": "general"},
             # a shelter that is military in any other way than the old bunker tag is still left out
