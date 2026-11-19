@@ -134,13 +134,14 @@
   const $ = s => document.querySelector(s);
   const log = $('#log'), q = $('#q'), sendBtn = $('#send'), thumbs = $('#thumbs');
   const LABEL = { 'books': 'Ur böckerna', 'crisis': 'Snabbt svar', 'crisis-small': 'Spara batteri' };
-  const KIWIX = `http://${location.hostname}:8090`;   // the libraries (always http)
+  let KIWIX = `http://${location.hostname}:8090`;   // the libraries (always http); status gives the port in use
   let status = null, mode = null, history = [], photos = [], busy = null;
 
   // ---------- status ----------
   async function checkStatus() {
     try { status = await (await fetch('/ai-api/status', { cache: 'no-store' })).json(); }
     catch { status = { ollama: false, models: [], books: false, libraries: false }; }
+    if (status.library_port) KIWIX = `http://${location.hostname}:${status.library_port}`;
     const avail = { 'books': status.models.includes('crisis') && (status.books || status.libraries), 'crisis': status.models.includes('crisis'), 'crisis-small': status.models.includes('crisis-small') };
     document.querySelectorAll('input[name=mode]').forEach(i => { i.disabled = !avail[i.value]; });
     const s = [], fix = [];

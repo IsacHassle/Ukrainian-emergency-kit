@@ -12,8 +12,11 @@
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # the kit folder (where this repo is)
 LIB="$KIT/library"
 SERVE="$KIT/tools/kiwix-tools/kiwix-serve"
-LIB_PORT=8090
-WEB_PORT=8091
+# The ports can be chosen (EK_LIBRARY_PORT, EK_WEB_PORT) so a second kit or a test can run beside a kit
+# that is already running. Without them: 8090 for the Library server and 8091 for the web server.
+LIB_PORT="${EK_LIBRARY_PORT:-8090}"
+WEB_PORT="${EK_WEB_PORT:-8091}"
+export EK_KIWIX="127.0.0.1:$LIB_PORT"   # tells the web server and the start page builder where the Library server is
 
 shopt -s nullglob
 zims=("$LIB"/*.zim)
@@ -45,7 +48,7 @@ echo ""
 echo "  På den här Macen:        http://localhost:$WEB_PORT"
 [ -n "$NAME" ] && echo "  På mobiler (samma wifi): http://$NAME.local:$WEB_PORT   (fungerar alltid på iPhone)"
 [ -n "$IP" ] && echo "                     eller: http://$IP:$WEB_PORT   (om den första inte fungerar, till exempel på Android)"
-[ -n "$NAME" ] && echo "  Med GPS på mobilen:      https://$NAME.local:8443   (ställ in en gång: öppna /mobil/ på mobilen)"
+[ -n "$NAME" ] && echo "  Med GPS på mobilen:      https://$NAME.local:$((WEB_PORT + 352))   (ställ in en gång: öppna /mobil/ på mobilen)"
 echo ""
 echo "  Fråga AI:                http://localhost:$WEB_PORT/ai/"
 [ -n "$IP" ] && echo "  Fråga AI från mobilen:   http://$IP:$WEB_PORT/ai/"

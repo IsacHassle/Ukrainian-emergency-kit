@@ -18,6 +18,9 @@
 !/CONTEXT.md
 !/CLAUDE.md
 !/.github/
+!/tests/
+!/package.json
+!/package-lock.json
 
 # Built or downloaded inside web/
 /web/index.html

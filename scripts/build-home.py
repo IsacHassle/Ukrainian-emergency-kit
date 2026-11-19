@@ -12,9 +12,10 @@ import os
 import re
 import urllib.request
 
-KIWIX = "http://localhost:8090"
-HOME = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # the kit folder
-WEB = os.path.join(HOME, "web")
+KIWIX_PORT = os.environ.get("EK_KIWIX", "localhost:8090").rpartition(":")[2]   # the Library server (tests choose it)
+KIWIX = "http://localhost:" + KIWIX_PORT
+HOME = os.environ.get("EK_KIT") or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # the kit folder
+WEB = os.environ.get("EK_WEB") or os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web")
 DOCS = os.path.join(HOME, "documents")
 
 # (Swedish, English, article). Articles are looked up in WikiMed, then MDWiki.
@@ -237,6 +238,7 @@ def main():
         "%ENG%": json.dumps(eng),
         "%SWE%": json.dumps(swe),
         "%COUNT%": str(len(books)),
+        "%LIBPORT%": KIWIX_PORT,
     }.items():
         page = page.replace(key, val)
     os.makedirs(WEB, exist_ok=True)
@@ -342,7 +344,7 @@ TEMPLATE = r"""<!doctype html>
   <footer class="kit">Kontrollera en gång i månaden med Kontrollera Krislåda.command · Bibliotek från Kiwix · Karta © OpenStreetMap · Råd från 1177, MCF och Livsmedelsverket</footer>
 </main>
 <script>
-  const KIWIX = 'http://' + (location.hostname || 'localhost') + ':8090';   // the libraries are always plain http
+  const KIWIX = 'http://' + (location.hostname || 'localhost') + ':%LIBPORT%';   // the libraries are always plain http
   const ENG = %ENG%, SWE = %SWE%;
   document.querySelectorAll('[data-k]').forEach(a => a.href = KIWIX + a.dataset.k);
   const go = books => {

@@ -20,11 +20,24 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-KIT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+KIT = os.environ.get("EK_KIT") or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # the kit folder
+
+
+def address(env, default):
+    """(host, port) of a helper app. The defaults are where the apps normally listen; the tests point
+    them at stand-ins (EK_OLLAMA, EK_ANYTHINGLLM, EK_KIWIX = "host:port") so they never meet a running kit."""
+    host, _, port = (os.environ.get(env) or default).rpartition(":")
+    return host, int(port)
+
+
+OLLAMA_ADDR = address("EK_OLLAMA", "127.0.0.1:11434")
+ANYTHINGLLM_ADDR = address("EK_ANYTHINGLLM", "127.0.0.1:3001")
+KIWIX_ADDR = address("EK_KIWIX", "127.0.0.1:8090")   # the Library server
+
 KEY_FILE = os.path.join(KIT, "tools", "anythingllm-api-key")
-ANYTHINGLLM = "http://127.0.0.1:3001/api"
-KIWIX = "http://127.0.0.1:8090"
-OLLAMA = "http://127.0.0.1:11434"
+ANYTHINGLLM = "http://%s:%d/api" % ANYTHINGLLM_ADDR
+KIWIX = "http://%s:%d" % KIWIX_ADDR
+OLLAMA = "http://%s:%d" % OLLAMA_ADDR
 WORKSPACE = "crisis"
 MODEL = "crisis"
 OPTIONS = {"num_ctx": 16384}   # room for the instructions, the excerpts and the conversation

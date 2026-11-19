@@ -12,6 +12,10 @@ phones on the same Wi-Fi.
 
 Usage: python3 scripts/serve-web.py [port]
 Then open http://localhost:<port>/  (default port 8091)
+
+For tests and for a second kit beside a running one, environment variables move things:
+  EK_WEB_PORT (the port when none is given), EK_BIND (address to listen on, default all), EK_KIT (kit folder: documents/, tools/),
+  EK_WEB (the folder served), EK_OLLAMA, EK_ANYTHINGLLM, EK_KIWIX (each "host:port").
 """
 import http.client
 import http.server
@@ -27,17 +31,19 @@ import urllib.parse
 import kit_gps      # the USB GPS receiver, if one is plugged in (scripts/kit_gps.py)
 import kit_search   # what the AI reads before answering in "Ur böckerna" (scripts/kit_search.py)
 
-KIT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # the kit folder
-ROOT = os.path.join(KIT, "web")
+CODE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # where this code and its config are
+KIT = kit_search.KIT   # the kit folder (the same as CODE unless EK_KIT says otherwise)
+ROOT = os.environ.get("EK_WEB") or os.path.join(CODE, "web")
 DOCS = os.path.join(KIT, "documents")
-PROMPT = os.path.join(KIT, "config", "AI-PROMPT.txt")
-PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8091
+PROMPT = os.path.join(CODE, "config", "AI-PROMPT.txt")
+BIND = os.environ.get("EK_BIND", "0.0.0.0")
+PORT = int(sys.argv[1]) if len(sys.argv) > 1 else int(os.environ.get("EK_WEB_PORT") or 8091)
 HTTPS_PORT = PORT + 352   # 8443: the same site over https, so phones allow the map to use their GPS
 CERTS = os.path.join(KIT, "tools", "certs")
 
-OLLAMA = ("127.0.0.1", 11434)
-ANYTHINGLLM = ("127.0.0.1", 3001)
-KIWIX = ("127.0.0.1", 8090)
+OLLAMA = kit_search.OLLAMA_ADDR
+ANYTHINGLLM = kit_search.ANYTHINGLLM_ADDR
+KIWIX = kit_search.KIWIX_ADDR
 WORKSPACE = "crisis"
 MODELS = {"crisis", "crisis-small"}
 MAX_BODY = 30 * 1024 * 1024  # a few photos
@@ -156,7 +162,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             conn.close()
 
     def ai_status(self):
-        status = {"ollama": False, "models": [], "books": False, "libraries": False, "lan": lan_address(), "port": PORT,
+        status = {"ollama": False, "models": [], "books": False, "libraries": False, "library_port": KIWIX[1], "lan": lan_address(), "port": PORT,
                   "battery": battery(),
                   "name": local_name(), "https_port": HTTPS_PORT if https_ready() else None}
         try:
@@ -324,7 +330,7 @@ def serve_https():
     """The same site on HTTPS_PORT, with the certificate from scripts/make-cert.sh."""
     ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     ctx.load_cert_chain(os.path.join(CERTS, "server.crt"), os.path.join(CERTS, "server.key"))
-    httpd = http.server.ThreadingHTTPServer(("0.0.0.0", HTTPS_PORT), Handler)
+    httpd = http.server.ThreadingHTTPServer((BIND, HTTPS_PORT), Handler)
     httpd.socket = ctx.wrap_socket(httpd.socket, server_side=True)
     httpd.serve_forever()
 
@@ -335,6 +341,6 @@ if __name__ == "__main__":
     if https_ready():
         threading.Thread(target=serve_https, daemon=True).start()
     kit_gps.start()
-    with http.server.ThreadingHTTPServer(("0.0.0.0", PORT), Handler) as httpd:
+    with http.server.ThreadingHTTPServer((BIND, PORT), Handler) as httpd:
         print(f"Crisis kit on this Mac: http://localhost:{PORT}/")
         httpd.serve_forever()
