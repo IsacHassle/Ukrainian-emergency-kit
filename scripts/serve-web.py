@@ -270,6 +270,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(data)
             return
+        if url.path == "/review/data.json":   # every text in both languages, for the review page (web/review/)
+            data = json.dumps(kit_lang.review_data(ROOT), ensure_ascii=False).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            return
         if url.path == "/manifest.webmanifest":   # the web app manifest, with the kit's name filled in
             try:
                 data = kit_country.manifest(open(os.path.join(ROOT, "manifest.webmanifest"), encoding="utf-8").read()).encode()
