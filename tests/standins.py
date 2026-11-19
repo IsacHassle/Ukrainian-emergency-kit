@@ -73,8 +73,8 @@ class StandInAI:
 
     def __init__(self, delay=0.0, models=None, workspaces=None):
         self.delay = delay
-        self.models = list(models) if models else ["crisis", "crisis-small", "emergency", "emergency-small"]
-        self.workspaces = set(workspaces) if workspaces else {"crisis", "emergency-kit"}
+        self.models = list(models) if models else ["emergency", "emergency-small"]
+        self.workspaces = set(workspaces) if workspaces else {"emergency-kit"}
         self.chat_requests = []
         self.searched_workspaces = []
         self.aborted = 0
