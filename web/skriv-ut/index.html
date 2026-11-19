@@ -50,7 +50,7 @@
   <a class="back" href="/">← <span data-kit></span></a>
   <h1>Skriv ut</h1>
   <div class="bar" style="margin-top:14px"><button onclick="print()">Skriv ut nu</button></div>
-  <p class="sub noprint">Det viktigaste från 1177, MCF och Livsmedelsverket, på papper. Skriv ut nu, medan det finns ström, och lägg papperen hos din hemberedskap. Tryck <b>Skriv ut</b> (eller Cmd + P).</p>
+  <p class="sub noprint" data-t="print.guides.intro"></p>
   <div id="pack"><p>Laddar…</p></div>
 </main>
 <script src="../lib/md.js"></script>
@@ -69,10 +69,10 @@
     const ok = docs.map((d, i) => d && { ...d, name: PAGES[i] }).filter(Boolean);
     let html = `<section class="cover"><h1>${COUNTRY.kit()}: att ha på papper</h1>
       <p class="nums">${numbers()}<br>Radio: <b>${COUNTRY.text(COUNTRY.radio.print_label)}</b> (batteri- eller vevradio)</p>
-      <p>Utskrivet ${today}. Råden är sparade från myndigheternas webbplatser. Kontrollera de senaste råden på 1177.se, mcf.se och krisinformation.se när det går.</p>
+      <p>${KIT.t('print.cover.saved', { date: today })}</p>
       <h4>Innehåll</h4><ol class="toc">${ok.map(d => `<li>${d.title || d.name.split(' - ')[1]} <span class="src">(${d.name.split(' - ')[0]})</span></li>`).join('')}</ol></section>`;
     html += ok.map(d => `<section>${d.html}</section>`).join('');
-    if (!ok.length) html = '<p>Myndigheternas sidor saknas. Kör installationen igen med internet.</p>';
+    if (!ok.length) html = '<p>' + KIT.t('print.guides.missing') + '</p>';
     document.getElementById('pack').innerHTML = html;
   });
 })();

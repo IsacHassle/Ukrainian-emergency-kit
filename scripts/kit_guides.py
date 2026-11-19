@@ -109,7 +109,19 @@ def _classify(code, headers, body):
     return "error"
 
 
-def fetch(url, method="GET", timeout=40, limit=None):
+def fetch(url, method="GET", timeout=40, limit=None, tries=3):
+    """Like fetch_once, but an answer that failed (no connection, a timeout, a server error; not a refusal, not a 404) is tried again a little later: a
+    flaky Wi-Fi or one slow answer should not leave a guide out of the kit."""
+    result = fetch_once(url, method, timeout, limit)
+    for attempt in range(1, tries):
+        if result.state != "error":
+            break
+        time.sleep(min(PAUSE, 1) * 3 * attempt)
+        result = fetch_once(url, method, timeout, limit)
+    return result
+
+
+def fetch_once(url, method="GET", timeout=40, limit=None):
     """Fetches one address, after a pause since the last request. Never raises: the answer says what happened.
     `limit` stops reading a body after that many bytes (the link check needs only the first answer)."""
     wait = _last[0] + PAUSE - time.time()

@@ -206,6 +206,7 @@ class StandInInternet:
 
     def __init__(self):
         self.routes = {}
+        self.failures = {}
         self.requests = []
         net = self
 
@@ -215,6 +216,9 @@ class StandInInternet:
                 key = (url.hostname, urllib.parse.unquote(url.path))
                 net.requests.append((self.command, url.hostname, urllib.parse.unquote(url.path), dict(self.headers), time.time()))
                 status, ctype, body, headers = net.routes.get(key, (404, "text/plain", b"not found", {}))
+                if net.failures.get(key):   # a server that stumbles the first times it is asked
+                    net.failures[key] -= 1
+                    status, ctype, body, headers = 502, "text/plain", b"bad gateway", {}
                 self.send_response(status)
                 self.send_header("Content-Type", ctype)
                 self.send_header("Content-Length", str(len(body)))
@@ -240,6 +244,12 @@ class StandInInternet:
         with open(os.path.join(HERE, "internet", fixture), "rb") as f:
             body = f.read()
         return self.add(url, status, body, "application/pdf" if fixture.endswith(".pdf") else "text/html; charset=utf-8")
+
+    def stumble(self, url, times):
+        """The next `times` requests for this address get a 502 before it answers normally."""
+        u = urllib.parse.urlsplit(url)
+        self.failures[(u.hostname, urllib.parse.unquote(u.path))] = times
+        return self
 
     def refuse(self, url):
         """What a State Emergency Service address answers from outside Ukraine."""

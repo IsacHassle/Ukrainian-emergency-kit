@@ -237,6 +237,18 @@ class UpdateTest(SaverTestCase):
         self.assertEqual(code, 0, out)
         self.assertGreaterEqual(len(self.net.requests), before + 7)
 
+    def test_a_server_that_stumbles_is_asked_again(self):
+        self.net.stumble(MOZ, 2)
+        code, out = self.saver.run()
+        self.assertEqual(code, 0, out)
+        self.assertIn(UK[2], self.saver.files())
+        self.assertEqual(len([r for r in self.net.requests if r[2].endswith("domedichnoi-dopomogi")]), 3)
+
+    def test_a_page_that_is_gone_is_not_asked_again(self):
+        self.net.add(MOZ, 404, b"gone", "text/html")
+        self.saver.run()
+        self.assertEqual(len([r for r in self.net.requests if r[2].endswith("domedichnoi-dopomogi")]), 1)
+
     def test_a_failed_refresh_keeps_the_copy_already_saved(self):
         self.saver.run()
         old = self.saver.read(UK[2])
