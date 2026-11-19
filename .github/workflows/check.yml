@@ -18,6 +18,8 @@ jobs:
           python3 -c "import json; json.load(open('config/document-names.json'))"
           grep -q '^https://download.kiwix.org/zim/' config/libraries.txt
           grep -q '^https://' config/swedish-pages.txt
+      - name: Country config
+        run: python3 scripts/check-country.py
   served-kit:
     # The harness: the web server against the small test kit, with stand-ins for the AI and the Library
     # server, driven over HTTP and in headless Chrome (tests/). Neither Ollama nor AnythingLLM is needed.

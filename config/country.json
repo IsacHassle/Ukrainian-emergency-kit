@@ -1,0 +1,921 @@
+{
+ "country": "sweden",
+ "default_language": "sv",
+ "kit_name": {
+  "sv": "Krislåda",
+  "en": "Crisis kit"
+ },
+ "ai": {
+  "models": {
+   "main": "crisis",
+   "small": "crisis-small"
+  },
+  "base_models": {
+   "main": "gemma4:26b",
+   "small": "gemma4:e4b"
+  },
+  "workspace": "crisis",
+  "workspace_name": "Crisis",
+  "answer_language": "Swedish",
+  "authorities": "the Swedish authorities' pages (1177, MCF, Livsmedelsverket, Krisinformation)",
+  "example_source": "1177 - Stoppa en blödning",
+  "check": {
+   "question": "Svara bara med siffrorna: vilket nummer ringer man vid nödsituation i Sverige?",
+   "expect": "112"
+  },
+  "libraries": [
+   {
+    "prefix": "wikipedia_en_medicine",
+    "label": "WikiMed",
+    "language": "en",
+    "kind": "encyclopedia"
+   },
+   {
+    "prefix": "mdwiki_en_all",
+    "label": "MDWiki",
+    "language": "en",
+    "kind": "encyclopedia"
+   },
+   {
+    "prefix": "medlineplus.gov_en_all",
+    "label": "MedlinePlus",
+    "language": "en",
+    "kind": "plain"
+   }
+  ]
+ },
+ "emergency_numbers": [
+  {
+   "number": "112",
+   "primary": true,
+   "label": {
+    "sv": "nödsituation"
+   },
+   "print_label": {
+    "sv": "nödsituation"
+   }
+  },
+  {
+   "number": "1177",
+   "label": {
+    "sv": "sjukvårdsråd"
+   },
+   "print_label": {
+    "sv": "sjukvårdsrådgivning"
+   }
+  },
+  {
+   "number": "113 13",
+   "label": {
+    "sv": "information vid kris"
+   },
+   "print_label": {
+    "sv": "information vid kris"
+   }
+  },
+  {
+   "number": "114 14",
+   "label": {
+    "sv": "polisen"
+   },
+   "print_label": {
+    "sv": "polisen, ej akut"
+   }
+  }
+ ],
+ "radio": {
+  "label": {
+   "sv": "Radio P4"
+  },
+  "print_label": {
+   "sv": "Sveriges Radio P4"
+  }
+ },
+ "official_guides": {
+  "folder": "library/Svenska myndigheter",
+  "sources": [
+   {
+    "id": "1177",
+    "label": {
+     "sv": "1177 · Första hjälpen och skador"
+    }
+   },
+   {
+    "id": "MCF",
+    "label": {
+     "sv": "MCF · Hemberedskap, varningar, skyddsrum, brand"
+    }
+   },
+   {
+    "id": "Livsmedelsverket",
+    "label": {
+     "sv": "Livsmedelsverket · Vatten och mat"
+    }
+   },
+   {
+    "id": "Krisinformation",
+    "label": {
+     "sv": "Krisinformation.se"
+    }
+   }
+  ],
+  "print_pages": [
+   "1177 - Hjärt-lungräddning",
+   "1177 - Hjärt-lungräddning på barn",
+   "1177 - Stabilt sidoläge",
+   "1177 - Om någon sätter i halsen",
+   "1177 - Stoppa en blödning",
+   "1177 - Chock",
+   "1177 - Brännskador",
+   "1177 - Förgiftning",
+   "1177 - Inandning av skadlig gas",
+   "1177 - Köldskador – förfrysning",
+   "MCF - Vad är VMA och hur går en varning till-",
+   "MCF - Utomhusvarning – Hesa Fredrik",
+   "MCF - Grunder i hemberedskap",
+   "MCF - Tillgång till vatten i kris",
+   "MCF - Tillgång till värme i kris",
+   "Livsmedelsverket - Dricksvatten i dunk",
+   "Livsmedelsverket - Laga mat under ett elavbrott"
+  ]
+ },
+ "emergency_topics": [
+  {
+   "article": "Cardiopulmonary_resuscitation",
+   "label": {
+    "sv": "Hjärt-lungräddning",
+    "en": "CPR"
+   },
+   "official_guide": {
+    "sv": "1177 - Hjärt-lungräddning"
+   },
+   "first": 1
+  },
+  {
+   "article": "Bleeding",
+   "label": {
+    "sv": "Kraftig blödning",
+    "en": "Severe bleeding"
+   },
+   "official_guide": {
+    "sv": "1177 - Stoppa en blödning"
+   },
+   "first": 2
+  },
+  {
+   "article": "Tourniquet",
+   "label": {
+    "sv": "Tryckförband, tourniquet",
+    "en": "Tourniquet"
+   },
+   "official_guide": {
+    "sv": "MCF - Stoppa en blödning"
+   }
+  },
+  {
+   "article": "Choking",
+   "label": {
+    "sv": "Luftvägsstopp",
+    "en": "Choking"
+   },
+   "official_guide": {
+    "sv": "1177 - Om någon sätter i halsen"
+   },
+   "first": 3
+  },
+  {
+   "article": "Shock_(circulatory)",
+   "label": {
+    "sv": "Chock",
+    "en": "Shock"
+   },
+   "official_guide": {
+    "sv": "1177 - Chock"
+   },
+   "first": 4
+  },
+  {
+   "article": "Burn",
+   "label": {
+    "sv": "Brännskada",
+    "en": "Burn"
+   },
+   "official_guide": {
+    "sv": "1177 - Brännskador"
+   },
+   "first": 5
+  },
+  {
+   "article": "Hypothermia",
+   "label": {
+    "sv": "Nedkylning",
+    "en": "Hypothermia"
+   },
+   "first": 6
+  },
+  {
+   "article": "Frostbite",
+   "label": {
+    "sv": "Förfrysning",
+    "en": "Frostbite"
+   },
+   "official_guide": {
+    "sv": "1177 - Köldskador – förfrysning"
+   }
+  },
+  {
+   "article": "Heat_stroke",
+   "label": {
+    "sv": "Värmeslag",
+    "en": "Heat stroke"
+   },
+   "official_guide": {
+    "sv": "1177 - Värmeslag"
+   }
+  },
+  {
+   "article": "Anaphylaxis",
+   "label": {
+    "sv": "Allergisk chock",
+    "en": "Anaphylaxis"
+   },
+   "official_guide": {
+    "sv": "1177 - Allergisk chock – anafylaxi"
+   },
+   "first": 7
+  },
+  {
+   "article": "Myocardial_infarction",
+   "label": {
+    "sv": "Hjärtinfarkt",
+    "en": "Heart attack"
+   }
+  },
+  {
+   "article": "Stroke",
+   "label": {
+    "sv": "Stroke",
+    "en": "Stroke"
+   }
+  },
+  {
+   "article": "Bone_fracture",
+   "label": {
+    "sv": "Benbrott",
+    "en": "Fracture"
+   }
+  },
+  {
+   "article": "Head_injury",
+   "label": {
+    "sv": "Huvudskada",
+    "en": "Head injury"
+   },
+   "official_guide": {
+    "sv": "1177 - Hjärnskakning"
+   }
+  },
+  {
+   "article": "Wound",
+   "label": {
+    "sv": "Sår",
+    "en": "Wounds"
+   },
+   "official_guide": {
+    "sv": "1177 - Behandling av stora sår"
+   }
+  },
+  {
+   "article": "Sepsis",
+   "label": {
+    "sv": "Blodförgiftning",
+    "en": "Sepsis"
+   }
+  },
+  {
+   "article": "Oral_rehydration_therapy",
+   "label": {
+    "sv": "Uttorkning, diarré",
+    "en": "Dehydration"
+   }
+  },
+  {
+   "article": "Carbon_monoxide_poisoning",
+   "label": {
+    "sv": "Kolmonoxid (aggregat, kaminer)",
+    "en": "Carbon monoxide"
+   },
+   "official_guide": {
+    "sv": "1177 - Inandning av skadlig gas"
+   },
+   "first": 9
+  },
+  {
+   "article": "Poisoning",
+   "label": {
+    "sv": "Förgiftning",
+    "en": "Poisoning"
+   },
+   "official_guide": {
+    "sv": "1177 - Förgiftning"
+   },
+   "first": 8
+  },
+  {
+   "article": "Mushroom_poisoning",
+   "label": {
+    "sv": "Svampförgiftning",
+    "en": "Mushroom poisoning"
+   }
+  },
+  {
+   "article": "Epileptic_seizure",
+   "label": {
+    "sv": "Kramper",
+    "en": "Seizure"
+   }
+  },
+  {
+   "article": "Hypoglycemia",
+   "label": {
+    "sv": "Lågt blodsocker",
+    "en": "Hypoglycemia"
+   }
+  },
+  {
+   "article": "Asthma",
+   "label": {
+    "sv": "Astma",
+    "en": "Asthma"
+   }
+  },
+  {
+   "article": "Drowning",
+   "label": {
+    "sv": "Drunkning",
+    "en": "Drowning"
+   },
+   "official_guide": {
+    "sv": "1177 - Drunkningsolyckor"
+   }
+  },
+  {
+   "article": "Childbirth",
+   "label": {
+    "sv": "Förlossning",
+    "en": "Childbirth"
+   }
+  },
+  {
+   "article": "Snakebite",
+   "label": {
+    "sv": "Huggormsbett",
+    "en": "Snakebite"
+   },
+   "official_guide": {
+    "sv": "1177 - Huggormsbett"
+   }
+  },
+  {
+   "article": "Tick-borne_encephalitis",
+   "label": {
+    "sv": "Fästingar, TBE",
+    "en": "Tick-borne encephalitis"
+   },
+   "official_guide": {
+    "sv": "1177 - Fästingbett"
+   }
+  },
+  {
+   "article": "Potassium_iodide",
+   "label": {
+    "sv": "Strålning, jodtabletter",
+    "en": "Radiation, iodine"
+   },
+   "official_guide": {
+    "sv": "MCF - Varning kring Sveriges kärnkraftverk"
+   }
+  },
+  {
+   "article": "Panic_attack",
+   "label": {
+    "sv": "Panikångest",
+    "en": "Panic attack"
+   }
+  }
+ ],
+ "books": [
+  {
+   "label": {
+    "sv": "Om krisen eller kriget kommer"
+   },
+   "description": {
+    "sv": "Myndighetens råd, på svenska"
+   },
+   "path": "Om-krisen-eller-kriget-kommer.pdf"
+  },
+  {
+   "label": {
+    "sv": "In case of crisis or war"
+   },
+   "description": {
+    "sv": "The same brochure in English"
+   },
+   "path": "In-case-of-crisis-or-war.pdf"
+  },
+  {
+   "label": {
+    "sv": "Where There Is No Doctor"
+   },
+   "description": {
+    "sv": "The classic village health care handbook"
+   },
+   "path": "library/Medical Library/Where there is no Doctor.pdf"
+  },
+  {
+   "label": {
+    "sv": "First Aid (Field Manual)"
+   },
+   "description": {
+    "sv": "Step-by-step first aid, US Army"
+   },
+   "path": "library/Military Medicine/First Aid (Field Manual).pdf"
+  },
+  {
+   "label": {
+    "sv": "Survival and Austere Medicine"
+   },
+   "description": {
+    "sv": "Medicine when there is no hospital"
+   },
+   "path": "library/Medical Library/Survival and Austere Medicine.pdf"
+  },
+  {
+   "label": {
+    "sv": "Family Guide to Emergency Health Care"
+   },
+   "description": {
+    "sv": "Care at home for the family"
+   },
+   "path": "library/Military Medicine/Family Guide to Emergency Health Care.pdf"
+  },
+  {
+   "label": {
+    "sv": "Emergency Childbirth"
+   },
+   "description": {
+    "sv": "Delivering a baby without a hospital"
+   },
+   "path": "library/Military Medicine/Emergency Childbirth.pdf"
+  },
+  {
+   "label": {
+    "sv": "Where There Is No Dentist"
+   },
+   "description": {
+    "sv": "Tooth pain, infections, extractions"
+   },
+   "path": "library/Medical Library/Where There is No Dentist.pdf"
+  },
+  {
+   "label": {
+    "sv": "Purifying Water During an Emergency"
+   },
+   "description": {
+    "sv": "Making water safe to drink"
+   },
+   "path": "library/Water Treatment/Purifying Water During an Emergency.pdf"
+  },
+  {
+   "label": {
+    "sv": "Bandaging and Splinting"
+   },
+   "description": {
+    "sv": "Dressings, slings and splints"
+   },
+   "path": "library/Military Medicine/Bandaging and Splinting.pdf"
+  }
+ ],
+ "library_groups": [
+  {
+   "heading": {
+    "sv": "Sjukvård"
+   },
+   "libraries": [
+    {
+     "prefix": "wikipedia_en_medicine",
+     "description": {
+      "sv": "Alla medicinska Wikipedia-artiklar, med bilder"
+     }
+    },
+    {
+     "prefix": "mdwiki_en",
+     "description": {
+      "sv": "Granskat medicinskt uppslagsverk"
+     }
+    },
+    {
+     "prefix": "zimgit-medicine",
+     "description": {
+      "sv": "Böcker: akutsjukvård, Where There Is No Doctor"
+     }
+    },
+    {
+     "prefix": "irp.fas.org_en_military-medicine",
+     "description": {
+      "sv": "Fältsjukvård, trauma, blödning"
+     }
+    },
+    {
+     "prefix": "medlineplus",
+     "description": {
+      "sv": "Sjukdomar och läkemedel, lättläst"
+     }
+    },
+    {
+     "prefix": "nhs.uk_en_medicines",
+     "description": {
+      "sv": "Läkemedel: vad de är till för, biverkningar"
+     }
+    },
+    {
+     "prefix": "wwwnc.cdc.gov",
+     "description": {
+      "sv": "Smittsamma sjukdomar och utbrott"
+     }
+    }
+   ]
+  },
+  {
+   "heading": {
+    "sv": "Vatten, mat och skydd"
+   },
+   "libraries": [
+    {
+     "prefix": "zimgit-water",
+     "description": {
+      "sv": "Rena vatten: koka, filtrera, kemiskt"
+     }
+    },
+    {
+     "prefix": "zimgit-food-preparation",
+     "description": {
+      "sv": "Förvara och laga mat utan el"
+     }
+    },
+    {
+     "prefix": "zimgit-post-disaster",
+     "description": {
+      "sv": "Skydd, sanitet, återuppbyggnad"
+     }
+    },
+    {
+     "prefix": "solar.lowtechmagazine",
+     "description": {
+      "sv": "Värme och matlagning utan el"
+     }
+    },
+    {
+     "prefix": "www.ready.gov",
+     "description": {
+      "sv": "Beredskap för olika katastrofer"
+     }
+    },
+    {
+     "prefix": "cd3wdproject",
+     "description": {
+      "sv": "Lågteknik: odling, vatten, energi, bygg"
+     }
+    },
+    {
+     "prefix": "appropedia",
+     "description": {
+      "sv": "Hållbar självförsörjning, praktiska projekt"
+     }
+    },
+    {
+     "prefix": "cooking.stackexchange",
+     "description": {
+      "sv": "Frågor och svar om matlagning"
+     }
+    },
+    {
+     "prefix": "gardening.stackexchange",
+     "description": {
+      "sv": "Frågor och svar om odling"
+     }
+    },
+    {
+     "prefix": "outdoors.stackexchange",
+     "description": {
+      "sv": "Friluftsliv, skydd, värme"
+     }
+    },
+    {
+     "prefix": "zimgit-knots",
+     "description": {
+      "sv": "Knopar och surrningar"
+     }
+    }
+   ]
+  },
+  {
+   "heading": {
+    "sv": "Laga och kommunicera"
+   },
+   "libraries": [
+    {
+     "prefix": "ifixit",
+     "description": {
+      "sv": "Reparationsguider för allt"
+     }
+    },
+    {
+     "prefix": "mechanics.stackexchange",
+     "description": {
+      "sv": "Bilreparationer"
+     }
+    },
+    {
+     "prefix": "diy.stackexchange",
+     "description": {
+      "sv": "Hus: värme, vatten, el"
+     }
+    },
+    {
+     "prefix": "ham.stackexchange",
+     "description": {
+      "sv": "Amatörradio och nödkommunikation"
+     }
+    }
+   ]
+  },
+  {
+   "heading": {
+    "sv": "Allmän kunskap"
+   },
+   "libraries": [
+    {
+     "prefix": "wikipedia_sv_all",
+     "description": {
+      "sv": "Svenska Wikipedia, med bilder"
+     }
+    },
+    {
+     "prefix": "wikipedia_en_all",
+     "description": {
+      "sv": "English Wikipedia, text only"
+     }
+    }
+   ]
+  }
+ ],
+ "search_languages": {
+  "main": "eng",
+  "country": "swe"
+ },
+ "checklist": {
+  "official_list": {
+   "guide": "MCF - Grunder i hemberedskap",
+   "section": "Checklista",
+   "heading": {
+    "sv": "Hemma (MCF)"
+   },
+   "source_prefix": "Källa: "
+  },
+  "additions": [
+   {
+    "sv": "Krislådan installerad, och kontrollerad med Kontrollera Krislåda.command"
+   },
+   {
+    "sv": "Guiden och första hjälpen-utskriften i en pärm hos hemberedskapen"
+   },
+   {
+    "sv": "Organic Maps med Sverige, och Kiwix med de medicinska biblioteken, på mobilen"
+   },
+   {
+    "sv": "Batteri- eller vevradio, inställd på Sveriges Radio P4"
+   },
+   {
+    "sv": "Laddad powerbank eller batteripaket som räcker till Macen"
+   },
+   {
+    "sv": "USB GPS-mottagare till datorn (och en USB-C-adapter om datorn bara har USB-C), testad med Var är jag? på kartan"
+   },
+   {
+    "sv": "Familjen vet hur man öppnar Krislådan från mobilen (samma wifi)"
+   }
+  ]
+ },
+ "ready_gov": {
+  "skip_pattern": "hurricane|tornado|tsunami|volcano|earthquake|landslide|climate.change|full.suite",
+  "note": "US advice: in Sweden call 112, and follow Swedish authorities (MCF, Krisinformation.se, Sveriges Radio P4)."
+ },
+ "map": {
+  "regions": [
+   {
+    "geofabrik": "europe/sweden",
+    "slug": "sweden",
+    "detail": "full"
+   }
+  ],
+  "pmtiles": "sweden",
+  "bbox": [
+   10.5,
+   55.0,
+   24.3,
+   69.2
+  ],
+  "search_release_repo": "IsacHassle/Swedish-doomsdaykit",
+  "center": [
+   16.5,
+   62.5
+  ],
+  "zoom": 4.3,
+  "overview_label": {
+   "sv": "Sverige"
+  },
+  "shortcuts": [
+   {
+    "label": {
+     "sv": "Stockholm"
+    },
+    "center": [
+     18.0686,
+     59.3293
+    ],
+    "zoom": 12
+   }
+  ],
+  "name_tags": [
+   "name:sv",
+   "name"
+  ],
+  "labels": {
+   "place": {
+    "city": "Stad",
+    "town": "Tätort",
+    "village": "By",
+    "hamlet": "Småort",
+    "suburb": "Stadsdel",
+    "borough": "Stadsdel",
+    "quarter": "Område",
+    "neighbourhood": "Område",
+    "island": "Ö",
+    "islet": "Ö",
+    "isolated_dwelling": "Gård",
+    "farm": "Gård",
+    "locality": "Ort"
+   },
+   "base_places": [
+    "By",
+    "Område",
+    "Småort",
+    "Stad",
+    "Stadsdel",
+    "Tätort",
+    "Ö"
+   ],
+   "service": {
+    "amenity=hospital": "Sjukhus",
+    "amenity=clinic": "Vårdcentral",
+    "amenity=doctors": "Läkare",
+    "amenity=dentist": "Tandläkare",
+    "amenity=pharmacy": "Apotek",
+    "amenity=police": "Polis",
+    "amenity=fire_station": "Brandstation",
+    "amenity=drinking_water": "Dricksvatten",
+    "amenity=water_point": "Vattenpost",
+    "amenity=fuel": "Bensinstation",
+    "amenity=townhall": "Kommunhus",
+    "amenity=veterinary": "Veterinär",
+    "shop=supermarket": "Livsmedel",
+    "shop=convenience": "Närbutik",
+    "shop=hardware": "Järnhandel"
+   },
+   "landmark": {
+    "railway=station": "Station",
+    "public_transport=station": "Station",
+    "amenity=school": "Skola",
+    "amenity=place_of_worship": "Kyrka",
+    "amenity=shelter": "Vindskydd",
+    "leisure=park": "Park",
+    "leisure=nature_reserve": "Naturreservat",
+    "natural=peak": "Topp",
+    "natural=beach": "Strand",
+    "tourism=camp_site": "Camping",
+    "leisure=marina": "Hamn",
+    "amenity=ferry_terminal": "Färja",
+    "aeroway=aerodrome": "Flygplats"
+   },
+   "street": "Gata",
+   "address": "Adress",
+   "approximate_prefix": "Ungefär",
+   "area_types": [
+    "Stadsdel",
+    "Område",
+    "Tätort",
+    "By",
+    "Småort"
+   ],
+   "town_types": [
+    "Stad",
+    "Tätort"
+   ]
+  },
+  "zoom_by_type": {
+   "Adress": 18.5,
+   "Stad": 12,
+   "Tätort": 13.5,
+   "Stadsdel": 14.5,
+   "Område": 15,
+   "By": 15,
+   "Småort": 15,
+   "Ort": 15.5,
+   "Gård": 16,
+   "Gata": 17
+  },
+  "search_priority": {
+   "Stad": -0.8,
+   "Sjukhus": -0.6,
+   "Tätort": -0.5,
+   "Vårdcentral": -0.4,
+   "Apotek": -0.4,
+   "Polis": -0.4,
+   "Brandstation": -0.4,
+   "Stadsdel": -0.2,
+   "Område": -0.1,
+   "Gård": 0.3,
+   "Ort": 0.3
+  },
+  "nearest": [
+   {
+    "label": {
+     "sv": "Sjukhus"
+    },
+    "types": [
+     "Sjukhus"
+    ]
+   },
+   {
+    "label": {
+     "sv": "Vårdcentral"
+    },
+    "types": [
+     "Vårdcentral",
+     "Läkare"
+    ]
+   },
+   {
+    "label": {
+     "sv": "Apotek"
+    },
+    "types": [
+     "Apotek"
+    ]
+   },
+   {
+    "label": {
+     "sv": "Polis"
+    },
+    "types": [
+     "Polis"
+    ]
+   },
+   {
+    "label": {
+     "sv": "Brand"
+    },
+    "types": [
+     "Brandstation"
+    ]
+   },
+   {
+    "label": {
+     "sv": "Vatten"
+    },
+    "types": [
+     "Dricksvatten",
+     "Vattenpost"
+    ]
+   },
+   {
+    "label": {
+     "sv": "Mat"
+    },
+    "types": [
+     "Livsmedel",
+     "Närbutik"
+    ]
+   },
+   {
+    "label": {
+     "sv": "Bensin"
+    },
+    "types": [
+     "Bensinstation"
+    ]
+   }
+  ]
+ }
+}
