@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="uk">
+<html>
 <head>
 <meta charset="utf-8">
 <script src="/lib/country.js"></script>
 <script src="/lib/lang.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Мапа · {kit}</title>
+<title>{kit}</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icon-180.png">
 <meta name="apple-mobile-web-app-title" content="" data-kit-attr="content={kit}">
@@ -139,7 +139,7 @@
 
   // Zoom to use when jumping to a result of each type.
   const MAP = COUNTRY.map, LABELS = MAP.labels;   // the country's place types, labels and start view (country config)
-  KitSearch.setStreetTypes(MAP.street_types);     // the street words the search ignores ("вулиця" in front of a name)
+  KitSearch.setStreetTypes(MAP.street_types);     // the street words the search ignores (like "street" in front of a name)
   const ZOOM = MAP.zoom_by_type;
   const zoomFor = t => ZOOM[t] || 18;
 
@@ -233,9 +233,9 @@
       return;
     }
     let words = text, house = null;
-    const hm = SR.parseQuery(text);   // "Хрещатик 22", "Садова 12-А, Львів"
+    const hm = SR.parseQuery(text);   // a street, a house number, maybe a town
     if (hm) {
-      hm.area = SR.canonicalArea(await loadIndex(), hm.area, LABELS.area_types);   // "Киев" means Київ
+      hm.area = SR.canonicalArea(await loadIndex(), hm.area, LABELS.area_types);   // an older or other-language spelling of a town
       house = hm.number.replace(/\s/g, '').toUpperCase();
       const found = await findAddress(map, hm);
       if (found.length) {
@@ -261,7 +261,7 @@
 
   // From the Kit Mac's position if there is one, else from the place marked on the map (a searched place, a
   // tap), else from the map centre. The same place is often mapped twice, so a list shows each place once.
-  async function nearest(map, types) {
+  async function nearest(map, types, reachKm) {
     note('');
     const items = await loadIndex();
     const want = new Set(types.split(','));
@@ -270,9 +270,11 @@
     if (gps.on && gps.here) { here = gps.here; fromKey = 'map.distance.fromyou'; }
     else if (pin && pin.getElement().isConnected) { const p = pin.getLngLat(); here = [p.lng, p.lat]; fromKey = 'map.distance.frompin'; }
     const sorted = items.filter(e => want.has(e.t)).map(e => [km([e[2], e[3]], here), e]).sort((a, b) => a[0] - b[0]);
+    // A list may reach only so far (the config's reach_km: shelters, 30 km), but the note still says how far the
+    // nearest one is, so a list that came out empty tells the person where to look.
     const list = [];
-    for (const [, e] of sorted) {
-      if (list.length >= 20) break;
+    for (const [d, e] of sorted) {
+      if (list.length >= 20 || (reachKm && d > reachKm)) break;
       if (!list.some(o => o[0] === e[0] && km([o[2], o[3]], [e[2], e[3]]) < 0.4)) list.push(e);
     }
     shelterSrc = want.has(LABELS.shelter) ? { km: sorted.length ? sorted[0][0] : null, fromKey } : null;
@@ -417,7 +419,7 @@
     for (const n of MAP.nearest) {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'plain'; b.dataset.t = n.types.join(',');
-      b.onclick = () => nearest(window.kitMap, b.dataset.t);
+      b.onclick = () => nearest(window.kitMap, b.dataset.t, n.reach_km);
       redraw.push(() => { b.textContent = COUNTRY.text(n.label); });
       $('#cats').appendChild(b);
     }

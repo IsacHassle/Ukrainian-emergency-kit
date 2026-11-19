@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="uk">
+<html>
 <head>
 <meta charset="utf-8">
 <script src="/lib/country.js"></script>
 <script src="/lib/lang.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Чекліст · {kit}</title>
+<title>{kit}</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icon-180.png">
 <meta name="theme-color" content="#0b5cad">
@@ -44,7 +44,7 @@
 (() => {
   // Ticks are kept in this browser only. A country addition is ticked by its place in the config, so the tick
   // follows the page language. An item from an Official Guide is ticked by its text and language: the English
-  // and Ukrainian guides word and order their lists differently, so one tick cannot stand for the other.
+  // and guides in the country.s language word and order their lists differently, so one tick cannot stand for the other.
   const KEY = COUNTRY.slug.toLowerCase() + '-checklist';
   let state = {};
   try { state = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { state = {}; }
@@ -52,7 +52,7 @@
   const DIR = 'docs/' + COUNTRY.official_guides.folder + '/';
   const guides = {};   // guide name and language -> its text, or null when it is not saved
 
-  // The saved guide in a language: Ukrainian guides sit in the folder, the others in a folder named by language code.
+  // The saved guide in a language: the country's own language sits in the folder, the others in a folder named by language code.
   const guideText = (name, lang) => {
     const id = lang + ':' + name;
     if (!(id in guides)) {
@@ -126,7 +126,7 @@
           ul.appendChild(li);
         }
         items.forEach(item => box(ul, lang + ':' + list.id + ':' + item, item));
-        if (!source) source = ((texts[i] || '').match(/^(Джерело|Source): .*$/m) || [''])[0];
+        if (!source) source = ((texts[i] || '').split('\n').find(isSourceLine)) || '';
       });
       const kit = section('kit', KIT.t('checklist.kit.heading'));
       COUNTRY.checklist.additions.forEach((a, i) => box(kit, 'kit:' + i, COUNTRY.text(a)));

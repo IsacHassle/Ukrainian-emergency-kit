@@ -3,7 +3,7 @@
 //   - the page language in <html lang>, from this device's saved choice, else the country config's default;
 //   - every element marked data-t="key" filled in (data-p='{"count": 3}' gives {count}), and
 //     data-t-attr="placeholder:key;aria-label:key" for attributes;
-//   - the УКР | ENG switch, put at the top right of the page (a full-screen page can ask for the bottom
+//   - the language switch (one button per language), put at the top right of the page (a full-screen page can ask for the bottom
 //     with <body data-switch="bottom">);
 //   - KIT.t(key, params) for page scripts, KIT.lang, KIT.setLang(code), and KIT.onChange(fn), which is
 //     called when the language changes so a script can redraw what it wrote itself.

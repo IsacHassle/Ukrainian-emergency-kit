@@ -150,6 +150,13 @@ def cyrillic(s):
     return any("Ѐ" <= c <= "ӿ" for c in s)
 
 
+DROPPED = set()   # (what, name) of everything left out for having only a name in the other language (--dropped)
+
+
+def dropped(what, name):
+    DROPPED.add((what, name))
+
+
 def shown_name(tags):
     """The name to show: Ukrainian, or the local name when it is not Russian, else the English name; None if none."""
     uk = tags.get("name:uk")
@@ -371,10 +378,16 @@ def near_closed_border(lon, lat, closed, limit_km):
     return any(o.near(lon, lat, limit_km) for o in closed)
 
 
-def load_closed_areas(osm_dir, work):
-    """The outlines named in map.closed_border_areas, cut from the region's extract (a relation by its tag)."""
+def inside_any(lon, lat, outlines):
+    """True when the point lies inside one of the outlines (map.no_help_areas: where nearest help is not listed)."""
+    return any(o.contains(lon, lat) for o in outlines)
+
+
+def load_closed_areas(osm_dir, work, key="closed_border_areas"):
+    """The outlines named in the config under `key` (map.closed_border_areas, map.no_help_areas), cut from the
+    region's extract (a relation by its tag): [(near_km, Outline)]."""
     out = []
-    for area in MAP.get("closed_border_areas", []):
+    for area in MAP.get(key, []):
         files = find_extracts(osm_dir, area["region"])
         if not files:
             sys.exit("Missing the %s extract for the closed area %s" % (area["region"], area["name"]))
@@ -388,7 +401,7 @@ def load_closed_areas(osm_dir, work):
             sys.exit("No outline for the closed area %s (%s) in %s" % (area["name"], area["relation"], files[0]))
         with open(gj, "w", encoding="utf-8") as f:
             json.dump(data, f)
-        out.append((area["near_km"], Outline.from_geojson(gj)))
+        out.append((area.get("near_km", 0), Outline.from_geojson(gj)))
     return out
 
 
@@ -397,6 +410,7 @@ def build(osm_dir, poly_dir, work):
     regions = MAP["regions"]
     shape = Outline.from_geojson(os.path.join(KIT, MAP["shape"]))
     closed = load_closed_areas(osm_dir, work)
+    no_help = [o for _, o in load_closed_areas(osm_dir, work, "no_help_areas")]   # nearest help is not listed in these
     full = [r for r in regions if r["detail"] == "full"]
     outlines = {}
     for r in regions:
@@ -433,6 +447,7 @@ def build(osm_dir, poly_dir, work):
                 shown = shown_name(tags)
                 if not shown:
                     stats["place dropped (no name, or Russian only)"] += 1
+                    dropped("place", tags.get("name:uk") or tags.get("name") or "")
                     continue
                 place_nodes.append((lon, lat, shown, kind))
                 if not shape.contains(lon, lat) or (not is_full and kind not in TOWN_KINDS):
@@ -464,6 +479,9 @@ def build(osm_dir, poly_dir, work):
                 shown = shown_name(tags) or ""
                 en = english_name(tags, shown) if shown else ""
                 keys = other_names(tags, shown, en) if shown else ""
+                if kind and inside_any(lon, lat, no_help):
+                    stats["nearest help left out (inside an area where it is not listed)"] += 1
+                    continue
                 if kind:   # a service without a name is shown by its kind
                     if kind == SHELTER:
                         shelters[shelter_group(tags)] += 1
@@ -482,6 +500,7 @@ def build(osm_dir, poly_dir, work):
                 shown = shown_name(tags)
                 if not shown:
                     stats["street dropped (Russian name only)"] += 1
+                    dropped("street", tags.get("name:uk") or tags.get("name") or "")
                     continue
                 streets_raw[shown].append((lon, lat))
                 keys, en = street_meta.setdefault(shown, (set(), ""))
@@ -572,6 +591,7 @@ def build(osm_dir, poly_dir, work):
             street = resolve.get(T.norm(T.strip_type(street)))
             if not street:
                 stats["address dropped (Russian street name, no Ukrainian name known)"] += 1
+                dropped("address street", street)
                 continue
         if city and looks_russian(city, endings=True):
             city = ""
@@ -665,6 +685,8 @@ def main():
     ap.add_argument("--osm-dir", default=os.environ.get("EK_OSM_DIR") or os.path.join(KIT, "maps", "osm"))
     ap.add_argument("--poly-dir", help="where <slug>.poly outlines are kept (default: next to the extracts)")
     ap.add_argument("--out", default=os.path.join(KIT, "web", "map", "data"))
+    ap.add_argument("--dropped", help="write every name left out as the other language's, one \"what<TAB>name\" line each, "
+                    "to this file (to look through them: a real name must not be among them)")
     ap.add_argument("--release", help="also write map-search.tar.gz into this folder")
     a = ap.parse_args()
     if not os.path.isdir(a.osm_dir):
@@ -674,6 +696,10 @@ def main():
     work = tempfile.mkdtemp(prefix="kit-map-")
     try:
         write(build(a.osm_dir, poly, work), a.out, a.release)
+        if a.dropped:
+            with open(a.dropped, "w", encoding="utf-8") as f:
+                for what, name in sorted(DROPPED):
+                    f.write("%s\t%s\n" % (what, name))
     finally:
         subprocess.run(["rm", "-rf", work])
 

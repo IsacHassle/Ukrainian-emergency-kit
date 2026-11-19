@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="uk">
+<html>
 <head>
 <meta charset="utf-8">
 <script src="/lib/country.js"></script>
 <script src="/lib/lang.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Друк · {kit}</title>
+<title>{kit}</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icon-180.png">
 <meta name="apple-mobile-web-app-title" content="" data-kit-attr="content={kit}">
@@ -79,7 +79,7 @@
   // The emergency numbers, two to a line: "<b>112</b> all emergencies · <b>101</b> fire and rescue<br>...".
   const numbers = () => COUNTRY.emergency_numbers.map(n => `<b>${n.number}</b> ${COUNTRY.text(n.print_label)}`)
     .map((t, i, all) => i % 2 ? t + (i < all.length - 1 ? '<br>' : '') : t + (i < all.length - 1 ? ' \u00b7 ' : '')).join('');
-  // The guides that go on paper in the page language: Ukrainian ones sit in the guides folder, the others in a
+  // The guides that go on paper in the page language: the country's own language sits in the guides folder, the others in a
   // folder named by language code (where the guide saver puts them).
   const pagesFor = lang => (COUNTRY.official_guides.print_pages[lang] || COUNTRY.official_guides.print_pages[COUNTRY.default_language]);
   const folderFor = lang => DIR + (lang === COUNTRY.default_language ? '' : lang + '/');

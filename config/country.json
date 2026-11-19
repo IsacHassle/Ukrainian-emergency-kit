@@ -1166,7 +1166,8 @@
     },
     "types": [
      "shelter"
-    ]
+    ],
+    "reach_km": 30
    },
    {
     "label": {
@@ -1302,6 +1303,14 @@
    "bd",
    "aleea",
    "șoseaua"
+  ],
+  "no_help_areas": [
+   {
+    "name": "Chornobyl exclusion zone",
+    "region": "ukraine",
+    "relation": "name=Зона відчуження Чорнобильської АЕС",
+    "why": "Nobody may go there, and its sarcophagus and Prypiat shelters are not places to send anyone to"
+   }
   ]
  },
  "repo": "IsacHassle/Ukrainian-emergency-kit"

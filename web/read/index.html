@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="uk">
+<html>
 <head>
 <meta charset="utf-8">
 <script src="/lib/country.js"></script>
@@ -38,7 +38,7 @@
 <script>
 (() => {
   // Shows a saved text document (Markdown) from documents/, for reading without internet. The page around the text
-  // follows the page language; the guide itself is in the language it was saved in (a Ukrainian guide in the folder,
+  // follows the page language; the guide itself is in the language it was saved in (one in the country's own language in the folder,
   // an English one in its en/ subfolder), and the start page only links the guides of the page language.
   const f = new URLSearchParams(location.search).get('f') || '';
   const box = document.getElementById('doc');

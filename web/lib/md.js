@@ -1,5 +1,11 @@
 // Turns the kit's Markdown documents into HTML (headings, lists, tables, bold, italics).
 // Needs lib/escape.js loaded first. Used by the reader (web/read/) and the print pack (web/print/).
+// The line a saved guide opens with ("Source: dovidka.info, <address>. Saved <date> ..."), in any language: its first
+// word comes from the language files' guide.saved, so no language is written in here.
+window.isSourceLine = line => {
+  const words = Object.values((window.KIT_LANG && KIT_LANG.texts) || {}).map(t => (t['guide.saved'] || '').split(':')[0]).filter(Boolean);
+  return words.some(w => line.startsWith(w + ': '));
+};
 window.renderMarkdown = function (src, opts) {
   opts = opts || {};
   const inline = s => escapeHtml(s)
@@ -26,7 +32,7 @@ window.renderMarkdown = function (src, opts) {
       first = false; continue;
     }
     first = false;
-    if (/^(Source|Джерело): /.test(line)) { flushP(); out += '<p class="src">' + inline(line) + '</p>'; continue; }
+    if (isSourceLine(line)) { flushP(); out += '<p class="src">' + inline(line) + '</p>'; continue; }
     if ((m = line.match(/^\s*[-*•+]\s+(.*)/))) { flushP(); if (list !== 'ul') { closeL(); out += '<ul>'; list = 'ul'; } out += '<li>' + inline(m[1]) + '</li>'; continue; }
     if ((m = line.match(/^\s*(\d+)[.)]\s+(.*)/))) { flushP(); if (list !== 'ol') { closeL(); out += `<ol start="${m[1]}">`; list = 'ol'; } out += '<li>' + inline(m[2]) + '</li>'; continue; }
     if (/^\s*(-{3,}|\*{3,})\s*$/.test(line)) { flushP(); closeL(); out += '<hr>'; continue; }

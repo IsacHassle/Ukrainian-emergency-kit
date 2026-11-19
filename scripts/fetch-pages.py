@@ -26,17 +26,17 @@ import sys
 import kit_country
 import kit_guides
 import kit_html
+import kit_lang
 
 KIT = os.environ.get("EK_KIT") or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FOLDER = kit_country.COUNTRY["official_guides"]["folder"]
 OUT = os.path.join(KIT, "documents", FOLDER)
 REFRESH = "--refresh" in sys.argv
 
-# What a saved text says about itself, in the guide's language: "Source: <source>, <address>. Saved <date> ...".
-SOURCE_LINE = {
-    "uk": "Джерело: {source}, {url}. Збережено {date} для читання без інтернету.",
-    "en": "Source: {source}, {url}. Saved {date} for reading offline.",
-}
+# What a saved text says about itself, in the guide's language: the language file's guide.saved ("Source: <source>,
+# <address>. Saved <date> ..."). The reader and the checklist find that line by its first word (web/lib/md.js).
+TEXTS = kit_lang.load()
+DATE = r"\d{4}-\d{2}-\d{2}"
 MIN_TEXT = 120   # a page that gives less text than this is a menu or an error page, not a guide
 
 
@@ -62,8 +62,12 @@ def unchanged(path, data):
             old = f.read()
     except OSError:
         return False
-    day = rb"(\xd0\x97\xd0\xb1\xd0\xb5\xd1\x80\xd0\xb5\xd0\xb6\xd0\xb5\xd0\xbd\xd0\xbe|Saved) \d{4}-\d{2}-\d{2}"
-    return re.sub(day, rb"\1 DAY", old) == re.sub(day, rb"\1 DAY", data)
+    # the saved line of every language, with its date as the one thing that may differ
+    lines = [re.escape(t["guide.saved"]).replace(re.escape("{date}"), DATE) for t in TEXTS.values() if "guide.saved" in t]
+    lines = [re.sub(r"\\\{(source|url)\\\}", ".*?", line) for line in lines]
+    day = re.compile(("|".join(lines)).encode("utf-8"))
+    flatten = lambda raw: day.sub(b"SAVED", raw)
+    return flatten(old) == flatten(data)
 
 
 def text_guide(guide, result, today):
@@ -80,7 +84,8 @@ def text_guide(guide, result, today):
     first, _, rest = body.partition("\n")
     if first.lstrip("#").strip().replace("\u201c", '"').replace("\u201d", '"') == title.replace("\u201c", '"').replace("\u201d", '"'):
         body = rest.strip() or body
-    line = SOURCE_LINE.get(guide.language, SOURCE_LINE["en"]).format(source=guide.source_id, url=guide.url, date=today)
+    line = kit_lang.text_in(TEXTS, "guide.saved", guide.language if guide.language in TEXTS else "en",
+                            {"source": guide.source_id, "url": guide.url, "date": today})
     return f"# {title}\n\n{line}\n\n{body}\n".encode("utf-8"), ""
 
 

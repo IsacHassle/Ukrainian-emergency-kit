@@ -94,6 +94,7 @@
  "checklist.print": "Print",
  "checklist.reset": "Start over",
  "checklist.title": "Checklist",
+ "guide.saved": "Source: {source}, {url}. Saved {date} for reading offline.",
  "home.ai.text": "Ask about injuries, illness, water, food and heat. The answer comes from the books and articles in the kit.",
  "home.ai.title": "Ask the AI",
  "home.battery": "The computer is running on battery ({percent} %). Save power: lower the brightness, close other apps and choose Save battery in the AI.",

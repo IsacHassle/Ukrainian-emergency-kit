@@ -321,6 +321,12 @@ def main():
     for i, n in enumerate(get("map", m, "nearest", list) or []):
         texts(f"map.nearest[{i}].label", n.get("label") if isinstance(n, dict) else None, lang)
         get(f"map.nearest[{i}]", n, "types", list)
+    for i, a in enumerate(m.get("no_help_areas") or []):   # where nearest help is not listed (optional)
+        for k in ("name", "region", "relation"):
+            get(f"map.no_help_areas[{i}]", a, k, str)
+    for i, n in enumerate(m.get("nearest") or []):
+        if isinstance(n, dict) and "reach_km" in n and not (isinstance(n["reach_km"], (int, float)) and n["reach_km"] > 0):
+            bad(f"map.nearest[{i}].reach_km", "must be a number above 0 (how far the list reaches)")
     for i, a in enumerate(get("map", m, "closed_border_areas", list) or []):
         for k in ("name", "region", "relation"):
             get(f"map.closed_border_areas[{i}]", a, k, str)

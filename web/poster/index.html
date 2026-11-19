@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="uk">
+<html>
 <head>
 <meta charset="utf-8">
 <script src="/lib/country.js"></script>
 <script src="/lib/lang.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<title>Плакат · {kit}</title>
+<title>{kit}</title>
 <link rel="stylesheet" href="../lib/kit.css">
 <script src="../lib/qrcode.js"></script>
 <style>
@@ -84,7 +84,7 @@
   const $ = id => document.getElementById(id);
   const SVG = 'http://www.w3.org/2000/svg';
 
-  // The QR format reads text as UTF-8, so Ukrainian network names scan correctly.
+  // The QR format reads text as UTF-8, so non-Latin network names scan correctly.
   qrcode.stringToBytes = qrcode.stringToBytesFuncs['UTF-8'];
 
   // What a phone's camera reads to join a Wi-Fi: WIFI:T:WPA;S:name;P:password;; where \ ; , : " in the

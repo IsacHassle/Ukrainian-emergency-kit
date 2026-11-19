@@ -11,17 +11,19 @@ const NOTE_EN = 'Not every shelter is on the map. Follow local signs and your lo
     args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
   try {
     const errors = [];
-    const open = async (lang, emptyShelters) => {
+    const open = async (lang, emptyShelters, farShelter) => {
       const ctx = await browser.createBrowserContext();
       const page = await ctx.newPage();
       page.on('pageerror', e => errors.push(String(e)));
-      if (emptyShelters) {   // the same search file with every shelter taken out
+      if (emptyShelters || farShelter) {   // the same search file with every shelter taken out (or only one, far away)
         await page.setRequestInterception(true);
         page.on('request', async req => {
           if (!req.url().endsWith('/map/data/places.json')) return req.continue();
           const d = await (await fetch(req.url())).json();
           const k = d.types.indexOf('shelter');
           d.items = d.items.filter(e => e[1] !== k);
+          // a shelter about 100 km east of the view's centre (Kyiv): beyond a shelter list's reach
+          if (farShelter) d.items.push(['Далеке укриття', k, 31.9, 50.45, '', '', '']);
           req.respond({ status: 200, contentType: 'application/json', body: JSON.stringify(d) });
         });
       }
@@ -29,6 +31,8 @@ const NOTE_EN = 'Not every shelter is on the map. Follow local signs and your lo
       await page.goto(url + '/map/', { waitUntil: 'load' });
       try { await page.waitForFunction(() => window.kitMap && window.kitMap.loaded(), { timeout: 20000 }); }
       catch (e) { return null; }
+      // The test search file's shelters are in Kyiv, and a shelter list reaches only 30 km: start the view there.
+      await page.evaluate(() => window.kitMap.jumpTo({ center: [30.5234, 50.4501] }));
       return page;
     };
     const press = async (page, label) => {
@@ -81,6 +85,16 @@ const NOTE_EN = 'Not every shelter is on the map. Follow local signs and your lo
     }
     ok('the note shows even when there is no shelter on the map');
 
+    // A shelter list reaches 30 km (config map.nearest reach_km), but the note still gives the nearest distance.
+    for (const lang of ['uk', 'en']) {
+      const p = await open(lang, false, true);
+      const r = await press(p, lang === 'uk' ? 'Укриття' : 'Shelter');
+      check(r.items.length === 0, 'a shelter 100 km away is not listed ' + lang + ': ' + JSON.stringify(r.items));
+      check(/\b(9\d|10\d) (км|km)/.test(r.shelter), 'the note still says how far it is ' + lang + ': ' + r.shelter);
+      check(r.shelter.includes(lang === 'uk' ? NOTE_UK : NOTE_EN), 'and keeps the note ' + lang + ': ' + r.shelter);
+    }
+    ok('the shelter list stops at its reach and the note keeps the nearest distance');
+
     // From a searched place: the distances count from it, not from the map centre.
     await uk.evaluate(() => { document.querySelector('#results').innerHTML = ''; });
     await uk.$eval('#q', e => { e.value = 'Харків'; });
@@ -88,8 +102,10 @@ const NOTE_EN = 'Not every shelter is on the map. Follow local signs and your lo
     await uk.waitForFunction(() => document.querySelector('#results li'));
     await uk.evaluate(() => document.querySelector('#results li').click());
     await new Promise(r => setTimeout(r, 300));
-    r = await press(uk, 'Укриття');
-    check(r.items[0].where.includes('від позначеного місця') && /\d{3,} км/.test(r.shelter), 'from the searched place: ' + r.shelter + JSON.stringify(r.items));
+    r = await press(uk, 'Укриття');   // Kharkiv is far from Kyiv's shelters: the list is empty, the note says how far
+    check(r.items.length === 0 && r.shelter.includes('від позначеного місця') && /\d{3,} км/.test(r.shelter), 'from the searched place: ' + r.shelter + JSON.stringify(r.items));
+    r = await press(uk, 'Лікарня');
+    check(r.items.length && r.items[0].where.includes('від позначеного місця'), 'a list counts from the searched place: ' + JSON.stringify(r.items));
     ok('after searching a place the nearest list counts from it');
 
     const real = errors.filter(e => !/WebGL/i.test(e));

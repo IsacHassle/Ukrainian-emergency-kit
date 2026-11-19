@@ -13,6 +13,8 @@ models and Book index workspace, so a request with any other name fails.
 ServedKit(peer="192.168.1.50") makes every request look like it comes from that address, as a Visitor device
 on the Wi-Fi does (tests/peer_launcher.py); the default is the Kit Mac itself.
 
+ServedKit(web_hook=function) lets a test change the copied web folder (another country's language files).
+
 ServedKit(env={...}) adds environment variables for the web server (for example KIT_GPS_DEVICE, a simulated
 USB receiver). kit.restart(peer=...) stops the web server and starts it again on the same kit folder, so a
 test can check what survives a restart, and who is asking can change between the two runs.
@@ -122,8 +124,9 @@ Not in the list.
 
 
 class ServedKit:
-    def __init__(self, ai_delay=0.0, country=None, peer=None, tiles=False, env=None):
+    def __init__(self, ai_delay=0.0, country=None, peer=None, tiles=False, env=None, web_hook=None):
         self.peer = peer
+        self.web_hook = web_hook   # called with the test kit's web folder once it is copied, before the start page is built
         self.extra_env = env or {}
         self.tiles = tiles   # put a tiny map (tests/kit/maps) in the kit, as the world and the country's map file
         self.country = None
@@ -148,7 +151,7 @@ class ServedKit:
     def saved_guides(self):
         """{path under the guides folder: text or bytes} saved in the test kit. Names follow the real config
         (config/country.json) unless the test runs another country, which has only its first print page."""
-        name = self.facts["official_guides"]["print_pages"]["uk"][0]
+        name = self.facts["official_guides"]["print_pages"][self.facts["default_language"]][0]
         saved = {name + ".md": "# %s\n\nPress hard on the wound.\n" % name.split(" - ", 1)[1]}
         if self.country is None:
             # a guide as saved from the site: with its navigation tag and the media notice, which stay off paper
@@ -204,6 +207,8 @@ class ServedKit:
             for name in ("world", self.facts["map"]["pmtiles"]):
                 shutil.copy(os.path.join(TESTS, "kit", "maps", "tiny.pmtiles"), os.path.join(self.kit_dir, "maps", name + ".pmtiles"))
         shutil.copytree(os.path.join(REPO, "web"), self.web_dir, symlinks=True)
+        if self.web_hook:
+            self.web_hook(self.web_dir)
         data = os.path.join(self.web_dir, "map", "data")
         os.makedirs(data, exist_ok=True)
         shutil.copytree(os.path.join(TESTS, "kit", "map-data"), data, dirs_exist_ok=True)   # places.json, letters/

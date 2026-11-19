@@ -2,8 +2,11 @@
 nothing military is ever indexed. These are the build's decisions, checked on tag sets like the ones in the real
 data (counts and tags: notes/10-nearest-help.md). The page side is in tests/test_nearest_help_browser.py."""
 import os
+import shutil
 import subprocess
+import tempfile
 import unittest
+from unittest import mock
 
 from servedkit import REPO, ServedKit
 from test_map_search import load_builder
@@ -151,6 +154,43 @@ class BorderCrossingsTest(unittest.TestCase):
         self.assertIsNone(self.b.crossing_object({"barrier": "border_control", "name": "Військовий пост"}))
         tags = {"barrier": "border_control", "name": "Шегині"}
         self.assertEqual(self.b.crossing_object(tags), tags)
+
+
+ZONE_FIXTURE = """<?xml version='1.0' encoding='UTF-8'?>
+<osm version='0.6' generator='test'>
+  <node id='1' lat='51.2' lon='30.0'/><node id='2' lat='51.2' lon='30.6'/>
+  <node id='3' lat='51.5' lon='30.6'/><node id='4' lat='51.5' lon='30.0'/>
+  <way id='10'><nd ref='1'/><nd ref='2'/><nd ref='3'/><nd ref='4'/><nd ref='1'/></way>
+  <relation id='100'><member type='way' ref='10' role='outer'/>
+    <tag k='type' v='multipolygon'/><tag k='boundary' v='hazard'/><tag k='name' v='Test exclusion zone'/></relation>
+</osm>
+"""
+
+
+class NoHelpAreaTest(unittest.TestCase):
+    """Followup 1: nothing inside the Chornobyl exclusion zone is offered as nearest help (the sarcophagus over
+    reactor 4 showed as a shelter). The zone's outline is read from OpenStreetMap by the relation the config names."""
+
+    def test_the_real_config_names_the_exclusion_zone(self):
+        areas = load_builder().MAP["no_help_areas"]
+        self.assertEqual([a["region"] for a in areas], ["ukraine"])
+        self.assertIn("Чорнобильської", areas[0]["relation"])
+
+    @unittest.skipUnless(shutil.which("osmium"), "osmium is not installed")
+    def test_the_outline_is_cut_from_the_extract_and_keeps_help_out(self):
+        b = load_builder()
+        with tempfile.TemporaryDirectory() as d:
+            subprocess.run(["osmium", "cat", "-o", os.path.join(d, "ukraine-261118.osm.pbf"), "--overwrite", "-F", "osm", "-"],
+                           input=ZONE_FIXTURE.encode(), check=True)
+            work = os.path.join(d, "work")
+            os.makedirs(work)
+            area = {"name": "Test zone", "region": "ukraine", "relation": "name=Test exclusion zone"}
+            with mock.patch.dict(b.MAP, {"no_help_areas": [area]}):
+                zone = [o for _, o in b.load_closed_areas(d, work, "no_help_areas")]
+        self.assertEqual(len(zone), 1)
+        self.assertTrue(b.inside_any(30.1, 51.3, zone))       # Prypiat side: no help listed
+        self.assertFalse(b.inside_any(30.52, 50.45, zone))    # Kyiv: listed as usual
+        self.assertFalse(b.inside_any(30.1, 51.3, []))        # a country with no such area
 
 
 @unittest.skipIf(why_skip() and not REQUIRED, why_skip())
