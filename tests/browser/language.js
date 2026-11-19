@@ -86,6 +86,20 @@ const check = (cond, msg) => { if (!cond) throw new Error(msg); };
     check(pressed.join() === 'true,false', 'aria-pressed ' + pressed);
     ok('the switch marks the language in use');
 
+    // 7. An Emergency Topic opens WikiMed in the page language: Ukrainian on УКР, English on ENG.
+    page = await fresh();
+    await page.goto(url + '/', { waitUntil: 'load' });
+    const bleeding = () => page.$$eval('.list a[data-k-uk]', els => {
+      const a = els.find(e => e.textContent.includes('Сильна кровотеча') || e.textContent.includes('Severe bleeding'));
+      return decodeURIComponent(a.getAttribute('href'));
+    });
+    check((await bleeding()).endsWith('/viewer#wikipedia_uk_medicine_test_2026-01/Зупинка_кровотечі'), 'uk topic link ' + await bleeding());
+    await page.click('.langswitch [data-lang=en]');
+    check((await bleeding()).endsWith('/viewer#wikipedia_en_medicine_test_2026-01/Bleeding'), 'en topic link ' + await bleeding());
+    await page.click('.langswitch [data-lang=uk]');
+    check((await bleeding()).includes('wikipedia_uk_medicine'), 'uk topic link after switching back');
+    ok('Emergency Topics open WikiMed in the page language');
+
     check(!errors.length, 'page errors: ' + errors.join('; '));
   } finally {
     await browser.close();

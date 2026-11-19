@@ -53,7 +53,7 @@ def testland(c):
     c["official_guides"]["folder"] = "Testguides"
     c["official_guides"]["print_pages"] = ["TL1 - Stop bleeding"]
     c["official_guides"]["sources"] = [{"id": "TL1", "label": {"uk": "TL1 · Testråd"}}]
-    c["emergency_topics"] = [{"article": "Bleeding", "label": {"uk": "Testblödning", "en": "Test bleeding"},
+    c["emergency_topics"] = [{"id": "bleeding", "wikimed": {"uk": "Bleeding", "en": "Bleeding"}, "label": {"uk": "Testblödning", "en": "Test bleeding"},
                               "official_guide": {"uk": "TL1 - Stop bleeding"}, "first": 1}]
     c["checklist"]["additions"] = [{"uk": "Ett testföremål"}]
     c["map"]["shortcuts"] = [{"label": {"uk": "Testby"}, "center": [1.5, 2.5], "zoom": 9}]
@@ -127,9 +127,9 @@ class ConfigIsValidTest(unittest.TestCase):
         code, out = check(c)
         self.assertNotEqual(code, 0)
 
-    def test_an_emergency_topic_without_an_article_is_refused(self):
+    def test_an_emergency_topic_without_an_id_is_refused(self):
         c = real()
-        del c["emergency_topics"][0]["article"]
+        del c["emergency_topics"][0]["id"]
         code, out = check(c)
         self.assertNotEqual(code, 0)
         self.assertIn("emergency_topics", out)

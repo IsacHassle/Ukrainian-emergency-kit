@@ -19,7 +19,7 @@ class SwitchTest(unittest.TestCase):
             run = subprocess.run(["node", os.path.join(REPO, "tests", "browser", "language.js")], env=env, cwd=REPO,
                                  capture_output=True, text=True, timeout=120)
             self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
-            self.assertEqual(run.stdout.count("ok - "), 7, run.stdout)
+            self.assertEqual(run.stdout.count("ok - "), 8, run.stdout)
         finally:
             kit.stop()
 
