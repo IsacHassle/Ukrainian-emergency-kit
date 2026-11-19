@@ -4,9 +4,10 @@ phones on the same Wi-Fi.
 
 - Files are served with Range support (the map needs it).
 - /ai-api/... lets the AI page talk to the local AI on this Mac:
-    Ollama (models "crisis" and "crisis-small"). In "Ur böckerna" the AI first gets
-    excerpts from the kit's books (AnythingLLM, workspace "Crisis") and from the big
-    medical libraries in Kiwix (scripts/kit_search.py).
+    Ollama (the two models named in the country config). In "From sources" the AI first gets
+    excerpts from the kit's books (AnythingLLM, the Book index workspace named in the country config)
+    and from the big medical libraries in Kiwix (scripts/kit_search.py).
+- /lib/country.js gives every page the part of the country config it needs (window.COUNTRY).
   Only these few actions are passed on, so phones on the Wi-Fi can ask
   questions but cannot change settings or delete anything.
 
@@ -15,7 +16,8 @@ Then open http://localhost:<port>/  (default port 8091)
 
 For tests and for a second kit beside a running one, environment variables move things:
   EK_WEB_PORT (the port when none is given), EK_BIND (address to listen on, default all), EK_KIT (kit folder: documents/, tools/),
-  EK_WEB (the folder served), EK_OLLAMA, EK_ANYTHINGLLM, EK_KIWIX (each "host:port").
+  EK_WEB (the folder served), EK_OLLAMA, EK_ANYTHINGLLM, EK_KIWIX (each "host:port"),
+  EK_COUNTRY (another country config file).
 """
 import http.client
 import http.server
@@ -28,8 +30,9 @@ import sys
 import threading
 import urllib.parse
 
+import kit_country  # the country's facts (config/country.json)
 import kit_gps      # the USB GPS receiver, if one is plugged in (scripts/kit_gps.py)
-import kit_search   # what the AI reads before answering in "Ur böckerna" (scripts/kit_search.py)
+import kit_search   # what the AI reads before answering in "From sources" (scripts/kit_search.py)
 
 CODE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # where this code and its config are
 KIT = kit_search.KIT   # the kit folder (the same as CODE unless EK_KIT says otherwise)
@@ -44,8 +47,8 @@ CERTS = os.path.join(KIT, "tools", "certs")
 OLLAMA = kit_search.OLLAMA_ADDR
 ANYTHINGLLM = kit_search.ANYTHINGLLM_ADDR
 KIWIX = kit_search.KIWIX_ADDR
-WORKSPACE = "crisis"
-MODELS = {"crisis", "crisis-small"}
+WORKSPACE = kit_country.workspace()
+MODELS = set(kit_country.models().values())
 MAX_BODY = 30 * 1024 * 1024  # a few photos
 
 
@@ -191,7 +194,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         except (ValueError, json.JSONDecodeError):
             return self.send_json({"error": "bad request"}, 400)
 
-        if action == "chat":  # Ollama, model crisis or crisis-small, photos allowed
+        if action == "chat":  # Ollama, one of the country config's two models, photos allowed
             model = body.get("model")
             msgs = body.get("messages")
             if model not in MODELS or not isinstance(msgs, list) or not msgs:
@@ -208,7 +211,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.stream(OLLAMA, "/api/chat", {
                 "model": model, "messages": clean, "stream": True,
                 "think": bool(body.get("think")), "keep_alive": "30m",
-                # the same context size as "Ur böckerna", so switching mode does not reload the model
+                # the same context size as "From sources", so switching mode does not reload the model
                 **({"options": kit_search.OPTIONS} if model == kit_search.MODEL else {}),
             })
 
@@ -256,6 +259,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     def do_GET(self):
         url = urllib.parse.urlsplit(self.path)
+        if url.path == "/lib/country.js":   # the country config for the pages
+            data = kit_country.pages_script().encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/javascript; charset=utf-8")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            return
         if url.path == "/krislada-ca.crt":   # the kit's certificate authority, for phones to trust once
             data = open(os.path.join(CERTS, "ca.crt"), "rb").read() if os.path.exists(os.path.join(CERTS, "ca.crt")) else b""
             if not data:
@@ -342,5 +354,5 @@ if __name__ == "__main__":
         threading.Thread(target=serve_https, daemon=True).start()
     kit_gps.start()
     with http.server.ThreadingHTTPServer((BIND, PORT), Handler) as httpd:
-        print(f"Crisis kit on this Mac: http://localhost:{PORT}/")
+        print(f"{kit_country.kit_name()} on this Mac: http://localhost:{PORT}/")
         httpd.serve_forever()

@@ -1,9 +1,10 @@
-"""Finds what the AI reads before it answers in "Ur böckerna" (the AI page's books mode).
+"""Finds what the AI reads before it answers in "From sources" (the AI page's books mode).
 
 Two places are searched at the same time:
-  - The kit's books, embedded in AnythingLLM (workspace "Crisis"): the 1177, MCF and Livsmedelsverket
-    pages, the MCF brochure, the medical, water, food and knot books, NHS Medicines and Ready.gov.
-  - The big medical libraries in Kiwix, which are too big to embed: WikiMed, MDWiki and MedlinePlus.
+  - The kit's books, embedded in AnythingLLM (the Book index workspace named in the country config): the
+    Official Guides, the brochure, the medical, water, food and knot books, NHS Medicines and Ready.gov.
+  - The big medical libraries in Kiwix, which are too big to embed: the Libraries named in the country
+    config (for Sweden WikiMed, MDWiki and MedlinePlus).
     The libraries are in English, so the AI first turns the question into English article titles;
     Kiwix finds the articles in a tenth of a second, and their most useful sections are passed on.
 
@@ -19,6 +20,8 @@ import threading
 import urllib.error
 import urllib.parse
 import urllib.request
+
+import kit_country
 
 KIT = os.environ.get("EK_KIT") or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # the kit folder
 
@@ -38,13 +41,15 @@ KEY_FILE = os.path.join(KIT, "tools", "anythingllm-api-key")
 ANYTHINGLLM = "http://%s:%d/api" % ANYTHINGLLM_ADDR
 KIWIX = "http://%s:%d" % KIWIX_ADDR
 OLLAMA = "http://%s:%d" % OLLAMA_ADDR
-WORKSPACE = "crisis"
-MODEL = "crisis"
+WORKSPACE = kit_country.workspace()
+MODEL = kit_country.models()["main"]
 OPTIONS = {"num_ctx": 16384}   # room for the instructions, the excerpts and the conversation
 
-# Kiwix libraries searched, by the start of their file name. The first two use Wikipedia's article titles.
-WIKIS = [("wikipedia_en_medicine", "WikiMed"), ("mdwiki_en_all", "MDWiki")]
-PLAIN = [("medlineplus.gov_en_all", "MedlinePlus")]   # CDC's library is travel advice by country: too noisy
+# Kiwix libraries searched (from the country config), by the start of their file name. The "encyclopedia"
+# ones use Wikipedia's article titles. (Sweden leaves CDC's library out: it is travel advice by country, too noisy.)
+_LIBS = kit_country.COUNTRY["ai"]["libraries"]
+WIKIS = [(l["prefix"], l["label"]) for l in _LIBS if l["kind"] == "encyclopedia"]
+PLAIN = [(l["prefix"], l["label"]) for l in _LIBS if l["kind"] == "plain"]
 
 PLAN_PROMPT = (
     "You prepare two searches for an offline crisis kit. Reply with exactly two lines and nothing else.\n"
@@ -79,7 +84,7 @@ def _api_key(renew=False):
             _key = open(KEY_FILE).read().strip()
             if _key:
                 return _key
-        made = json.load(_request(ANYTHINGLLM + "/system/generate-api-key", {"name": "Krislåda"}))
+        made = json.load(_request(ANYTHINGLLM + "/system/generate-api-key", {"name": kit_country.kit_name()}))
         _key = made["apiKey"]["secret"]
         fd = os.open(KEY_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
         with os.fdopen(fd, "w") as f:
@@ -367,11 +372,12 @@ def system_prompt(base, passages, articles):
     for a in articles:
         n += 1
         parts.append(f"[{n}] {a['library']}: {a['title']}\n{a['text']}")
+    ai = kit_country.COUNTRY["ai"]
     return base + (
         "\n\nEXCERPTS FOR THIS QUESTION\n"
         "Found in the kit's books and libraries for this question. Base your answer on them where they fit, "
-        "the Swedish authorities' pages (1177, MCF, Livsmedelsverket, Krisinformation) first. Name the sources "
-        "you used, only from the list below and by the name shown there (for example \"1177 - Stoppa en blödning\" "
+        + ai["authorities"] + " first. Name the sources "
+        "you used, only from the list below and by the name shown there (for example \"" + ai["example_source"] + "\" "
         "or \"WikiMed: Hypothermia\"); never name a source that is not below. "
-        "The library excerpts are in English: translate what you use, and never mix English into a Swedish answer. "
+        "The library excerpts are in English: translate what you use, and never mix English into a " + ai["answer_language"] + " answer. "
         "If the excerpts do not cover the question, say so and answer carefully.\n\n" + "\n\n".join(parts))
