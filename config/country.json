@@ -195,13 +195,33 @@
     }
    }
   ],
-  "print_pages": [
-   "dovidka.info - Як надати допомогу пораненому",
-   "dovidka.info - Тактична медицина, як зупинити кровотечу",
-   "МОЗ - МОЗ нагадує, базові правила домедичної допомоги",
-   "МОЗ - Тихий вбивця, як уберегтися від отруєння чадним газом",
-   "dovidka.info - Як очистити воду за будь-яких умов",
-   "МОЗ - Що робити у разі радіаційної аварії"
+  "print_pages": {
+   "uk": [
+    "dovidka.info - Як надати допомогу пораненому",
+    "dovidka.info - Тактична медицина, як зупинити кровотечу",
+    "МОЗ - МОЗ нагадує, базові правила домедичної допомоги",
+    "МОЗ - Тихий вбивця, як уберегтися від отруєння чадним газом",
+    "dovidka.info - Як очистити воду за будь-яких умов",
+    "МОЗ - Що робити у разі радіаційної аварії"
+   ],
+   "en": [
+    "dovidka.info - How to help a wounded person",
+    "dovidka.info - Tactical medicine, how to stop bleeding",
+    "dovidka.info - Rescue is in our hands, the rules of first aid",
+    "dovidka.info - How to purify water in any conditions",
+    "dovidka.info - How to protect yourself from a dirty bomb, a nuclear attack or an accident at a nuclear power plant"
+   ]
+  },
+  "print_skip": [
+   "^Важлива інформація для ЗМІ",
+   "^Important information for the media",
+   "^Поради, як підготуватись",
+   "^See also the video",
+   "^https?://"
+  ],
+  "print_drop_lines": [
+   "^#{1,2}\\s+(Спротив|Resistance)\\s*$",
+   "^#[^\\s#]"
   ]
  },
  "emergency_topics": [
@@ -699,15 +719,54 @@
   "country": "ukr"
  },
  "checklist": {
-  "official_list": {
-   "guide": "MCF - Grunder i hemberedskap",
-   "section": "Checklista",
-   "heading": {
-    "uk": "Вдома (офіційний перелік)",
-    "en": "At home (official list)"
+  "official_lists": [
+   {
+    "id": "home",
+    "heading": {
+     "uk": "Вдома",
+     "en": "At home"
+    },
+    "guide": {
+     "uk": "dovidka.info - Як підготуватися до надзвичайної ситуації",
+     "en": "dovidka.info - How to prepare for an emergency"
+    },
+    "section": {
+     "uk": "Як підготувати власну оселю до надзвичайної ситуації",
+     "en": "How to prepare your own home"
+    },
+    "start": {
+     "uk": "Перевірте, чи є у вас:",
+     "en": "Make sure you have:"
+    },
+    "until": {
+     "uk": "Якщо ви живете в приватному будинку",
+     "en": "If you live in a private house"
+    }
    },
-   "source_prefix": "Källa: "
-  },
+   {
+    "id": "gobag",
+    "heading": {
+     "uk": "Що покласти в тривожну валізу",
+     "en": "What to put in the go-bag"
+    },
+    "guide": {
+     "uk": "dovidka.info - Як підготуватися до надзвичайної ситуації",
+     "en": "dovidka.info - How to prepare for an emergency"
+    },
+    "section": {
+     "uk": "Що покласти в тривожну валізу",
+     "en": "What to put in a survival kit"
+    },
+    "start": {
+     "uk": "**У валізу покладіть:**",
+     "en": "**Put in the survival kit:**"
+    },
+    "until": {
+     "uk": "Покладіть у верхню чи бокову кишеню",
+     "en": "Put a tag in your top or side pocket"
+    }
+   }
+  ],
   "additions": [
    {
     "uk": "Тривожну валізу встановлено й перевірено",
@@ -1073,8 +1132,6 @@
  },
  "_placeholders": [
   "Values below are still Sweden's and belong to later tickets; they are marked here so nobody ships them.",
-  "ai.authorities, ai.example_source (07)",
-  "radio (12)",
-  "checklist.official_list.guide, checklist.official_list.source_prefix (12)"
+  "ai.authorities, ai.example_source (07)"
  ]
 }

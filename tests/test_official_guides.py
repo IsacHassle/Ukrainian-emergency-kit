@@ -394,8 +394,8 @@ class StartPageGuidesTest(unittest.TestCase):
         self.assertIn('href="docs/Official%20Guides/%D0%A7', uk)   # the PDF
 
     def test_the_summary_counts_the_guides_of_each_language(self):
-        self.assertRegex(self.page, r'<span data-l="uk" data-t="home.guides.summary" data-p=\'\{"count": 3\}\'>')
-        self.assertRegex(self.page, r'<span data-l="en" data-t="home.guides.summary" data-p=\'\{"count": 2\}\'>')
+        self.assertRegex(self.page, r'<span data-l="uk" data-t="home.guides.summary" data-p=\'\{"count": 4\}\'>')
+        self.assertRegex(self.page, r'<span data-l="en" data-t="home.guides.summary" data-p=\'\{"count": 4\}\'>')
 
     def test_the_sources_are_headed_with_their_name_in_each_language(self):
         self.assertIn("dovidka.info · Укриття, війна, перша допомога", self.page)

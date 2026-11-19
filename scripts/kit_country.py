@@ -63,7 +63,7 @@ def for_pages():
     out = {k: COUNTRY[k] for k in PAGE_KEYS if k in COUNTRY}
     out["slug"] = slug()
     out["ai"] = {"models": COUNTRY["ai"]["models"], "workspace_name": COUNTRY["ai"]["workspace_name"]}
-    out["official_guides"] = {k: COUNTRY["official_guides"][k] for k in ("folder", "print_pages")}
+    out["official_guides"] = {k: COUNTRY["official_guides"][k] for k in ("folder", "print_pages", "print_skip", "print_drop_lines")}
     m = COUNTRY["map"]
     out["map"] = {k: m[k] for k in ("pmtiles", "center", "zoom", "overview_label", "shortcuts", "zoom_by_type",
                                     "search_priority", "nearest") if k in m}

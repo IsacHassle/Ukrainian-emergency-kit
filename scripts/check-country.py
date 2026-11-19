@@ -136,9 +136,18 @@ def main():
             cont = s.get("container", [])
             if not isinstance(cont, list) or not all(isinstance(x, str) and x for x in cont):
                 bad(f"official_guides.sources[{i}].container", "must be a list of selectors like \"article\" or \"div.post\"")
-    pages = get("official_guides", og, "print_pages", list) or []
-    if not all(isinstance(p, str) and " - " in p for p in pages):
-        bad("official_guides.print_pages", "each must be a saved guide's name like \"Source - Title\"")
+    printed = get("official_guides", og, "print_pages", dict) or {}
+    for code, names in printed.items():
+        if not isinstance(names, list) or not all(isinstance(p, str) and " - " in p for p in names):
+            bad(f"official_guides.print_pages.{code}", "must be a list of saved guides' names like \"Source - Title\"")
+    if lang not in printed:
+        bad("official_guides.print_pages", f"needs a list for the default language ({lang})")
+    for key in ("print_skip", "print_drop_lines"):
+        for i, p in enumerate(get("official_guides", og, key, list) or []):
+            try:
+                re.compile(p)
+            except (re.error, TypeError):
+                bad(f"official_guides.{key}[{i}]", "must be a regular expression")
 
     # The guide list beside the config (config/pages.txt), when there is one: (language, name) of every line.
     listed = None
@@ -158,6 +167,12 @@ def main():
                 listed.add((parts[0], parts[2]))
                 if parts[2].split(" - ", 1)[0] not in ids:
                     bad(f"pages.txt:{number}", f"{parts[2].split(' - ', 1)[0]!r} is not a source in official_guides.sources")
+
+    if listed is not None:
+        for code, names in printed.items():
+            for n in names if isinstance(names, list) else []:
+                if (code, n) not in listed:
+                    bad(f"official_guides.print_pages.{code}", f"{n!r} is not in pages.txt for {code}")
 
     # Emergency Topics.
     topics = get("", c, "emergency_topics", list) or []
@@ -203,10 +218,12 @@ def main():
 
     # Checklist.
     cl = get("", c, "checklist", dict) or {}
-    ol = get("checklist", cl, "official_list", dict) or {}
-    for k in ("guide", "section", "source_prefix"):
-        get("checklist.official_list", ol, k, str)
-    texts("checklist.official_list.heading", ol.get("heading"), lang)
+    # Each list is read from a saved Official Guide: the section, the line that starts the list and the line it ends before.
+    for i, ol in enumerate(get("checklist", cl, "official_lists", list) or []):
+        where = f"checklist.official_lists[{i}]"
+        get(where, ol, "id", str)
+        for k in ("heading", "guide", "section", "start", "until"):
+            texts(f"{where}.{k}", ol.get(k) if isinstance(ol, dict) else None, lang)
     for i, a in enumerate(get("checklist", cl, "additions", list) or []):
         texts(f"checklist.additions[{i}]", a, lang)
 
