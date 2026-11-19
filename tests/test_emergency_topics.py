@@ -71,10 +71,10 @@ class StartPageTopicsTest(unittest.TestCase):
     def test_a_topic_with_one_language_only_opens_that_article_in_both_and_says_so(self):
         li = item(self.page, "Вибухова травма")
         self.assertIn('data-k="%s"' % viewer(EN, "Blast_injury"), li)
-        self.assertIn('data-t="home.urgent.english"', li)
+        self.assertIn('data-t="home.urgent.in.en"', li)
         en = item(self.page, "Вибухова травма", "en")
         self.assertIn('data-k="%s"' % viewer(EN, "Blast_injury"), en)
-        self.assertNotIn("home.urgent.english", en)
+        self.assertNotIn("home.urgent.in.en", en)
 
     def test_a_topic_whose_articles_and_guides_are_in_none_is_left_out_of_both_pages(self):
         self.assertIsNone(item(self.page, "Радіація"))

@@ -54,6 +54,11 @@ def models():
     return COUNTRY["ai"]["models"]
 
 
+def path(relative):
+    """A file the config names (the AI's instruction files): from the kit's code folder, unless it is absolute."""
+    return relative if os.path.isabs(relative) else os.path.join(CODE, relative)
+
+
 def workspace():
     return COUNTRY["ai"]["workspace"]
 
@@ -66,7 +71,7 @@ def for_pages():
     out["official_guides"] = {k: COUNTRY["official_guides"][k] for k in ("folder", "print_pages", "print_skip", "print_drop_lines")}
     m = COUNTRY["map"]
     out["map"] = {k: m[k] for k in ("pmtiles", "center", "zoom", "overview_label", "shortcuts", "zoom_by_type",
-                                    "search_priority", "nearest") if k in m}
+                                    "search_priority", "nearest", "street_types") if k in m}
     out["map"]["labels"] = {k: m["labels"][k] for k in ("street", "address", "area_types", "shelter")}
     return out
 

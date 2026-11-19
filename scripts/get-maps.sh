@@ -16,7 +16,7 @@ MAP=$(country map.pmtiles)
 SHAPE="$KIT/$(country map.shape)"        # a GeoJSON polygon
 MAXZOOM=$(country map.max_zoom)          # the detailed cut; the Protomaps build has no tiles beyond 15
 WORLD_MAXZOOM=$(country map.world_max_zoom)
-REPO="${KIT_REPO:-$(country map.search_release_repo)}"
+REPO="${KIT_REPO:-$(country repo)}"
 mkdir -p "$M"
 # shellcheck source=say.sh
 . "$KIT/scripts/say.sh"

@@ -4,9 +4,9 @@ Two places are searched at the same time:
   - The kit's books, embedded in AnythingLLM (the Book index workspace named in the country config): the
     Official Guides, the brochure, the medical, water, food and knot books, NHS Medicines and Ready.gov.
   - The big medical libraries in Kiwix, which are too big to embed: the Libraries named in the country
-    config, each with its language (for Ukraine WikiMed in Ukrainian and in English, MDWiki, MedlinePlus).
-    The AI first turns the question into article titles in Ukrainian and in English; Ukrainian titles are
-    looked up in the Ukrainian Libraries and English titles in the English ones. Kiwix finds the articles in a
+    config, each with its language.
+    The AI first turns the question into article titles in each Library language (ai.library_languages) and
+    each language's titles are looked up in the Libraries of that language. Kiwix finds the articles in a
     tenth of a second, and their most useful sections are passed on.
 
 Either place may be missing (AnythingLLM not open, Kiwix not started): the other still works.
@@ -49,23 +49,18 @@ OPTIONS = {"num_ctx": 16384}   # room for the instructions, the excerpts and the
 # Kiwix libraries searched (from the country config), by the start of their file name, per language. The
 # "encyclopedia" ones use Wikipedia's article titles, "plain" ones are plain-language health pages.
 _LIBS = kit_country.COUNTRY["ai"]["libraries"]
-WIKIS = {lang: [(l["prefix"], l["label"]) for l in _LIBS if l["kind"] == "encyclopedia" and l["language"] == lang]
-         for lang in ("uk", "en")}
-PLAIN = [(l["prefix"], l["label"]) for l in _LIBS if l["kind"] == "plain" and l["language"] == "en"]
+# The languages the Libraries are in, from the config: a code (the Libraries' `language`), a name for the
+# instructions, and the label of its title line in the planning call (config/AI-PLAN-PROMPT.txt).
+LIB_LANGS = kit_country.COUNTRY["ai"]["library_languages"]
+WIKIS = {l["code"]: [(x["prefix"], x["label"]) for x in _LIBS if x["kind"] == "encyclopedia" and x["language"] == l["code"]]
+         for l in LIB_LANGS}
+PLAIN_LANG = next((x["language"] for x in _LIBS if x["kind"] == "plain"), "")   # the language of the plain-language pages
+PLAIN = [(x["prefix"], x["label"]) for x in _LIBS if x["kind"] == "plain" and x["language"] == PLAIN_LANG]
 ALL_LIBS = [x for lang in WIKIS for x in WIKIS[lang]] + PLAIN
 
-PLAN_PROMPT = (
-    "You prepare searches for an offline emergency kit in Ukraine. Reply with exactly three lines and nothing else.\n"
-    "SEARCH: the user's latest question rewritten so it stands on its own (bring in what an earlier question "
-    "was about), in the user's own language.\n"
-    "UKRAINIAN: 1 to 3 article titles in Ukrainian for the Ukrainian Wikipedia's medical articles, separated by "
-    "semicolons, in the nominative case, as the encyclopedia titles them: Опік, Гіпотермія, Зупинка кровотечі, "
-    "Отруєння чадним газом, Серцево-легенева реанімація, Вибухова травма.\n"
-    "ENGLISH: 1 to 3 English article titles for a medical library (Wikipedia's medical articles and MedlinePlus), "
-    "separated by semicolons. Use the shortest common title, for example: Burn (not Burn treatment), Hypothermia, "
-    "Bleeding, Tourniquet, Blast injury, Carbon monoxide poisoning, Water purification, Ibuprofen.\n"
-    "Name conditions, injuries or medicines, not whole fields. Write NONE on both title lines if the question is "
-    "not about health, illness, injuries, medicines, poisoning, or safe drinking water and food.")
+# What the AI is asked to do before the search (config/AI-PLAN-PROMPT.txt, the country's own text).
+with open(kit_country.path(kit_country.COUNTRY["ai"]["plan_prompt_file"]), encoding="utf-8") as _f:
+    PLAN_PROMPT = _f.read().strip()
 
 _lock = threading.Lock()
 _key = None
@@ -124,8 +119,8 @@ def book_passages(query, top=6):
 # ---------- one quick call to the AI ----------
 
 def plan(question, earlier=""):
-    """(the question as a stand-alone search, Ukrainian article titles, English article titles). The title lists
-    are empty if it is not a health question."""
+    """(the question as a stand-alone search, {language code: article titles}). The title lists are empty if it
+    is not a health question."""
     ask = (f"Earlier question: {earlier}\n" if earlier else "") + f"Latest question: {question}"
     body = {"model": MODEL, "stream": False, "think": False, "keep_alive": "30m",
             "messages": [{"role": "system", "content": PLAN_PROMPT}, {"role": "user", "content": ask[:3000]}],
@@ -133,21 +128,23 @@ def plan(question, earlier=""):
     try:
         reply = json.load(_request(OLLAMA + "/api/chat", body, timeout=180))["message"]["content"]
     except (OSError, ValueError, KeyError, TypeError):
-        return question, [], []
-    search, found = question, {"UKRAINIAN": [], "ENGLISH": []}
+        return question, {l["code"]: [] for l in LIB_LANGS}
+    code_of = {l["plan_label"].upper(): l["code"] for l in LIB_LANGS}
+    search, found = question, {l["code"]: [] for l in LIB_LANGS}
     for line in reply.splitlines():
-        m = re.match(r"\W*(SEARCH|UKRAINIAN|ENGLISH)\W*:\s*(.*)", line, re.I)
+        m = re.match(r"\W*(SEARCH|%s)\W*:\s*(.*)" % "|".join(map(re.escape, code_of)), line, re.I)
         if not m:
             continue
         kind = m.group(1).upper()
         if kind == "SEARCH":
             search = m.group(2).strip() or question
             continue
+        titles = found[code_of[kind]]
         for t in re.split(r"[;,]", m.group(2)):
             t = t.strip().strip("\"'.*").strip()
-            if t and t.upper() != "NONE" and len(t) <= 60 and t not in found[kind]:
-                found[kind].append(t)
-    return search, found["UKRAINIAN"][:3], found["ENGLISH"][:3]
+            if t and t.upper() != "NONE" and len(t) <= 60 and t not in titles:
+                titles.append(t)
+    return search, {code: titles[:3] for code, titles in found.items()}
 
 
 # ---------- the big libraries (Kiwix) ----------
@@ -257,10 +254,10 @@ class _Text(html.parser.HTMLParser):
             self.sub = None
 
 
-HIGH = re.compile(r"first aid|treatment|management|what to do|do not|home care|self.care|rewarming|"
-                  r"when to (call|contact|see)|перша допомога|домедична|лікування|терапі|невідкладн|"
-                  r"що робити|допомога", re.I)
-MID = re.compile(r"symptom|signs|emergency|prevention|diagnosis|симптом|ознаки|профілактика|діагностика", re.I)
+# Headings of an article's most useful sections (first aid, treatment ...), in the Libraries' languages (the
+# country config, ai.section_words): high ones count most, mid ones some.
+HIGH = re.compile("|".join(kit_country.COUNTRY["ai"]["section_words"]["high"]), re.I)
+MID = re.compile("|".join(kit_country.COUNTRY["ai"]["section_words"]["mid"]), re.I)
 
 
 def _excerpt(path, terms, limit=2400):
@@ -298,10 +295,10 @@ def _book_of(link):
     return parts[2] if len(parts) > 2 else ""
 
 
-def library_articles(uk_titles, en_titles, limit=4):
-    """Up to `limit` articles from Kiwix: Ukrainian titles are looked up in the Ukrainian Libraries and English
-    titles in the English ones. [{"title", "library", "href", "text"}], Ukrainian ones first."""
-    if not (uk_titles or en_titles):
+def library_articles(titles, limit=4):
+    """Up to `limit` articles from Kiwix. `titles` is {language code: titles}: each language's titles are looked
+    up in the Libraries of that language. [{"title", "library", "href", "text"}], the first language's first."""
+    if not any(titles.values()):
         return []
     try:
         libs = _libraries()
@@ -310,7 +307,7 @@ def library_articles(uk_titles, en_titles, limit=4):
     label = {libs[p]: name for p, name in ALL_LIBS if p in libs}
     books = {lang: [libs[p] for p, _ in WIKIS[lang] if p in libs] for lang in WIKIS}
     plain = [libs[p] for p, _ in PLAIN if p in libs]
-    terms = list(uk_titles) + list(en_titles)
+    terms = [t for l in LIB_LANGS for t in titles.get(l["code"], [])]
     picked, seen = [], set()
 
     def take(title, path):
@@ -351,15 +348,17 @@ def library_articles(uk_titles, en_titles, limit=4):
                 return True
         return False
 
-    # Alternate between the languages so the answer gets both: first Ukrainian title, first English title, ...
+    # Alternate between the languages so the answer gets all of them: the first title of each, then the second, ...
     order = []
     for i in range(3):
-        order += [("uk", t) for t in uk_titles[i:i + 1]] + [("en", t) for t in en_titles[i:i + 1]]
+        for l in LIB_LANGS:
+            order += [(l["code"], t) for t in titles.get(l["code"], [])[i:i + 1]]
     for lang, term in order:
         article(lang, term)
-    # For the first English term, also the plain-language page (MedlinePlus often has a "First aid" section).
-    if en_titles and plain:
-        term = en_titles[0]
+    # For the first term in the plain-language pages' language, also their page (MedlinePlus often has a "First
+    # aid" section).
+    if titles.get(PLAIN_LANG) and plain:
+        term = titles[PLAIN_LANG][0]
         try:
             hits = _search(plain, term)
         except (OSError, ValueError):
@@ -389,39 +388,46 @@ def gather(question, earlier="", cancelled=lambda: False):
     if not earlier:   # a first question can search the books while the AI picks the article titles
         jobs.append(threading.Thread(target=books, args=(question,), daemon=True))
         jobs[-1].start()
-    search, uk_titles, en_titles = plan(question, earlier)
+    search, titles = plan(question, earlier)
     if cancelled():
         return [], []
     if earlier:       # a follow-up ("and for a child?") searches with the rewritten, stand-alone question
         jobs.append(threading.Thread(target=books, args=(search,), daemon=True))
         jobs[-1].start()
-    out["libs"] = library_articles(uk_titles, en_titles)
+    out["libs"] = library_articles(titles)
     for j in jobs:
         j.join(120)
     return out.get("books", []), out.get("libs", [])
 
 
-# Letters and common words only one of the two Cyrillic languages uses, to tell a Russian message from a Ukrainian one.
-_UK_ONLY = re.compile(r"[іїєґ]", re.I)
-_RU_ONLY = re.compile(r"[ыэъё]", re.I)
-_UK_WORDS = {"що", "як", "мені", "можна", "треба", "дуже", "який", "яка", "коли", "тому", "це", "та", "і", "є", "дитина", "діти", "робити"}
-_RU_WORDS = {"что", "как", "мне", "можно", "нужно", "очень", "какой", "какая", "когда", "потому", "это", "и", "или", "делать", "ребёнок", "дети", "если"}
+# The languages a question may come in (ai.answer_languages in the country config): each has an alphabet, the
+# letters only it uses and some common words only it uses, which tell apart languages that share an alphabet
+# (a Russian message from a Ukrainian one).
+ANSWER_LANGS = kit_country.COUNTRY["ai"]["answer_languages"]
 
 
 def language_of(text):
-    """"Ukrainian", "Russian" or "English" for a question, or None when it cannot be told. Models drift into the
-    language of the excerpts (Ukrainian in a Ukrainian kit), so the answer's language is named outright."""
-    cyr = len(re.findall(r"[а-яіїєґё]", text, re.I))
-    lat = len(re.findall(r"[a-z]", text, re.I))
-    if lat > cyr:
-        return "English"
-    if not cyr:
+    """The name of the language a question is in (one of ai.answer_languages), or None when it cannot be told.
+    Models drift into the language of the excerpts, so the answer's language is named outright. The alphabet
+    with the most letters in the text wins (the first listed on a tie); among languages sharing it, the one
+    with the most of its own letters and words (the first listed on a tie)."""
+    alphabets = []   # in the order the config lists them
+    for lang in ANSWER_LANGS:
+        if lang["alphabet"] not in alphabets:
+            alphabets.append(lang["alphabet"])
+    counts = [len(re.findall("[" + a + "]", text, re.I)) for a in alphabets]
+    if not any(counts):
         return None
-    uk, ru = len(_UK_ONLY.findall(text)), len(_RU_ONLY.findall(text))
-    words = re.findall(r"[а-яіїєґё']+", text.lower())
-    uk += sum(w in _UK_WORDS for w in words)
-    ru += sum(w in _RU_WORDS for w in words)
-    return "Russian" if ru > uk else "Ukrainian"
+    alphabet = alphabets[counts.index(max(counts))]
+    sharing = [l for l in ANSWER_LANGS if l["alphabet"] == alphabet]
+    words = re.findall("[" + alphabet + "']+", text.lower())
+
+    def score(lang):
+        letters = len(re.findall("[" + lang["letters"] + "]", text, re.I)) if lang["letters"] else 0
+        return letters + sum(w in lang["words"] for w in words)
+
+    scores = [score(l) for l in sharing]
+    return sharing[scores.index(max(scores))]["name"]
 
 
 def system_prompt(base, passages, articles, language=None):
@@ -445,9 +451,10 @@ def system_prompt(base, passages, articles, language=None):
         + ai["authorities"] + " first. Name the sources "
         "you used, only from the list below and by the name shown there (for example \"" + ai["example_source"] + "\" "
         "or \"WikiMed: Hypothermia\"); never name a source that is not below. "
-        "The excerpts are in Ukrainian or in English whatever the question's language. Write the whole answer in the language "
-        "of the user's LATEST message (a Russian question gets a Russian answer, an English question an English one, "
-        "a Ukrainian question a Ukrainian one; " + ai["answer_language"] + " if it is unclear), translate what you use, "
+        "The excerpts are in " + " or in ".join(l["name"] for l in LIB_LANGS) + " whatever the question's language. "
+        "Write the whole answer in the language of the user's LATEST message (" + ", ".join(
+            "a question in %s gets an answer in %s" % (l["name"], l["name"]) for l in ANSWER_LANGS) + "; "
+        + ai["answer_language"] + " if it is unclear), translate what you use, "
         "and never mix languages in one answer. "
         + (f"The user's latest message is in {language}: write the whole answer in {language}. " if language else "") +
         "If the excerpts do not cover the question, say so and answer carefully.\n\n" + "\n\n".join(parts))

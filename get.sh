@@ -4,10 +4,13 @@
 # Paste into Terminal / Вставте в Terminal:
 #   curl -fsSL https://raw.githubusercontent.com/IsacHassle/Ukrainian-emergency-kit/main/get.sh | bash
 set -eu
+# The address of the kit on GitHub. config/country.json ("repo") holds it for everything else; this is a copy,
+# because the kit is not downloaded yet when this runs (a test keeps the two equal).
+REPO="${EK_REPO:-IsacHassle/Ukrainian-emergency-kit}"
 DEST="${EK_DIR:-$HOME/Emergency-Kit}"
 if [ ! -f "$DEST/install.sh" ]; then
   echo "Завантажую валізу до $DEST / Downloading the kit to $DEST"
   mkdir -p "$DEST"
-  curl -fsSL https://github.com/IsacHassle/Ukrainian-emergency-kit/archive/refs/heads/main.tar.gz | tar -xz --strip-components=1 -C "$DEST"
+  curl -fsSL https://github.com/$REPO/archive/refs/heads/main.tar.gz | tar -xz --strip-components=1 -C "$DEST"
 fi
 exec bash "$DEST/install.sh" </dev/tty

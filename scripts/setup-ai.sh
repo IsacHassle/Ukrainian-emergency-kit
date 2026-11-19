@@ -1,7 +1,7 @@
 #!/bin/bash
 # Sets up the local AI (nothing leaves the Mac):
 #   1. Ollama: downloads the two base models and bge-m3, and builds the country config's two models
-#      (ai.models) with the instructions in config/AI-PROMPT.txt
+#      (ai.models) with the instructions in the file ai.prompt_file names (config/AI-PROMPT.txt)
 #   2. AnythingLLM: uses Ollama, and gets the Book index workspace named in the country config (ai.workspace)
 #      that answers from the books
 #   3. Loads every document in documents/ into that workspace (scripts/embed-documents.sh)
@@ -10,11 +10,12 @@
 # and the base models, which the drive does not carry, are neither needed nor asked for.
 set -eu
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PROMPT="$KIT/config/AI-PROMPT.txt"
 # shellcheck source=country.sh
 . "$KIT/scripts/country.sh"   # the country's facts (config/country.json)
 # shellcheck source=say.sh
 . "$KIT/scripts/say.sh"
+PROMPT=$(country ai.prompt_file)   # the AI's instructions: a path from the kit folder, or absolute
+case "$PROMPT" in /*) ;; *) PROMPT="$KIT/$PROMPT" ;; esac
 MODEL_MAIN=$(country ai.models.main); MODEL_SMALL=$(country ai.models.small)
 BASE_MAIN=$(country ai.base_models.main); BASE_SMALL=$(country ai.base_models.small)
 WORKSPACE=$(country ai.workspace); WORKSPACE_NAME=$(country ai.workspace_name)

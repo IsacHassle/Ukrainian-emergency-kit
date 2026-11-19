@@ -6,6 +6,8 @@ letter file a street is written to here must be the one the page asks for. Stdli
 import re
 import unicodedata
 
+import kit_country
+
 ANY = {"а": "a", "б": "b", "в": "v", "г": "h", "ґ": "g", "д": "d", "е": "e", "є": "ie", "ж": "zh", "з": "z", "и": "y",
        "і": "i", "ї": "i", "й": "i", "к": "k", "л": "l", "м": "m", "н": "n", "о": "o", "п": "p", "р": "r", "с": "s",
        "т": "t", "у": "u", "ф": "f", "х": "kh", "ц": "ts", "ч": "ch", "ш": "sh", "щ": "shch", "ю": "iu", "я": "ia"}
@@ -15,9 +17,10 @@ RU = {"а": "a", "б": "b", "в": "v", "г": "g", "д": "d", "е": "e", "ё": "e
       "к": "k", "л": "l", "м": "m", "н": "n", "о": "o", "п": "p", "р": "r", "с": "s", "т": "t", "у": "u", "ф": "f",
       "х": "kh", "ц": "ts", "ч": "ch", "ш": "sh", "щ": "shch", "ъ": "", "ы": "y", "ь": "", "э": "e", "ю": "yu", "я": "ya"}
 FOLD = {"і": "и", "ї": "и", "ы": "и", "є": "е", "э": "е", "ё": "е", "ґ": "г", "й": "и"}
-TYPES = set(("вулиця вул провулок пров проспект просп бульвар бул площа пл шосе набережна наб узвіз тупик проїзд алея "
-             "майдан лінія тракт улица ул переулок пер проезд площадь шоссе набережная strada str bulevardul bd "
-             "aleea șoseaua").split())
+# Street types in the country's languages (config, map.street_types), lower case without the dot. The two letter
+# tables above (Ukrainian and Russian to Latin) stay in code: they are rules of those scripts, and the tests
+# (tests/kit/search-cases.json) hold them equal to the page's copy in web/map/search.js.
+TYPES = set(kit_country.COUNTRY["map"]["street_types"])
 
 
 def _is_letter(ch):

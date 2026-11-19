@@ -75,6 +75,68 @@ def post(kit, path, payload):
         return [json.loads(l) for l in r.read().decode("utf-8").splitlines() if l.strip()]
 
 
+class EngineHoldsNoCountryTextTest(unittest.TestCase):
+    """ADR 0002: the engine holds no country's facts and no human-readable text. What it needs from a country is in
+    config/ (country.json and the AI's instruction files) and in web/lang/. So no engine script has Cyrillic
+    letters in a string outside comments and docstrings. Allowed: the OpenStreetMap tag value with a Cyrillic a
+    and the Cyrillic block's edges in build-map-index.py (data, not text), and the letter tables of kit_translit.py
+    (the rules of a script). The scripts that print terminal lines (say, die) are not in this list: those lines are
+    the Ukrainian half of a line in both languages."""
+    ENGINE = ("kit_search.py", "serve-web.py", "build-home.py", "kit_gps.py", "kit_guides.py", "kit_country.py", "kit_lang.py",
+              "kit_html.py", "build-map-index.py")
+    DATA = {"\u0430ir-raid shelter", "\u0400", "\u04ff"}
+
+    def test_no_engine_script_has_cyrillic_text(self):
+        import ast
+        import re
+        cyrillic = re.compile("[\u0400-\u04ff]")
+        for name in self.ENGINE:
+            with open(os.path.join(REPO, "scripts", name), encoding="utf-8") as f:
+                tree = ast.parse(f.read())
+            docstrings = {id(n.body[0].value) for n in ast.walk(tree)
+                          if isinstance(n, (ast.Module, ast.FunctionDef, ast.ClassDef)) and n.body
+                          and isinstance(n.body[0], ast.Expr) and isinstance(getattr(n.body[0], "value", None), ast.Constant)}
+            found = [n.value for n in ast.walk(tree) if isinstance(n, ast.Constant) and isinstance(n.value, str)
+                     and id(n) not in docstrings and cyrillic.search(n.value) and n.value not in self.DATA]
+            self.assertEqual(found, [], name)
+
+    def test_the_moved_facts_are_in_the_config(self):
+        c = real()
+        self.assertIn("військ", c["map"]["labels"]["military_words"])
+        self.assertIn("ыэъё", c["map"]["labels"]["other_language"]["letters"])
+        self.assertEqual(c["map"]["labels"]["unnamed_crossing"]["name"], "Пункт пропуску, ")
+        self.assertIn("вулиця", c["map"]["street_types"])
+        self.assertEqual([l["code"] for l in c["ai"]["library_languages"]], ["uk", "en"])
+        self.assertEqual([l["name"] for l in c["ai"]["answer_languages"]], ["Ukrainian", "Russian", "English"])
+        self.assertEqual(c["repo"], "IsacHassle/Ukrainian-emergency-kit")
+
+    def test_the_plan_prompt_file_asks_for_every_line_the_engine_reads(self):
+        c = real()
+        with open(os.path.join(REPO, c["ai"]["plan_prompt_file"]), encoding="utf-8") as f:
+            plan = f.read()
+        for label in ["SEARCH"] + [l["plan_label"] for l in c["ai"]["library_languages"]]:
+            self.assertIn(label + ":", plan)
+
+    def test_the_ai_instructions_name_the_kit_in_every_answer_language(self):
+        c = real()
+        with open(os.path.join(REPO, c["ai"]["prompt_file"]), encoding="utf-8") as f:
+            prompt = f.read()
+        for name in (c["kit_name"]["uk"], c["kit_name"]["en"], "Тривожный чемоданчик"):
+            self.assertIn('"%s"' % name, prompt)
+
+    def test_the_example_source_is_a_guide_the_saver_saves(self):
+        with open(os.path.join(REPO, "config", "pages.txt"), encoding="utf-8") as f:
+            saved = {l.split("|")[2].strip() for l in f if l.strip() and not l.startswith("#") and l.count("|") == 2}
+        self.assertIn(real()["ai"]["example_source"], saved)
+
+    def test_get_sh_keeps_the_config_s_repo_as_its_default(self):
+        with open(os.path.join(REPO, "get.sh"), encoding="utf-8") as f:
+            self.assertIn("${EK_REPO:-%s}" % real()["repo"], f.read())
+
+    def test_no_placeholder_note_is_left_in_the_config(self):
+        self.assertNotIn("_placeholders", real())
+
+
 class ConfigIsValidTest(unittest.TestCase):
     def test_the_real_config_is_valid(self):
         code, out = check(real())
@@ -232,7 +294,7 @@ class ShellScriptsReadTheConfigTest(unittest.TestCase):
         self.assertEqual(shell(REPO, None, "country map.pmtiles"), "ukraine")
         self.assertEqual(shell(REPO, None, "country map.shape"), "config/map-area.geojson")
         self.assertEqual(shell(REPO, None, "country map.max_zoom"), "15")
-        self.assertEqual(shell(REPO, None, "country map.search_release_repo"), "IsacHassle/Ukrainian-emergency-kit")
+        self.assertEqual(shell(REPO, None, "country repo"), "IsacHassle/Ukrainian-emergency-kit")
         self.assertEqual(shell(REPO, None, "country kit_name"), "Тривожна валіза")
         self.assertEqual(shell(REPO, None, "country ai.check.expect"), "112")
 

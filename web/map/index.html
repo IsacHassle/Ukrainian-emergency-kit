@@ -139,6 +139,7 @@
 
   // Zoom to use when jumping to a result of each type.
   const MAP = COUNTRY.map, LABELS = MAP.labels;   // the country's place types, labels and start view (country config)
+  KitSearch.setStreetTypes(MAP.street_types);     // the street words the search ignores ("вулиця" in front of a name)
   const ZOOM = MAP.zoom_by_type;
   const zoomFor = t => ZOOM[t] || 18;
 

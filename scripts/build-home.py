@@ -85,9 +85,6 @@ def both(value):
     return "".join(f'<span data-l="{code}">{html.escape(text(value, code))}</span>' for code in langs)
 
 
-# How a language is named in "home.urgent.<language>": the note on a topic that opens an article in the other language.
-LANGUAGE_WORD = {"uk": "ukrainian", "en": "english"}
-
 PRIMARY = next((n for n in C["emergency_numbers"] if n.get("primary")), C["emergency_numbers"][0])
 
 
@@ -196,7 +193,7 @@ def main():
         note = ""
         if article and not own:   # an article in the other language: say so
             other = next(c for c in TEXTS if c in found)
-            note = f'<small data-t="home.urgent.{LANGUAGE_WORD[other]}"></small>'
+            note = f'<small data-t="home.urgent.in.{other}"></small>'
         label = both(t["label"])
         if guides:
             (href, source), more = guides[0], guides[1:]

@@ -23,7 +23,7 @@
   "workspace_name": "Emergency Kit",
   "answer_language": "Ukrainian",
   "authorities": "the Ukrainian authorities' pages (DSNS, MOZ)",
-  "example_source": "ДСНС - Як зупинити кровотечу",
+  "example_source": "dovidka.info - Тактична медицина, як зупинити кровотечу",
   "check": {
    "question": "Відповідай лише цифрами: який номер набирати в разі надзвичайної ситуації в Україні?",
    "expect": "112"
@@ -53,7 +53,108 @@
     "language": "en",
     "kind": "plain"
    }
-  ]
+  ],
+  "prompt_file": "config/AI-PROMPT.txt",
+  "plan_prompt_file": "config/AI-PLAN-PROMPT.txt",
+  "library_languages": [
+   {
+    "code": "uk",
+    "name": "Ukrainian",
+    "plan_label": "UKRAINIAN"
+   },
+   {
+    "code": "en",
+    "name": "English",
+    "plan_label": "ENGLISH"
+   }
+  ],
+  "answer_languages": [
+   {
+    "name": "Ukrainian",
+    "alphabet": "а-яіїєґё",
+    "letters": "іїєґ",
+    "words": [
+     "що",
+     "як",
+     "мені",
+     "можна",
+     "треба",
+     "дуже",
+     "який",
+     "яка",
+     "коли",
+     "тому",
+     "це",
+     "та",
+     "і",
+     "є",
+     "дитина",
+     "діти",
+     "робити"
+    ]
+   },
+   {
+    "name": "Russian",
+    "alphabet": "а-яіїєґё",
+    "letters": "ыэъё",
+    "words": [
+     "что",
+     "как",
+     "мне",
+     "можно",
+     "нужно",
+     "очень",
+     "какой",
+     "какая",
+     "когда",
+     "потому",
+     "это",
+     "и",
+     "или",
+     "делать",
+     "ребёнок",
+     "дети",
+     "если"
+    ]
+   },
+   {
+    "name": "English",
+    "alphabet": "a-z",
+    "letters": "",
+    "words": []
+   }
+  ],
+  "section_words": {
+   "high": [
+    "first aid",
+    "treatment",
+    "management",
+    "what to do",
+    "do not",
+    "home care",
+    "self.care",
+    "rewarming",
+    "when to (call|contact|see)",
+    "перша допомога",
+    "домедична",
+    "лікування",
+    "терапі",
+    "невідкладн",
+    "що робити",
+    "допомога"
+   ],
+   "mid": [
+    "symptom",
+    "signs",
+    "emergency",
+    "prevention",
+    "diagnosis",
+    "симптом",
+    "ознаки",
+    "профілактика",
+    "діагностика"
+   ]
+  }
  },
  "emergency_numbers": [
   {
@@ -835,7 +936,6 @@
   "shape": "config/map-area.geojson",
   "max_zoom": 15,
   "world_max_zoom": 6,
-  "search_release_repo": "IsacHassle/Ukrainian-emergency-kit",
   "center": [
    31.2,
    48.6
@@ -977,7 +1077,45 @@
     "city",
     "town"
    ],
-   "shelter": "shelter"
+   "shelter": "shelter",
+   "military_words": [
+    "військ",
+    "воен",
+    "збройн",
+    "міністерств[оа] оборони",
+    "нацгварді",
+    "нацiональна гвардi",
+    "казарм",
+    "armed forces",
+    "military",
+    "\\barmy\\b",
+    "служб[аи] безпеки",
+    "\\b(зсу|тцк|вч|сбу)\\b"
+   ],
+   "other_language": {
+    "letters": "ыэъё",
+    "street_types": [
+     "улица",
+     "ул",
+     "переулок",
+     "пер",
+     "проезд",
+     "площадь",
+     "шоссе",
+     "набережная"
+    ],
+    "endings": [
+     "ая",
+     "ый",
+     "ский",
+     "ское",
+     "ской"
+    ]
+   },
+   "unnamed_crossing": {
+    "name": "Пункт пропуску, ",
+    "en": "Border crossing, "
+   }
   },
   "zoom_by_type": {
    "address": 18.5,
@@ -1128,10 +1266,43 @@
     "near_km": 3,
     "why": "Ukraine closed its crossings on the Transnistrian stretch in February 2022"
    }
+  ],
+  "street_types": [
+   "вулиця",
+   "вул",
+   "провулок",
+   "пров",
+   "проспект",
+   "просп",
+   "бульвар",
+   "бул",
+   "площа",
+   "пл",
+   "шосе",
+   "набережна",
+   "наб",
+   "узвіз",
+   "тупик",
+   "проїзд",
+   "алея",
+   "майдан",
+   "лінія",
+   "тракт",
+   "улица",
+   "ул",
+   "переулок",
+   "пер",
+   "проезд",
+   "площадь",
+   "шоссе",
+   "набережная",
+   "strada",
+   "str",
+   "bulevardul",
+   "bd",
+   "aleea",
+   "șoseaua"
   ]
  },
- "_placeholders": [
-  "Values below are still Sweden's and belong to later tickets; they are marked here so nobody ships them.",
-  "ai.authorities, ai.example_source (07)"
- ]
+ "repo": "IsacHassle/Ukrainian-emergency-kit"
 }

@@ -2,10 +2,11 @@
 and the tiny Libraries (one Ukrainian, one English)."""
 import json
 import os
+import sys
 import unittest
 import urllib.request
 
-from servedkit import ServedKit
+from servedkit import REPO, ServedKit
 from standins import ANSWER
 
 
@@ -133,7 +134,8 @@ class LanguageTest(unittest.TestCase):
         finally:
             kit.stop()
         tail = system.split("EXCERPTS FOR THIS QUESTION", 1)[1]
-        self.assertIn("a Russian question gets a Russian answer", tail)
+        self.assertIn("a question in Russian gets an answer in Russian", tail)
+        self.assertIn("a question in English gets an answer in English", tail)
         self.assertIn("LATEST message", tail)
         self.assertIn("never mix languages", tail)
 
@@ -182,6 +184,17 @@ class NamingTheLanguageTest(unittest.TestCase):
 
     def test_english(self):
         self.check("I saw something in a field that looks like a mine. What do I do?", "English")
+
+
+class LanguageOfTest(unittest.TestCase):
+    """kit_search.language_of tells the languages in the country config apart (ai.answer_languages)."""
+
+    def test_a_text_with_no_letters_of_any_language_has_none(self):
+        sys.path.insert(0, os.path.join(REPO, "scripts"))
+        import kit_search
+        self.assertIsNone(kit_search.language_of("112 !!"))
+        self.assertEqual(kit_search.language_of("Що робити, коли немає світла?"), "Ukrainian")
+        self.assertEqual(kit_search.language_of("Что делать, если нет света?"), "Russian")
 
 
 class InstructionsTest(unittest.TestCase):

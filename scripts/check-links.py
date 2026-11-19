@@ -18,6 +18,7 @@ import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from kit_say import say  # noqa: E402
+import kit_country  # noqa: E402
 import kit_guides   # noqa: E402  (the guide list and the polite fetch, shared with the guide saver)
 
 KIT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -95,7 +96,7 @@ required = {
     "Ollama download": "https://ollama.com/download/Ollama.dmg",
     "AnythingLLM download": "https://cdn.anythingllm.com/latest/AnythingLLMDesktop-Silicon.dmg",
     "kiwix-tools": "https://download.kiwix.org/release/kiwix-tools/kiwix-tools_macos-arm64-3.8.2.tar.gz",
-    "Map search (GitHub release)": "https://github.com/IsacHassle/Ukrainian-emergency-kit/releases/latest/download/map-search.tar.gz",
+    "Map search (GitHub release)": f"https://github.com/{kit_country.COUNTRY['repo']}/releases/latest/download/map-search.tar.gz",
 }
 pm = re.search(r"PMTILES_VERSION=(\S+)", open(os.path.join(KIT, "scripts", "get-tools.sh")).read()).group(1)
 required["pmtiles"] = f"https://github.com/protomaps/go-pmtiles/releases/download/v{pm}/go-pmtiles-{pm}_Darwin_arm64.zip"

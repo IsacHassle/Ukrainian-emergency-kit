@@ -11,12 +11,14 @@
 # For tests: the same EK_ variables as install.sh and check.sh (EK_APPS, EK_ANYTHINGLLM, EK_OLLAMA, EK_NO_PAUSE).
 set -u
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=country.sh
+. "$KIT/scripts/country.sh"   # the country's facts (config/country.json)
 # shellcheck source=say.sh
 . "$KIT/scripts/say.sh"
 APPS="${EK_APPS:-/Applications}"
 ANYTHINGLLM_ADDR="${EK_ANYTHINGLLM:-localhost:3001}"
 OLLAMA_ADDR="${EK_OLLAMA:-127.0.0.1:11434}"
-CODE_URL="https://github.com/IsacHassle/Ukrainian-emergency-kit/archive/refs/heads/main.tar.gz"
+CODE_URL="https://github.com/$(country repo)/archive/refs/heads/main.tar.gz"
 step() { printf '\n\033[1m==> %s / %s\033[0m\n' "$1" "$2"; }
 
 # The whole script is one function, read before it runs: step 1 replaces the files of the kit, this one included.

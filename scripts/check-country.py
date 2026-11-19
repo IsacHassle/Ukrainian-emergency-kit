@@ -113,6 +113,43 @@ def main():
         if isinstance(lib, dict) and lib.get("kind") not in ("encyclopedia", "plain"):
             bad(w + ".kind", "must be encyclopedia or plain")
 
+    # The AI's instruction files, the languages of the Libraries and the languages a question may come in.
+    for k in ("prompt_file", "plan_prompt_file"):
+        f = get("ai", ai, k, str)
+        if f and not os.path.isfile(f if os.path.isabs(f) else os.path.join(ROOT, f)):
+            bad(f"ai.{k}", f"{f} is not a file")
+    plan_text = ""
+    f = ai.get("plan_prompt_file")
+    if isinstance(f, str) and os.path.isfile(f if os.path.isabs(f) else os.path.join(ROOT, f)):
+        with open(f if os.path.isabs(f) else os.path.join(ROOT, f), encoding="utf-8") as fh:
+            plan_text = fh.read()
+    if plan_text and "SEARCH:" not in plan_text:
+        bad("ai.plan_prompt_file", "must ask for a line starting SEARCH:")
+    codes = set()
+    for i, l in enumerate(get("ai", ai, "library_languages", list) or []):
+        w = f"ai.library_languages[{i}]"
+        for k in ("code", "name", "plan_label"):
+            get(w, l, k, str)
+        if isinstance(l, dict) and isinstance(l.get("code"), str):
+            codes.add(l["code"])
+        if isinstance(l, dict) and isinstance(l.get("plan_label"), str) and plan_text and l["plan_label"] + ":" not in plan_text:
+            bad(w + ".plan_label", f"{l['plan_label']}: is not a line the plan prompt asks for")
+    for i, lib in enumerate(libs):
+        if isinstance(lib, dict) and lib.get("language") not in codes:
+            bad(f"ai.libraries[{i}].language", "is not one of ai.library_languages")
+    for i, l in enumerate(get("ai", ai, "answer_languages", list) or []):
+        w = f"ai.answer_languages[{i}]"
+        get(w, l, "name", str)
+        get(w, l, "alphabet", str)
+        if not isinstance(l, dict) or not isinstance(l.get("letters"), str) or not isinstance(l.get("words"), list):
+            bad(w, "needs letters (a string, may be empty) and words (a list)")
+    sw = get("ai", ai, "section_words", dict) or {}
+    for k in ("high", "mid"):
+        get("ai.section_words", sw, k, list)
+    get("", c, "repo", str)
+    if isinstance(c.get("repo"), str) and not re.fullmatch(r"[\w.-]+/[\w.-]+", c["repo"]):
+        bad("repo", "must look like owner/name")
+
     # Emergency numbers.
     nums = get("", c, "emergency_numbers", list) or []
     for i, n in enumerate(nums):
@@ -242,7 +279,6 @@ def main():
     if regions and not any(isinstance(r, dict) and r.get("detail") == "full" for r in regions):
         bad("map.regions", "at least one region must be full detail")
     get("map", m, "pmtiles", str)
-    get("map", m, "search_release_repo", str)
     check_shape(get("map", m, "shape", str))
     for k in ("max_zoom", "world_max_zoom"):
         if not isinstance(m.get(k), int) or isinstance(m.get(k), bool) or not 0 <= m[k] <= 22:
@@ -264,6 +300,22 @@ def main():
         get("map.labels", lab, k, str)
     for k in ("base_places", "area_types", "town_types"):
         get("map.labels", lab, k, list)
+    # Words that mark a name as military, the other language whose names are left out, and the street types the search strips.
+    for where, v in (("map.labels.military_words", lab.get("military_words")), ("map.street_types", m.get("street_types"))):
+        if not isinstance(v, list) or not all(isinstance(x, str) for x in v):
+            bad(where, "must be a list of words (may be empty)")
+    for w in lab.get("military_words") or []:
+        try:
+            re.compile(w)
+        except re.error as e:
+            bad("map.labels.military_words", f"{w!r} is not a valid pattern ({e})")
+    other = lab.get("other_language")
+    if not isinstance(other, dict) or not isinstance(other.get("letters"), str) \
+            or not all(isinstance(other.get(k), list) for k in ("street_types", "endings")):
+        bad("map.labels.other_language", "needs letters (a string), street_types and endings (lists), all may be empty")
+    crossing = get("map.labels", lab, "unnamed_crossing", dict) or {}
+    for k in ("name", "en"):
+        get("map.labels.unnamed_crossing", crossing, k, str)
     for k in ("zoom_by_type", "search_priority"):
         get("map", m, k, dict)
     for i, n in enumerate(get("map", m, "nearest", list) or []):

@@ -69,8 +69,9 @@
   }
 
   // Street types, lower case without the dot. They sit first ("вулиця Хрещатик") or last ("Вишнева вулиця").
-  const TYPES = new Set(('вулиця вул провулок пров проспект просп бульвар бул площа пл шосе набережна наб узвіз тупик проїзд алея ' +
-    'майдан лінія тракт улица ул переулок пер проезд площадь шоссе набережная strada str bulevardul bd aleea șoseaua').split(' '));
+  // The country's own list (config map.street_types), given with setStreetTypes before anything is searched.
+  const TYPES = new Set();
+  function setStreetTypes(list) { TYPES.clear(); list.forEach(x => TYPES.add(x)); }
   function stripType(s) {
     const w = s.trim().split(/\s+/);
     const isType = x => TYPES.has(x.toLowerCase().replace(/\.$/, ''));
@@ -241,6 +242,6 @@
     return list;
   }
 
-  return { translit, translitRu, norm, stripType, letterOf, parseQuery, TYPES, displayName, displayArea,
+  return { translit, translitRu, norm, stripType, setStreetTypes, letterOf, parseQuery, TYPES, displayName, displayArea,
            prepare, searchItems, findAddress, canonicalArea, houseKey, km };
 });

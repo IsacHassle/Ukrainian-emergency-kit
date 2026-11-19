@@ -14,7 +14,7 @@ What goes in (the matching rules are in scripts/kit_translit.py and web/map/sear
   - full-detail regions: every named place, service and landmark, every street, every address, inside the map shape
   - border-strip regions: cities and towns inside the map shape
   - border crossings (barrier=border_control) from every region, grouped by site, only those at the land border
-    between Ukraine or Moldova and a neighbouring region
+    between a full-detail region (map.regions) and another region
 Names: what is shown is Ukrainian (name:uk, else name when it is not Russian) or the local name; the English name
 is name:en, or the page transliterates the Ukrainian one. Russian and older names (name:ru, old_name, ...) are
 only stored as search keys. A way or place whose only name is Russian is left out (counted in the log).
@@ -47,6 +47,7 @@ LABELS = MAP["labels"]
 PLACE = LABELS["place"]                  # place=* value -> kind
 BASE_PLACES = set(LABELS["base_places"])  # kinds in places.json (always loaded)
 STREET, CROSSING, SHELTER = LABELS["street"], LABELS["border_crossing"], LABELS["shelter"]
+UNNAMED_CROSSING = LABELS["unnamed_crossing"]   # how a crossing with no name is called (after it: the nearest place)
 pair = lambda table: {tuple(k.split("=", 1)): v for k, v in table.items()}
 SERVICE = pair(LABELS["service"])        # (key, value) -> kind; always loaded
 LANDMARK = pair(LABELS["landmark"])      # named places that help find your way; loaded per letter
@@ -56,7 +57,7 @@ NAME_TAGS = MAP["name_tags"]             # every one is a search key; the first 
 ROADS = {"motorway", "trunk", "primary", "secondary", "tertiary", "unclassified", "residential",
          "living_street", "pedestrian", "road"}
 GROUP_KM = 2.0        # border control objects closer than this are one crossing
-NEAR_BORDER_KM = 5.0  # a crossing must be this close to the border between Ukraine/Moldova and a neighbour
+NEAR_BORDER_KM = 5.0  # a crossing must be this close to the border between a full-detail region and another one
 TAGS = sorted(set(NAME_TAGS) | {"name", "name:uk", "name:en"}) + [
     "place", "highway", "amenity", "shop", "railway", "public_transport", "leisure", "natural", "tourism",
     "aeroway", "barrier", "addr:street", "addr:place", "addr:housenumber", "addr:city",
@@ -77,10 +78,10 @@ SHELTER_TAGS = {
 MILITARY_KEYS = ("military",)
 MILITARY_VALUE = {("landuse", "military"), ("building", "military"), ("office", "military"), ("access", "military"),
                   ("operator:type", "military")}
-# Words that mark a name or an operator as military (Ukrainian, Russian, English). Short ones must be whole words.
-MILITARY_WORDS = re.compile(
-    r"військ|воен|збройн|міністерств[оа] оборони|нацгварді|нацiональна гвардi|казарм|armed forces|military|\barmy\b"
-    r"|служб[аи] безпеки|\b(зсу|тцк|вч|сбу)\b", re.I)
+# Words that mark a name or an operator as military, in the languages the country's names come in (the config,
+# map.labels.military_words, patterns: short words are written as whole words, \\b...\\b).
+NEVER = "(?!)"   # a pattern that matches nothing, for a country with no words in a list
+MILITARY_WORDS = re.compile("|".join(LABELS["military_words"]) or NEVER, re.I)
 NAME_AND_OPERATOR = ("name", "name:uk", "name:en", "name:ru", "operator", "official_name", "short_name")
 
 
@@ -127,11 +128,13 @@ def service_kind(tags):
         return None
     return kind
 
-# What marks a name as Russian: letters Ukrainian does not have, street types spelled the Russian way, and
-# Russian adjective endings (Ukrainian has -а, -ий, -ська, -ське).
-RU_LETTERS = re.compile("[ыэъёЫЭЪЁ]")
-RU_TYPES = {"улица", "ул", "переулок", "пер", "проезд", "площадь", "шоссе", "набережная"}
-RU_ENDINGS = ("ая", "ый", "ский", "ское", "ской")
+# What marks a name as written in the other language, the one the country does not want shown (config,
+# map.labels.other_language; for Ukraine it is Russian): letters the country's language does not have, street
+# types spelled the other language's way, and its adjective endings.
+OTHER = LABELS["other_language"]
+RU_LETTERS = re.compile("[%s]" % (OTHER["letters"] + OTHER["letters"].upper()) if OTHER["letters"] else NEVER)
+RU_TYPES = set(OTHER["street_types"])
+RU_ENDINGS = tuple(OTHER["endings"])
 
 
 def looks_russian(s, endings=False):
@@ -511,7 +514,7 @@ def build(osm_dir, poly_dir, work):
                 parts.append(p)
         return ", ".join(parts)
 
-    # Border crossings: one entry per site, only where Ukraine or Moldova meets a neighbouring region.
+    # Border crossings: one entry per site, only where a full-detail region meets another region.
     sites, kept = group_crossings(crossings), 0
     for lon, lat, objs in sites:
         if not shape.contains(lon, lat) or not at_land_border(lon, lat, outlines, full):
@@ -541,7 +544,7 @@ def build(osm_dir, poly_dir, work):
             if en.strip().lower() == T.translit(shown).strip().lower():
                 en = ""
         else:   # unnamed: named after the nearest place
-            shown, en = "Пункт пропуску, " + near_place, "Border crossing, " + T.translit(near_place)
+            shown, en = UNNAMED_CROSSING["name"] + near_place, UNNAMED_CROSSING["en"] + T.translit(near_place)
         keys = "|".join(v for v, _ in others.most_common(6) if T.norm(v) != T.norm(shown))
         base.append([shown, CROSSING, round(lon, 5), round(lat, 5), keys, en])
         kept += 1

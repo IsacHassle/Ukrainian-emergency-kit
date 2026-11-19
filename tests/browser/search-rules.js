@@ -3,6 +3,7 @@
 const path = require('path');
 const S = require(path.join(__dirname, '..', '..', 'web', 'map', 'search.js'));
 const cases = require(path.join(__dirname, '..', 'kit', 'search-cases.json'));
+S.setStreetTypes(require(path.join(__dirname, '..', '..', 'config', 'country.json')).map.street_types);   // as the map page does
 
 const same = (got, want, what) => {
   if (JSON.stringify(got) !== JSON.stringify(want)) throw new Error(what + ': got ' + JSON.stringify(got) + ', want ' + JSON.stringify(want));
