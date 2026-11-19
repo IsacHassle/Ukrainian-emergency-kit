@@ -1,0 +1,11 @@
+{
+  "name": "emergency-kit-tests",
+  "private": true,
+  "description": "Test tools only (headless Chrome driver). The kit itself needs no Node.",
+  "scripts": {
+    "test": "python3 -m unittest discover -s tests -v"
+  },
+  "devDependencies": {
+    "puppeteer-core": "24.2.0"
+  }
+}

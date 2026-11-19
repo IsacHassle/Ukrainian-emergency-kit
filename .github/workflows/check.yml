@@ -18,3 +18,19 @@ jobs:
           python3 -c "import json; json.load(open('config/document-names.json'))"
           grep -q '^https://download.kiwix.org/zim/' config/libraries.txt
           grep -q '^https://' config/swedish-pages.txt
+  served-kit:
+    # The harness: the web server against the small test kit, with stand-ins for the AI and the Library
+    # server, driven over HTTP and in headless Chrome (tests/). Neither Ollama nor AnythingLLM is needed.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Test tools
+        run: npm ci
+      - name: Served-kit harness
+        run: EK_REQUIRE_BROWSER=1 EK_CHROME=$(which google-chrome) python3 -m unittest discover -s tests -v
