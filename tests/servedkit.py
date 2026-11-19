@@ -9,6 +9,9 @@ the web server is told (EK_* variables) to talk to the stand-ins in tests/standi
 ServedKit(country=facts) runs the kit with a different country config: `facts` is a function that takes the
 repo's country config (a dict) and returns the one to use. The stand-in AI then has exactly that config's
 models and Book index workspace, so a request with any other name fails.
+
+ServedKit(peer="192.168.1.50") makes every request look like it comes from that address, as a Visitor device
+on the Wi-Fi does (tests/peer_launcher.py); the default is the Kit Mac itself.
 """
 import json
 import os
@@ -35,7 +38,8 @@ def free_port():
 
 
 class ServedKit:
-    def __init__(self, ai_delay=0.0, country=None):
+    def __init__(self, ai_delay=0.0, country=None, peer=None):
+        self.peer = peer
         self.country = None
         with open(os.path.join(REPO, "config", "country.json"), encoding="utf-8") as f:
             facts = json.load(f)
@@ -91,8 +95,13 @@ class ServedKit:
                        stdout=subprocess.DEVNULL)
         for attempt in range(5):
             self.port = free_port()
-            self._proc = subprocess.Popen([sys.executable, os.path.join(REPO, "scripts", "serve-web.py"), str(self.port)],
-                                          env=self.env(), stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+            env = self.env()
+            script = os.path.join(REPO, "scripts", "serve-web.py")
+            if self.peer:
+                env["EK_TEST_PEER"] = self.peer
+                script = os.path.join(TESTS, "peer_launcher.py")
+            self._proc = subprocess.Popen([sys.executable, script, str(self.port)],
+                                          env=env, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
             self.url = "http://127.0.0.1:%d" % self.port
             if self._wait_ready():
                 return self
