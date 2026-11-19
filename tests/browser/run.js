@@ -23,9 +23,9 @@ const ok = name => console.log('ok - ' + name);
     ok('start page loads');
 
     await page.goto(url + '/ai/', { waitUntil: 'load' });
-    await page.waitForFunction(() => document.querySelector('#status').textContent.includes('igång'));
+    await page.waitForFunction(() => document.querySelectorAll('#status .lamp:not(.off):not(.warn)').length === 3);
     const lamps = await page.$eval('#status', el => el.textContent);
-    if (lamps.includes('AI-motor: av') || lamps.includes('Biblioteken: av')) throw new Error('lamps: ' + lamps);
+    if (lamps.includes('вимкнено')) throw new Error('lamps: ' + lamps);
     ok('AI page shows the engine, the Books and the Libraries running');
 
     await page.type('#q', 'How do I stop bleeding?');
@@ -47,8 +47,8 @@ const ok = name => console.log('ok - ' + name);
       await page.goto(url + '/ai/', { waitUntil: 'load' });
       const modes = await page.$$eval('input[name=mode]', els => els.map(e => e.value));
       if (modes.join() !== ['books'].concat(expect.models).join()) throw new Error('modes: ' + modes);
-      const number = await page.$eval('[data-number]', e => e.textContent);
-      if (number !== expect.number) throw new Error('number: ' + number);
+      const danger = await page.$eval('#danger', e => e.textContent);
+      if (!danger.includes(expect.number)) throw new Error('danger line: ' + danger);
       ok('the AI page offers the config\'s models and its emergency number');
 
       await page.goto(url + '/checklista/', { waitUntil: 'load' });

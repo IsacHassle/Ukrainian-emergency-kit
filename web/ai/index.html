@@ -5,7 +5,7 @@
 <script src="/lib/country.js"></script>
 <script src="/lib/lang.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fråga AI · {kit}</title>
+<title>Запитати ШІ · {kit}</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icon-180.png">
 <meta name="apple-mobile-web-app-title" content="" data-kit-attr="content={kit}">
@@ -68,16 +68,16 @@
 <body>
 <main class="page">
   <a class="back" href="../">← <span data-kit></span></a>
-  <h1>Fråga AI</h1>
-  <p class="meta">Körs på den här datorn, utan internet. Livsfara? Ring <span data-number></span> först, och använd Akut på startsidan.</p>
+  <h1 data-t="ai.title"></h1>
+  <p class="meta"><span data-t="ai.intro"></span> <span id="danger"></span></p>
 
-  <div id="status" class="lamps">Kontrollerar AI:n…</div>
+  <div id="status" class="lamps"><span data-t="ai.status.checking"></span></div>
   <div id="fix"></div>
 
-  <div class="modes" role="radiogroup" aria-label="Välj läge">
-    <label class="mode" data-hint="Läser krislådans böcker och de medicinska biblioteken (WikiMed, MedlinePlus) och visar källorna. 10 till 40 sekunder."><input type="radio" name="mode" value="books">Ur böckerna</label>
-    <label class="mode" data-hint="Samma AI utan böckerna. Snabbare, och kan titta på foton."><input type="radio" name="mode" data-model="main" value="">Snabbt svar</label>
-    <label class="mode" data-hint="Mindre AI som drar mindre ström. Enklare svar."><input type="radio" name="mode" data-model="small" value="">Spara batteri</label>
+  <div class="modes" role="radiogroup" data-t-attr="aria-label:ai.modes.label">
+    <label class="mode" data-hint="ai.mode.books.hint"><input type="radio" name="mode" value="books"><span data-t="ai.mode.books"></span></label>
+    <label class="mode" data-hint="ai.mode.main.hint"><input type="radio" name="mode" data-model="main" value=""><span data-t="ai.mode.main"></span></label>
+    <label class="mode" data-hint="ai.mode.small.hint"><input type="radio" name="mode" data-model="small" value=""><span data-t="ai.mode.small"></span></label>
   </div>
   <p id="modehint"></p>
 
@@ -85,51 +85,54 @@
 
   <form id="ask">
     <div id="thumbs"></div>
-    <textarea id="q" rows="3" placeholder="Beskriv läget: vem (ålder), vad hände, när, vad du ser och vad du har hemma." aria-label="Din fråga"></textarea>
+    <textarea id="q" rows="3" data-t-attr="placeholder:ai.ask.placeholder;aria-label:ai.ask.label"></textarea>
     <div class="row">
-      <label class="button plain" title="Bifoga foto">Foto<input id="photo" type="file" accept="image/*" multiple></label>
-      <button type="button" class="plain" id="new">Ny<span class="long"> konversation</span></button>
+      <label class="button plain" data-t-attr="title:ai.photo.attach"><span data-t="ai.photo.button"></span><input id="photo" type="file" accept="image/*" multiple></label>
+      <button type="button" class="plain" id="new"><span data-t="ai.new.short"></span><span class="long" data-t="ai.new.long"></span></button>
       <span class="grow"></span>
-      <button type="submit" id="send">Skicka</button>
+      <button type="submit" id="send" data-t="ai.send"></button>
     </div>
   </form>
 
   <section>
-    <details class="more"><summary>Exempel på frågor</summary><div class="inner">
+    <details class="more"><summary data-t="ai.examples.title"></summary><div class="inner">
       <div id="examples">
-        <button type="button">Någon har bränt handen på spisen. Vad gör jag nu?</button>
-        <button type="button">Hur renar jag vatten om kranvattnet inte går att dricka?</button>
-        <button type="button">Ett barn på 4 år har haft 39,5 graders feber i två dagar. När måste vi söka vård?</button>
-        <button type="button">Elen har varit borta i ett dygn och det är minus 10 ute. Hur håller vi lägenheten varm på ett säkert sätt?</button>
-        <button type="button">Vad betyder signalen Viktigt meddelande till allmänheten och vad ska jag göra när jag hör den?</button>
-        <button type="button">Vad behöver vi hemma för att klara en vecka utan el och vatten? Vi är två vuxna och ett barn.</button>
-        <button type="button">Hur lagar jag mat säkert utan el?</button>
-        <button type="button" data-photo="1">Vad är det här? (bifoga ett foto av ett sår, utslag, en växt eller en trasig sak)</button>
+        <button type="button" data-t="ai.example.tourniquet"></button>
+        <button type="button" data-t="ai.example.mine"></button>
+        <button type="button" data-t="ai.example.generator"></button>
+        <button type="button" data-t="ai.example.alert"></button>
+        <button type="button" data-t="ai.example.burn"></button>
+        <button type="button" data-t="ai.example.water"></button>
+        <button type="button" data-t="ai.example.cold"></button>
+        <button type="button" data-photo="1" data-t="ai.example.photo"></button>
       </div>
     </div></details>
-    <details class="more guide"><summary>Så använder du AI:n</summary><div class="inner">
+    <details class="more guide"><summary data-t="ai.guide.title"></summary><div class="inner">
       <ol>
-        <li><b>Välj läge.</b> <i>Ur böckerna</i> för det mesta: svaret bygger på krislådans böcker och de medicinska biblioteken, och du ser källorna under svaret. <i>Snabbt svar</i> när det är bråttom eller för foton. <i>Spara batteri</i> när datorn går på batteri.</li>
-        <li><b>Skriv som när du ringer 1177.</b> Vem (ålder, vikt för barn), vad som hände, när, vad du ser och vad du har hemma.
-          <div class="example">Exempel: Min pappa är 72 år. Han föll i trappan för 20 minuter sedan och slog i huvudet. Han blöder lite från pannan och verkar förvirrad. Vi har plåster, kompresser och Alvedon. Vad ska vi göra?</div></li>
-        <li><b>Fortsätt fråga.</b> AI:n minns samtalet. Tryck <i>Ny konversation</i> när du byter ämne.</li>
-        <li><b>Kontrollera det viktiga.</b> AI kan ha fel. Öppna källan under svaret, särskilt för doser. Ät aldrig en svamp eller växt för att AI:n säger att den är ätlig.</li>
-        <li><b>Foto.</b> Tryck <i>Foto</i> (byter till Snabbt svar). Bra ljus, nära, en sak per bild.</li>
-        <li><b>Prata i stället för att skriva.</b> Datorns diktering (mikrofontangenten, eller Fn två gånger), eller mikrofonen på mobilens tangentbord.</li>
-        <li><b>Från mobilen.</b> Samma wifi som datorn, öppna <b id="lanurl">adressen som Terminal-fönstret visar</b>.</li>
-        <li><b>Om det inte fungerar.</b> Raden högst upp visar vad som är igång. Öppna appen Ollama för AI-motorn eller AnythingLLM för böckerna. Hjälper inget: dubbelklicka <i>Starta Krislåda.command</i> igen.</li>
+        <li><b data-t="ai.guide.mode.head"></b> <span data-t="ai.guide.mode.text"></span></li>
+        <li><b data-t="ai.guide.write.head"></b> <span data-t="ai.guide.write.text"></span>
+          <div class="example" data-t="ai.guide.write.example"></div></li>
+        <li><b data-t="ai.guide.follow.head"></b> <span data-t="ai.guide.follow.text"></span></li>
+        <li><b data-t="ai.guide.check.head"></b> <span data-t="ai.guide.check.text"></span></li>
+        <li><b data-t="ai.guide.language.head"></b> <span data-t="ai.guide.language.text"></span></li>
+        <li><b data-t="ai.guide.photo.head"></b> <span data-t="ai.guide.photo.text"></span></li>
+        <li><b data-t="ai.guide.voice.head"></b> <span data-t="ai.guide.voice.text"></span></li>
+        <li><b data-t="ai.guide.phone.head"></b> <span data-t="ai.guide.phone.text"></span> <b id="lanurl"></b></li>
+        <li><b data-t="ai.guide.broken.head"></b> <span data-t="ai.guide.broken.text"></span></li>
+        <li><b data-t="ai.guide.private.head"></b> <span data-t="ai.guide.private.text"></span></li>
       </ol>
-      <h3>Andra sätt på datorn</h3>
+      <h3 data-t="ai.other.title"></h3>
       <table>
-        <tr><td>AnythingLLM, arbetsytan <span data-country="ai.workspace_name"></span></td><td>Svarar ur böckerna, men inte ur WikiMed och MedlinePlus. Du kan dra in egna filer där.</td></tr>
-        <tr><td>Ollama, modellen <span data-country="ai.models.main"></span></td><td>Samma som Snabbt svar. Dra in ett foto för att fråga om det.</td></tr>
-        <tr><td>Terminal</td><td><code>ollama run <span data-country="ai.models.main"></span></code>, avsluta med <code>/bye</code>.</td></tr>
+        <tr><td><span data-t="ai.other.anything"></span> <span data-country="ai.workspace_name"></span></td><td data-t="ai.other.anything.text"></td></tr>
+        <tr><td><span data-t="ai.other.ollama"></span> <span data-country="ai.models.main"></span></td><td data-t="ai.other.ollama.text"></td></tr>
+        <tr><td data-t="ai.other.terminal"></td><td><code>ollama run <span data-country="ai.models.main"></span></code>, <span data-t="ai.other.terminal.text"></span> <code>/bye</code></td></tr>
       </table>
     </div></details>
   </section>
 
-  <footer class="kit">AI-modeller: Gemma 4 26B och E4B. Sökning: AnythingLLM och bge-m3 i böckerna, Kiwix i WikiMed, MDWiki och MedlinePlus.</footer>
+  <footer class="kit" data-t="ai.footer"></footer>
 </main>
+
 
 <script>
 (() => {
@@ -138,7 +141,12 @@
   // The two AI models are named in the country config; a mode is 'books' or the name of its model.
   const MAIN = COUNTRY.ai.models.main, SMALL = COUNTRY.ai.models.small;
   document.querySelectorAll('input[name=mode][data-model]').forEach(i => { i.value = COUNTRY.ai.models[i.dataset.model]; });
-  const LABEL = { 'books': 'Ur böckerna', [MAIN]: 'Snabbt svar', [SMALL]: 'Spara batteri' };
+  const t = (k, p) => KIT.t(k, p);
+  // The three modes' names, in the page language (the glossary: From sources, Quick answer, Save battery).
+  const label = m => t(m === 'books' ? 'ai.mode.books' : m === MAIN ? 'ai.mode.main' : 'ai.mode.small');
+  // The title follows the page language; the kit's name is filled in by country.js.
+  const setTitle = () => { document.documentElement.dataset.title = t('ai.title') + ' · {kit}'; };
+  setTitle();
   let KIWIX = `http://${location.hostname}:8090`;   // the libraries (always http); status gives the port in use
   let status = null, mode = null, history = [], photos = [], busy = null;
 
@@ -149,34 +157,47 @@
     if (status.library_port) KIWIX = `http://${location.hostname}:${status.library_port}`;
     const avail = { 'books': status.models.includes(MAIN) && (status.books || status.libraries), [MAIN]: status.models.includes(MAIN), [SMALL]: status.models.includes(SMALL) };
     document.querySelectorAll('input[name=mode]').forEach(i => { i.disabled = !avail[i.value]; });
-    const s = [], fix = [];
-    s.push(status.ollama ? '<span class="lamp">AI-motor: igång</span>' : '<span class="lamp off">AI-motor: av</span>');
-    s.push(status.books ? '<span class="lamp">Böckerna: igång</span>' : '<span class="lamp off">Böckerna: av</span>');
-    s.push(status.libraries ? '<span class="lamp">Biblioteken: igång</span>' : '<span class="lamp off">Biblioteken: av</span>');
-    if (!status.ollama) fix.push('Öppna appen Ollama och vänta tio sekunder.');
-    if (!status.books) fix.push('För svar ur böckerna: öppna appen AnythingLLM.');
-    if (!status.libraries) fix.push('Biblioteken är av: dubbelklicka Starta Krislåda.command.');
-    const b = status.battery;
-    if (b && b.on_battery) {
-      s.push(`<span class="lamp warn">Batteri: ${b.percent} %</span>`);
-      if (b.percent < 40 && mode !== SMALL) fix.push('Lite batteri: välj Spara batteri, så räcker strömmen längre.');
-    }
-    $('#status').innerHTML = s.join('');
-    $('#fix').textContent = fix.join(' ');
-    if (status.name || status.lan) $('#lanurl').textContent = [status.name, status.lan].filter(Boolean).map(h => `http://${h}:${status.port}/ai/`).join(' eller ');
+    renderStatus();
+    if (status.name || status.lan) $('#lanurl').textContent = [status.name, status.lan].filter(Boolean).map(h => `http://${h}:${status.port}/ai/`).join(t('ai.or'));
     if (!mode || !avail[mode]) {
       const first = ['books', MAIN, SMALL].find(m => avail[m]);
       if (first) setMode(first, true);
     }
   }
 
+  // The lights and the lines on what to fix, from the last status (drawn again when the language changes).
+  function renderStatus() {
+    if (!status) return;
+    const lamp = (on, key) => `<span class="lamp${on ? '' : ' off'}">${esc(t(key))}: ${esc(t(on ? 'ai.status.on' : 'ai.status.off'))}</span>`;
+    const s = [lamp(status.ollama, 'ai.status.engine'), lamp(status.books, 'ai.status.books'), lamp(status.libraries, 'ai.status.libraries')], fix = [];
+    if (!status.ollama) fix.push(t('ai.fix.engine'));
+    if (!status.books) fix.push(t('ai.fix.books'));
+    if (!status.libraries) fix.push(t('ai.fix.libraries'));
+    const b = status.battery;
+    if (b && b.on_battery) {
+      s.push(`<span class="lamp warn">${esc(t('ai.status.battery', { percent: b.percent }))}</span>`);
+      if (b.percent < 40 && mode !== SMALL) fix.push(t('ai.fix.battery'));
+    }
+    $('#status').innerHTML = s.join('');
+    $('#fix').textContent = fix.join(' ');
+  }
+  function renderHint() {
+    const input = document.querySelector('input[name=mode]:checked');
+    $('#modehint').textContent = input ? t(input.closest('label').dataset.hint) : '';
+  }
+  const renderSend = () => { sendBtn.textContent = t(busy ? 'ai.stop' : 'ai.send'); };
+  // The line about danger names the country's main emergency number.
+  const renderDanger = () => { $('#danger').textContent = t('ai.danger', { number: COUNTRY.primaryNumber() }); };
+  KIT.onChange(() => { setTitle(); renderStatus(); renderHint(); renderSend(); renderDanger(); });
+  renderDanger();
+
   function setMode(m, quiet) {
     const input = document.querySelector(`input[name=mode][value="${m}"]`);
     if (!input || input.disabled) return false;
     input.checked = true;
-    $('#modehint').textContent = input.closest('label').dataset.hint || '';
+    renderHint();
     if (mode && mode !== m && log.children.length && !quiet) {
-      add('div', 'sep', 'Nytt läge: ' + LABEL[m] + '. AI:n börjar om utan det tidigare samtalet.');
+      add('div', 'sep', t('ai.mode.changed', { mode: label(m) }));
     }
     if (mode !== m) history = [];
     mode = m;
@@ -238,18 +259,18 @@
     thumbs.innerHTML = '';
     photos.forEach((p, i) => {
       const d = document.createElement('div');
-      d.innerHTML = `<img src="${p}" alt="Bifogat foto"><button type="button" aria-label="Ta bort foto">✕</button>`;
+      d.innerHTML = `<img src="${p}" alt="${esc(t('ai.photo.attached'))}"><button type="button" aria-label="${esc(t('ai.photo.remove'))}">✕</button>`;
       d.querySelector('button').onclick = () => { photos.splice(i, 1); drawThumbs(); };
       thumbs.appendChild(d);
     });
   }
   $('#photo').addEventListener('change', async e => {
     for (const f of [...e.target.files].slice(0, 4 - photos.length)) {
-      try { photos.push(await shrink(f)); } catch { alertLine('Kunde inte läsa bilden. Prova att ta en ny.'); }
+      try { photos.push(await shrink(f)); } catch { alertLine(t('ai.photo.unreadable')); }
     }
     e.target.value = '';
     if (photos.length && mode === 'books') {
-      if (setMode(MAIN, true) || setMode(SMALL, true)) add('div', 'sep', 'Foton fungerar i ' + LABEL[mode] + ', så jag bytte läge.');
+      if (setMode(MAIN, true) || setMode(SMALL, true)) add('div', 'sep', t('ai.photo.switched', { mode: label(mode) }));
     }
     drawThumbs();
   });
@@ -271,24 +292,24 @@
 
   async function ask(text) {
     if (busy || (!text && !photos.length)) return;
-    if (!mode) { alertLine('Ingen AI är igång. Se raden högst upp.'); return; }
-    text = text || 'Vad ser du på bilden, och vad ska jag göra?';
+    if (!mode) { alertLine(t('ai.none')); return; }
+    text = text || t('ai.photo.default');
     const me = add('div', 'msg me', text);
     const imgs = photos.map(p => p.split(',')[1]);
-    photos.forEach(p => { const im = document.createElement('img'); im.src = p; im.alt = 'Bifogat foto'; me.appendChild(im); });
+    photos.forEach(p => { const im = document.createElement('img'); im.src = p; im.alt = t('ai.photo.attached'); me.appendChild(im); });
     photos = []; drawThumbs(); q.value = '';
 
     const box = add('div', 'msg ai');
     const t0 = Date.now(), used = mode;
-    let raw = '', sources = [], failed = null, shown = false, doing = used === 'books' ? 'Söker i böckerna' : 'Tänker';
-    box.innerHTML = `<div class="wait">${doing}… 0 s</div>`;
-    const tick = setInterval(() => { if (!shown) box.querySelector('.wait').textContent = `${doing}… ${Math.round((Date.now() - t0) / 1000)} s`; }, 1000);
+    let raw = '', sources = [], failed = null, shown = false, doing = used === 'books' ? t('ai.doing.searching') : t('ai.doing.thinking');
+    box.innerHTML = `<div class="wait">${esc(doing)}… ${esc(t('ai.seconds', { n: 0 }))}</div>`;
+    const tick = setInterval(() => { if (!shown) box.querySelector('.wait').textContent = `${doing}… ${t('ai.seconds', { n: Math.round((Date.now() - t0) / 1000) })}`; }, 1000);
     const paint = () => { const v = visible(raw); if (v) { shown = true; box.innerHTML = md(v); } };
 
     const ctrl = new AbortController();
-    busy = ctrl; sendBtn.textContent = 'Stopp'; sendBtn.className = 'stop';
+    busy = ctrl; sendBtn.className = 'stop'; renderSend();
     try {
-      // "Ur böckerna" first sends the sources it found (one line), then the answer, like the other modes.
+      // "From sources" first sends the sources it found (one line), then the answer, like the other modes.
       history.push({ role: 'user', content: text, ...(imgs.length ? { images: imgs } : {}) });
       const books = used === 'books';
       const r = await fetch(books ? '/ai-api/books-chat' : '/ai-api/chat', { method: 'POST', signal: ctrl.signal,
@@ -296,7 +317,7 @@
       if (!r.ok) { history.pop(); throw new Error('ollama'); }
       await readStream(r, line => {
         let d; try { d = JSON.parse(line); } catch { return; }
-        if (d.sources) { sources = d.sources; doing = sources.length ? `Läser ${sources.length} källor` : 'Tänker'; }
+        if (d.sources) { sources = d.sources; doing = sources.length ? t('ai.doing.reading', { count: sources.length }) : t('ai.doing.thinking'); }
         if (d.error) failed = d.error;
         if (d.message && d.message.content) { raw += d.message.content; paint(); }
       });
@@ -304,24 +325,24 @@
       else history.pop();
     } catch (e) {
       if (e.name === 'AbortError') failed = 'stopped';
-      else failed = 'AI-motorn svarar inte. Öppna appen Ollama, vänta tio sekunder och försök igen.';
+      else failed = t('ai.error.engine');
     } finally {
       clearInterval(tick);
-      busy = null; sendBtn.textContent = 'Skicka'; sendBtn.className = '';
+      busy = null; sendBtn.className = ''; renderSend();
     }
 
     if (!visible(raw)) box.innerHTML = '';
-    if (failed === 'stopped') box.insertAdjacentHTML('beforeend', '<div class="meta">Stoppad.</div>');
+    if (failed === 'stopped') box.insertAdjacentHTML('beforeend', `<div class="meta">${esc(t('ai.stopped'))}</div>`);
     else if (failed) box.insertAdjacentHTML('beforeend', `<div class="err">${esc(String(failed))}</div>`);
     const secs = Math.round((Date.now() - t0) / 1000);
-    box.insertAdjacentHTML('beforeend', `<div class="meta">${LABEL[used]} · ${secs} s</div>`);
+    box.insertAdjacentHTML('beforeend', `<div class="meta">${esc(label(used))} · ${esc(t('ai.seconds', { n: secs }))}</div>`);
 
     // The kit's books open as PDFs or in the reader; library articles open in Kiwix.
     const seen = new Set(), list = sources.filter(s => s.title && !seen.has(s.title + s.library) && seen.add(s.title + s.library));
     if (list.length) {
       const src = document.createElement('div');
       src.className = 'src';
-      src.innerHTML = '<b>Källor:</b> ';
+      src.innerHTML = '<b>' + esc(t('ai.sources')) + '</b> ';
       box.appendChild(src);
       for (const s of list) {
         if (s.href) {
