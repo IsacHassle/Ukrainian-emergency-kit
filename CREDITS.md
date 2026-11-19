@@ -3,7 +3,7 @@
 The repository holds only the kit's own code and configuration (MIT licence, see `LICENSE`).
 Everything below is downloaded by `install.sh` from its original source and keeps its own licence.
 Nothing here is redistributed from this repository, except the map fonts and symbols in `web/map/assets/`
-and the map viewer libraries in `web/map/lib/` (licences below), and the ready-made map search files
+the map viewer libraries in `web/map/lib/` and the QR code library in `web/lib/qrcode.js` (licences below), and the ready-made map search files
 attached to the GitHub release, which are built from OpenStreetMap data.
 
 ## Offline libraries (Kiwix / openZIM)
@@ -52,6 +52,12 @@ Downloaded from msb.se / rib.msb.se, not redistributed.
 - [MapLibre GL JS](https://github.com/maplibre/maplibre-gl-js) (BSD 3-Clause) and
   [PMTiles](https://github.com/protomaps/PMTiles) (BSD 3-Clause) in `web/map/lib/`.
 - Addresses from OpenStreetMap Sweden, via [Geofabrik](https://download.geofabrik.de).
+
+## Keeper poster
+
+- [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) 2.0.4 by Kazuhiko Arase (MIT), in `web/lib/qrcode.js`
+  (licence in `web/lib/qrcode.LICENSE.txt`). Draws the QR codes on the Keeper's poster, in the page, with no internet.
+- Test tool only: [jsQR](https://github.com/cozmo/jsQR) (Apache-2.0), which reads the codes back in the tests.
 
 ## AI
 

@@ -38,7 +38,7 @@ class ServedKitTest(unittest.TestCase):
         page = body.decode("utf-8")
         self.assertEqual(status, 200)
         self.assertIn("<title>", page)
-        self.assertIn("Джгут, тиснуча пов’язка", page)   # an emergency topic found in the test Library
+        self.assertIn("Сильна кровотеча, джгут", page)   # an emergency topic found in the test Library
 
     def test_status_reports_ai_engine_book_index_and_libraries(self):
         status, body = get(self.kit, "/ai-api/status")

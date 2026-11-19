@@ -9,6 +9,8 @@ phones on the same Wi-Fi.
     and from the big medical libraries in Kiwix (scripts/kit_search.py).
   Only these few actions are passed on, so phones on the Wi-Fi can ask
   questions but cannot change settings or delete anything.
+- /poster/ (the Keeper's A4 poster with the QR codes) is served only to requests from this Mac itself;
+  a Visitor device on the Wi-Fi gets 403 (see Handler.from_this_mac).
 - /lib/country.js gives every page the part of the country config it needs (window.COUNTRY).
 - /lib/lang.js gives every page its texts in all languages and the language switch (web/lang/*.json).
 
@@ -22,6 +24,7 @@ For tests and for a second kit beside a running one, environment variables move 
 """
 import http.client
 import http.server
+import ipaddress
 import json
 import os
 import re
@@ -52,6 +55,7 @@ KIWIX = kit_search.KIWIX_ADDR
 WORKSPACE = kit_country.workspace()
 MODELS = set(kit_country.models().values())
 MAX_BODY = 30 * 1024 * 1024  # a few photos
+KEEPER_ONLY = ("poster",)   # first folder names under web/ that only the Kit Mac itself may open
 
 
 def upstream(host, method, path, body=None, timeout=900):
@@ -123,6 +127,42 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Accept-Ranges", "bytes")
         self.send_header("Access-Control-Allow-Origin", "*")
         super().end_headers()
+
+    # ---------- Keeper tools (only on the Kit Mac) ----------
+
+    def from_this_mac(self):
+        """True only when the connection itself comes from this Mac: from a loopback address, or from the
+        Mac's own Wi-Fi address (the same address at both ends). Only the connection's own addresses count.
+        Headers such as X-Forwarded-For, Forwarded and Host are written by the sender, so a Visitor device
+        could claim anything in them, and they are never looked at."""
+        try:
+            peer = ipaddress.ip_address(self.client_address[0].split("%")[0])
+            own = ipaddress.ip_address(self.request.getsockname()[0].split("%")[0])
+        except (ValueError, OSError, AttributeError, IndexError):
+            return False   # when in doubt, refuse
+        if peer.version == 6 and peer.ipv4_mapped:
+            peer = peer.ipv4_mapped
+        if own.version == 6 and own.ipv4_mapped:
+            own = own.ipv4_mapped
+        return peer.is_loopback or peer == own
+
+    def keeper_only(self):
+        """True when the request names a Keeper tool (see KEEPER_ONLY). Judged on the file the request resolves
+        to, as the server itself would open it, so //poster/, /./poster/, /%70oster/ and /Poster/ (the Mac's
+        file system ignores case) are all caught."""
+        rel = os.path.relpath(self.translate_path(self.path), os.path.abspath(ROOT))
+        return rel.split(os.sep)[0].lower() in KEEPER_ONLY
+
+    def refuse_visitor(self):
+        """Answers 403 and returns True when a Visitor device asks for a Keeper tool."""
+        if self.keeper_only() and not self.from_this_mac():
+            self.send_json({"error": "this page opens only on the Kit Mac itself"}, 403)
+            return True
+        return False
+
+    def do_HEAD(self):
+        if not self.refuse_visitor():
+            super().do_HEAD()
 
     # ---------- AI ----------
 
@@ -260,11 +300,22 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     # ---------- files ----------
 
     def do_GET(self):
+        if self.refuse_visitor():
+            return
         url = urllib.parse.urlsplit(self.path)
         if url.path in ("/lib/country.js", "/lib/lang.js"):   # the country config and the texts, for the pages
             data = (kit_country.pages_script() if url.path == "/lib/country.js" else kit_lang.pages_script(ROOT)).encode()
             self.send_response(200)
             self.send_header("Content-Type", "text/javascript; charset=utf-8")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            return
+        if url.path == "/review/data.json":   # every text in both languages, for the review page (web/review/)
+            data = json.dumps(kit_lang.review_data(ROOT), ensure_ascii=False).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Cache-Control", "no-store")
             self.send_header("Content-Length", str(len(data)))
             self.end_headers()

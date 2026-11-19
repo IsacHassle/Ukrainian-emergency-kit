@@ -83,3 +83,30 @@ def fill(page, texts, lang=None):
         return tag
 
     return _ATTRS.sub(attrs, _ELEMENT.sub(element, page))
+
+
+# What the review page (/review/) lists: every language-file key with both texts, and every text in the country
+# config that exists per language (topic labels, number labels, the kit name, ...). The config is walked as it
+# is, so a text a later ticket adds to it is listed without a change here.
+_HINTS = ("number", "article", "prefix", "id", "path")
+
+
+def _config_texts(node, path="", hint=""):
+    if isinstance(node, dict):
+        if isinstance(node.get("uk"), str) and isinstance(node.get("en"), str):
+            yield {"path": path, "hint": hint, "uk": node["uk"], "en": node["en"]}
+            return
+        own = next((str(node[h]) for h in _HINTS if isinstance(node.get(h), (str, int))), hint)
+        for k, v in node.items():
+            yield from _config_texts(v, path + "/" + k, own)
+    elif isinstance(node, list):
+        for i, v in enumerate(node):
+            yield from _config_texts(v, "%s/%d" % (path, i), hint)
+
+
+def review_data(web=None):
+    """{"keys": [{key, uk, en}], "config": [{path, hint, uk, en}]} for the review page."""
+    texts = load(web)
+    uk, en = texts.get("uk", {}), texts.get("en", {})
+    keys = [{"key": k, "uk": uk.get(k, ""), "en": en.get(k, "")} for k in sorted(set(uk) | set(en))]
+    return {"keys": keys, "config": list(_config_texts(kit_country.COUNTRY))}

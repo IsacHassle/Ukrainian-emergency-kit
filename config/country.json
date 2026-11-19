@@ -30,6 +30,12 @@
   },
   "libraries": [
    {
+    "prefix": "wikipedia_uk_medicine",
+    "label": "WikiMed (українська)",
+    "language": "uk",
+    "kind": "encyclopedia"
+   },
+   {
     "prefix": "wikipedia_en_medicine",
     "label": "WikiMed",
     "language": "en",
@@ -135,216 +141,124 @@
  },
  "emergency_topics": [
   {
-   "article": "Cardiopulmonary_resuscitation",
+   "id": "bleeding",
    "label": {
-    "uk": "Серцево-легенева реанімація",
-    "en": "CPR"
+    "uk": "Сильна кровотеча, джгут",
+    "en": "Severe bleeding, tourniquet"
+   },
+   "wikimed": {
+    "uk": "Зупинка_кровотечі",
+    "en": "Bleeding"
    },
    "first": 1
   },
   {
-   "article": "Bleeding",
+   "id": "blast",
    "label": {
-    "uk": "Сильна кровотеча",
-    "en": "Severe bleeding"
+    "uk": "Вибухова травма",
+    "en": "Blast injury"
+   },
+   "wikimed": {
+    "uk": "Вибухова_травма",
+    "en": "Blast_injury"
    },
    "first": 2
   },
   {
-   "article": "Tourniquet",
+   "id": "crush",
    "label": {
-    "uk": "Джгут, тиснуча пов’язка",
-    "en": "Tourniquet"
-   }
-  },
-  {
-   "article": "Choking",
-   "label": {
-    "uk": "Закупорка дихальних шляхів",
-    "en": "Choking"
+    "uk": "Завали, синдром тривалого здавлення (краш-синдром)",
+    "en": "Crush injury, trapped under rubble"
+   },
+   "wikimed": {
+    "uk": "Травматичний_токсикоз",
+    "en": "Crush_syndrome"
    },
    "first": 3
   },
   {
-   "article": "Shock_(circulatory)",
+   "id": "cpr",
    "label": {
-    "uk": "Шок",
-    "en": "Shock"
+    "uk": "Серцево-легенева реанімація",
+    "en": "CPR"
+   },
+   "wikimed": {
+    "uk": "Серцево-легенева_реанімація",
+    "en": "Cardiopulmonary_resuscitation"
    },
    "first": 4
   },
   {
-   "article": "Burn",
+   "id": "burns",
    "label": {
+    "uk": "Опіки",
+    "en": "Burns"
+   },
+   "wikimed": {
     "uk": "Опік",
     "en": "Burn"
    },
    "first": 5
   },
   {
-   "article": "Hypothermia",
+   "id": "shock",
    "label": {
-    "uk": "Переохолодження",
-    "en": "Hypothermia"
+    "uk": "Шок",
+    "en": "Shock"
+   },
+   "wikimed": {
+    "uk": "Шок_(медицина)",
+    "en": "Shock_(circulatory)"
    },
    "first": 6
   },
   {
-   "article": "Frostbite",
+   "id": "hypothermia",
    "label": {
-    "uk": "Обмороження",
-    "en": "Frostbite"
-   }
-  },
-  {
-   "article": "Heat_stroke",
-   "label": {
-    "uk": "Тепловий удар",
-    "en": "Heat stroke"
-   }
-  },
-  {
-   "article": "Anaphylaxis",
-   "label": {
-    "uk": "Алергічний шок",
-    "en": "Anaphylaxis"
+    "uk": "Переохолодження",
+    "en": "Hypothermia"
+   },
+   "wikimed": {
+    "uk": "Гіпотермія",
+    "en": "Hypothermia"
    },
    "first": 7
   },
   {
-   "article": "Myocardial_infarction",
-   "label": {
-    "uk": "Інфаркт",
-    "en": "Heart attack"
-   }
-  },
-  {
-   "article": "Stroke",
-   "label": {
-    "uk": "Інсульт",
-    "en": "Stroke"
-   }
-  },
-  {
-   "article": "Bone_fracture",
-   "label": {
-    "uk": "Перелом",
-    "en": "Fracture"
-   }
-  },
-  {
-   "article": "Head_injury",
-   "label": {
-    "uk": "Травма голови",
-    "en": "Head injury"
-   }
-  },
-  {
-   "article": "Wound",
-   "label": {
-    "uk": "Рани",
-    "en": "Wounds"
-   }
-  },
-  {
-   "article": "Sepsis",
-   "label": {
-    "uk": "Сепсис",
-    "en": "Sepsis"
-   }
-  },
-  {
-   "article": "Oral_rehydration_therapy",
-   "label": {
-    "uk": "Зневоднення, пронос",
-    "en": "Dehydration"
-   }
-  },
-  {
-   "article": "Carbon_monoxide_poisoning",
+   "id": "co",
    "label": {
     "uk": "Чадний газ (генератор, пічки)",
     "en": "Carbon monoxide"
    },
-   "first": 9
-  },
-  {
-   "article": "Poisoning",
-   "label": {
-    "uk": "Отруєння",
-    "en": "Poisoning"
+   "wikimed": {
+    "uk": "Отруєння_чадним_газом",
+    "en": "Carbon_monoxide_poisoning"
    },
    "first": 8
   },
   {
-   "article": "Mushroom_poisoning",
+   "id": "mines",
    "label": {
-    "uk": "Отруєння грибами",
-    "en": "Mushroom poisoning"
-   }
+    "uk": "Міни та вибухонебезпечні предмети",
+    "en": "Mines and unexploded ordnance"
+   },
+   "wikimed": {
+    "uk": "Вибухова_травма",
+    "en": "Blast_injury"
+   },
+   "first": 9
   },
   {
-   "article": "Epileptic_seizure",
+   "id": "radiation",
    "label": {
-    "uk": "Судоми",
-    "en": "Seizure"
-   }
-  },
-  {
-   "article": "Hypoglycemia",
-   "label": {
-    "uk": "Низький цукор у крові",
-    "en": "Hypoglycemia"
-   }
-  },
-  {
-   "article": "Asthma",
-   "label": {
-    "uk": "Астма",
-    "en": "Asthma"
-   }
-  },
-  {
-   "article": "Drowning",
-   "label": {
-    "uk": "Утоплення",
-    "en": "Drowning"
-   }
-  },
-  {
-   "article": "Childbirth",
-   "label": {
-    "uk": "Пологи",
-    "en": "Childbirth"
-   }
-  },
-  {
-   "article": "Snakebite",
-   "label": {
-    "uk": "Укус змії",
-    "en": "Snakebite"
-   }
-  },
-  {
-   "article": "Tick-borne_encephalitis",
-   "label": {
-    "uk": "Кліщі, кліщовий енцефаліт",
-    "en": "Tick-borne encephalitis"
-   }
-  },
-  {
-   "article": "Potassium_iodide",
-   "label": {
-    "uk": "Радіація, йодид калію",
-    "en": "Radiation, iodine"
-   }
-  },
-  {
-   "article": "Panic_attack",
-   "label": {
-    "uk": "Панічна атака",
-    "en": "Panic attack"
-   }
+    "uk": "Радіація",
+    "en": "Radiation"
+   },
+   "wikimed": {
+    "uk": "Променева_хвороба",
+    "en": "Acute_radiation_syndrome"
+   },
+   "first": 10
   }
  ],
  "books": [
@@ -455,10 +369,17 @@
    },
    "libraries": [
     {
+     "prefix": "wikipedia_uk_medicine",
+     "description": {
+      "uk": "Усі медичні статті української Вікіпедії, із зображеннями",
+      "en": "All medical articles of Ukrainian Wikipedia, with images"
+     }
+    },
+    {
      "prefix": "wikipedia_en_medicine",
      "description": {
-      "uk": "Усі медичні статті Вікіпедії, із зображеннями",
-      "en": "All medical Wikipedia articles, with images"
+      "uk": "Усі медичні статті англійської Вікіпедії, із зображеннями",
+      "en": "All medical articles of English Wikipedia, with images"
      }
     },
     {
@@ -495,13 +416,6 @@
       "uk": "Ліки: для чого вони, побічні дії",
       "en": "Medicines: what they are for, side effects"
      }
-    },
-    {
-     "prefix": "wwwnc.cdc.gov",
-     "description": {
-      "uk": "Інфекційні хвороби та спалахи",
-      "en": "Infectious diseases and outbreaks"
-     }
     }
    ]
   },
@@ -537,13 +451,6 @@
      "description": {
       "uk": "Тепло й готування без електрики",
       "en": "Heat and cooking without power"
-     }
-    },
-    {
-     "prefix": "www.ready.gov",
-     "description": {
-      "uk": "Підготовка до різних катастроф",
-      "en": "Preparing for different disasters"
      }
     },
     {
@@ -635,8 +542,8 @@
     {
      "prefix": "wikipedia_uk_all",
      "description": {
-      "uk": "Українська Вікіпедія, із зображеннями",
-      "en": "Ukrainian Wikipedia, with images"
+      "uk": "Українська Вікіпедія: початок кожної статті",
+      "en": "Ukrainian Wikipedia: the opening of every article"
      }
     },
     {
@@ -693,10 +600,6 @@
     "en": "The whole family knows how to open the kit from a phone (same Wi-Fi)"
    }
   ]
- },
- "ready_gov": {
-  "skip_pattern": "hurricane|tornado|tsunami|volcano|earthquake|landslide|climate.change|full.suite",
-  "note": "US advice: in Ukraine call 112, and follow the Ukrainian authorities (DSNS)."
  },
  "map": {
   "regions": [
@@ -965,8 +868,7 @@
   "ai.authorities, ai.example_source (07)",
   "radio (12)",
   "official_guides.* and checklist.official_list.guide, checklist.official_list.source_prefix (06)",
-  "brochures, ready_gov.skip_pattern (06)",
-  "map.* except regions, pmtiles, shape, max_zoom, world_max_zoom, center, zoom, shortcuts, overview_label and nearest labels: name_tags, labels, zoom_by_type, search_priority (09)",
-  "libraries in ai.libraries and library_groups prefixes follow config/libraries.txt (05)"
+  "brochures (06)",
+  "map.* except regions, pmtiles, shape, max_zoom, world_max_zoom, center, zoom, shortcuts, overview_label and nearest labels: name_tags, labels, zoom_by_type, search_priority (09)"
  ]
 }

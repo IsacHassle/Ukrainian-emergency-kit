@@ -19,7 +19,7 @@ def newest(url):
     stem = name.rsplit("_", 1)[0]
     if folder not in listings:
         listings[folder] = urllib.request.urlopen(folder + "/", timeout=60).read().decode()
-    found = sorted(set(re.findall(re.escape(stem) + r'_(\d{4}-\d{2})\.zim"', listings[folder])))
+    found = sorted(set(re.findall(re.escape(stem) + r'_(\d{4}-\d{2}[a-z]?)\.zim"', listings[folder])))
     return f"{folder}/{stem}_{found[-1]}.zim" if found else url
 
 lines, changed = [], 0
