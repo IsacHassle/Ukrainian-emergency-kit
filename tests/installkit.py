@@ -202,6 +202,53 @@ class InstallKit:
         except FileNotFoundError:
             return []
 
+    # -- the Kit Drive ------------------------------------------------------------------------
+    def fake_model_store(self):
+        """An Ollama model folder (manifests/ and blobs/) like the real one: the kit's three models, the base
+        models, the Swedish kit's `crisis` models (which share blobs with `emergency`) and an unrelated model.
+        Returns (folder, the digests the kit's three models name, the digests of everything else)."""
+        store = os.path.join(self.root, "ollama-models")
+        blobs = os.path.join(store, "blobs")
+        os.makedirs(blobs)
+        made = {}
+
+        def blob(tag):
+            data = ("blob " + tag).encode()
+            digest = hashlib.sha256(data).hexdigest()
+            with open(os.path.join(blobs, "sha256-" + digest), "wb") as f:
+                f.write(data)
+            made[tag] = "sha256:" + digest
+            return made[tag]
+
+        def model(name, tag, layers):
+            folder = os.path.join(store, "manifests", "registry.ollama.ai", "library", name)
+            os.makedirs(folder, exist_ok=True)
+            digests = [blob(t) if t not in made else made[t] for t in layers]
+            body = {"schemaVersion": 2, "config": {"digest": digests[0], "size": 1},
+                    "layers": [{"digest": d, "size": 1} for d in digests[1:]]}
+            with open(os.path.join(folder, tag), "w") as f:
+                json.dump(body, f)
+
+        model("gemma4", "26b", ["cfg-26b", "weights-26b", "license"])
+        model("gemma4", "e4b", ["cfg-e4b", "weights-e4b", "license"])
+        model("bge-m3", "latest", ["cfg-bge", "weights-bge"])
+        model("emergency", "latest", ["cfg-emergency", "weights-26b", "prompt-emergency"])
+        model("emergency-small", "latest", ["cfg-emergency-small", "weights-e4b", "prompt-emergency"])
+        kit = set(made.values())
+        model("crisis", "latest", ["cfg-crisis", "weights-26b", "prompt-crisis"])
+        model("crisis-small", "latest", ["cfg-crisis-small", "weights-e4b", "prompt-crisis"])
+        model("llama3", "8b", ["cfg-llama", "weights-llama"])
+        blob("orphan")
+        kit_digests = {made[t] for t in ("cfg-emergency", "weights-26b", "prompt-emergency", "cfg-emergency-small",
+                                          "weights-e4b", "prompt-emergency", "cfg-bge", "weights-bge")}
+        return store, kit_digests, set(made.values()) - kit_digests
+
+    def make_drive(self, drive, store=None, extra=None):
+        """Run the Kit Drive maker into `drive`, a test folder standing in for the drive."""
+        env = {"OLLAMA_MODELS": store} if store else {}
+        env.update(extra or {})
+        return self.run("scripts/make-kit-drive.sh", drive, extra=env)
+
     def stop(self):
         if self.ai:
             self.ai.stop()
