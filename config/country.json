@@ -195,13 +195,33 @@
     }
    }
   ],
-  "print_pages": [
-   "dovidka.info - Як надати допомогу пораненому",
-   "dovidka.info - Тактична медицина, як зупинити кровотечу",
-   "МОЗ - МОЗ нагадує, базові правила домедичної допомоги",
-   "МОЗ - Тихий вбивця, як уберегтися від отруєння чадним газом",
-   "dovidka.info - Як очистити воду за будь-яких умов",
-   "МОЗ - Що робити у разі радіаційної аварії"
+  "print_pages": {
+   "uk": [
+    "dovidka.info - Як надати допомогу пораненому",
+    "dovidka.info - Тактична медицина, як зупинити кровотечу",
+    "МОЗ - МОЗ нагадує, базові правила домедичної допомоги",
+    "МОЗ - Тихий вбивця, як уберегтися від отруєння чадним газом",
+    "dovidka.info - Як очистити воду за будь-яких умов",
+    "МОЗ - Що робити у разі радіаційної аварії"
+   ],
+   "en": [
+    "dovidka.info - How to help a wounded person",
+    "dovidka.info - Tactical medicine, how to stop bleeding",
+    "dovidka.info - Rescue is in our hands, the rules of first aid",
+    "dovidka.info - How to purify water in any conditions",
+    "dovidka.info - How to protect yourself from a dirty bomb, a nuclear attack or an accident at a nuclear power plant"
+   ]
+  },
+  "print_skip": [
+   "^Важлива інформація для ЗМІ",
+   "^Important information for the media",
+   "^Поради, як підготуватись",
+   "^See also the video",
+   "^https?://"
+  ],
+  "print_drop_lines": [
+   "^#{1,2}\\s+(Спротив|Resistance)\\s*$",
+   "^#[^\\s#]"
   ]
  },
  "emergency_topics": [
@@ -699,15 +719,54 @@
   "country": "ukr"
  },
  "checklist": {
-  "official_list": {
-   "guide": "MCF - Grunder i hemberedskap",
-   "section": "Checklista",
-   "heading": {
-    "uk": "Вдома (офіційний перелік)",
-    "en": "At home (official list)"
+  "official_lists": [
+   {
+    "id": "home",
+    "heading": {
+     "uk": "Вдома",
+     "en": "At home"
+    },
+    "guide": {
+     "uk": "dovidka.info - Як підготуватися до надзвичайної ситуації",
+     "en": "dovidka.info - How to prepare for an emergency"
+    },
+    "section": {
+     "uk": "Як підготувати власну оселю до надзвичайної ситуації",
+     "en": "How to prepare your own home"
+    },
+    "start": {
+     "uk": "Перевірте, чи є у вас:",
+     "en": "Make sure you have:"
+    },
+    "until": {
+     "uk": "Якщо ви живете в приватному будинку",
+     "en": "If you live in a private house"
+    }
    },
-   "source_prefix": "Källa: "
-  },
+   {
+    "id": "gobag",
+    "heading": {
+     "uk": "Що покласти в тривожну валізу",
+     "en": "What to put in the go-bag"
+    },
+    "guide": {
+     "uk": "dovidka.info - Як підготуватися до надзвичайної ситуації",
+     "en": "dovidka.info - How to prepare for an emergency"
+    },
+    "section": {
+     "uk": "Що покласти в тривожну валізу",
+     "en": "What to put in a survival kit"
+    },
+    "start": {
+     "uk": "**У валізу покладіть:**",
+     "en": "**Put in the survival kit:**"
+    },
+    "until": {
+     "uk": "Покладіть у верхню чи бокову кишеню",
+     "en": "Put a tag in your top or side pocket"
+    }
+   }
+  ],
   "additions": [
    {
     "uk": "Тривожну валізу встановлено й перевірено",
@@ -872,14 +931,27 @@
     "amenity=veterinary": "veterinary",
     "shop=supermarket": "supermarket",
     "shop=convenience": "convenience",
-    "shop=hardware": "hardware"
+    "shop=hardware": "hardware",
+    "healthcare=hospital": "hospital",
+    "healthcare=clinic": "clinic",
+    "healthcare=centre": "clinic",
+    "healthcare=doctor": "doctors",
+    "healthcare=pharmacy": "pharmacy",
+    "emergency=fire_station": "fire_station",
+    "man_made=water_tap": "drinking_water",
+    "natural=spring": "drinking_water",
+    "man_made=water_well": "drinking_water",
+    "shop=grocery": "grocery",
+    "shop=greengrocer": "greengrocer",
+    "shop=bakery": "bakery",
+    "shop=butcher": "butcher",
+    "shop=general": "general"
    },
    "landmark": {
     "railway=station": "station",
     "public_transport=station": "station",
     "amenity=school": "school",
     "amenity=place_of_worship": "place_of_worship",
-    "amenity=shelter": "shelter",
     "leisure=park": "park",
     "leisure=nature_reserve": "nature_reserve",
     "natural=peak": "peak",
@@ -904,7 +976,8 @@
    "town_types": [
     "city",
     "town"
-   ]
+   ],
+   "shelter": "shelter"
   },
   "zoom_by_type": {
    "address": 18.5,
@@ -923,7 +996,13 @@
    "station": 16,
    "hospital": 17,
    "clinic": 17,
-   "pharmacy": 17
+   "pharmacy": 17,
+   "shelter": 17,
+   "fuel": 17,
+   "police": 17,
+   "fire_station": 17,
+   "drinking_water": 18,
+   "water_point": 18
   },
   "search_priority": {
    "city": -0.8,
@@ -938,9 +1017,19 @@
    "quarter": -0.1,
    "neighbourhood": -0.1,
    "farm": 0.3,
-   "locality": 0.3
+   "locality": 0.3,
+   "shelter": -0.6
   },
   "nearest": [
+   {
+    "label": {
+     "uk": "Укриття",
+     "en": "Shelter"
+    },
+    "types": [
+     "shelter"
+    ]
+   },
    {
     "label": {
      "uk": "Лікарня",
@@ -1004,7 +1093,12 @@
     },
     "types": [
      "supermarket",
-     "convenience"
+     "convenience",
+     "grocery",
+     "greengrocer",
+     "bakery",
+     "butcher",
+     "general"
     ]
    },
    {
@@ -1015,13 +1109,29 @@
     "types": [
      "fuel"
     ]
+   },
+   {
+    "label": {
+     "uk": "Пункт пропуску",
+     "en": "Border crossing"
+    },
+    "types": [
+     "border_crossing"
+    ]
+   }
+  ],
+  "closed_border_areas": [
+   {
+    "name": "Transnistria",
+    "region": "moldova",
+    "relation": "ISO3166-2=MD-SN",
+    "near_km": 3,
+    "why": "Ukraine closed its crossings on the Transnistrian stretch in February 2022"
    }
   ]
  },
  "_placeholders": [
   "Values below are still Sweden's and belong to later tickets; they are marked here so nobody ships them.",
-  "ai.authorities, ai.example_source (07)",
-  "radio (12)",
-  "checklist.official_list.guide, checklist.official_list.source_prefix (12)"
+  "ai.authorities, ai.example_source (07)"
  ]
 }

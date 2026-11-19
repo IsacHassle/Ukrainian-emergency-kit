@@ -38,6 +38,10 @@
   #results li:hover, #results li:focus { background: var(--soft); outline: none; }
   #results small { color: var(--muted); display: block; font-size: 12.5px; }
   #note { margin-top: 8px; }
+  #shelternote { margin-top: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--soft); font-size: 13px; }
+  #shelternote[hidden] { display: none; }
+  #shelternote p { margin: 0; }
+  #shelternote p + p { margin-top: 6px; }
   #coords { margin-top: 8px; color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
   .bar { display: flex; gap: 6px; align-items: center; margin-top: 10px; }
   .bar .grow { flex: 1; }
@@ -69,6 +73,7 @@
     </details>
     <ul id="results"></ul>
     <div id="note"></div>
+    <div id="shelternote" hidden></div>
     <div id="coords"></div>
   </div>
   <div class="bar">
@@ -92,14 +97,14 @@
   addEventListener('kitlang', setTitle);
   KIT.onChange(() => {
     redraw.forEach(fn => fn());
-    if (resultsSrc && window.kitMap) show(resultsSrc.list, window.kitMap, resultsSrc.withDistance, resultsSrc.from);
+    if (resultsSrc && window.kitMap) show(resultsSrc.list, window.kitMap, resultsSrc.withDistance, resultsSrc.from, resultsSrc.fromKeyGiven);
   });
   const root = new URL('../tiles/', location.href).href;   // where the .pmtiles live
   const $ = s => document.querySelector(s);
   // Texts the script writes itself must follow the page language, so each is kept as a function and written
   // again when the language changes: the note under the search, the coordinates line, the result list, the
   // zoom, the error line and the nearest and shortcut buttons.
-  let noteSrc = null, coordsSrc = null, errSrc = null, resultsSrc = null;
+  let noteSrc = null, coordsSrc = null, errSrc = null, resultsSrc = null, shelterSrc = null;
   const redraw = [];
   const renderNote = () => {
     const v = noteSrc ? noteSrc() : '';
@@ -113,6 +118,20 @@
     if (errSrc) { el.style.display = 'block'; el.textContent = errSrc(); }
   };
   redraw.push(renderError);
+
+  // The shelter list always carries this note, in both languages, even when the list is empty or far away.
+  // shelterSrc: null (not a shelter list) or { km, fromKey }: how far the nearest shelter on the map is, or km null for none.
+  const renderShelter = () => {
+    const el = $('#shelternote');
+    el.hidden = !shelterSrc;
+    if (!shelterSrc) { el.replaceChildren(); return; }
+    const lines = [];
+    lines.push(shelterSrc.km === null ? KIT.t('map.shelter.none')
+      : KIT.t('map.shelter.nearest', { distance: KIT.t(shelterSrc.fromKey, { distance: fmtKm(shelterSrc.km) }) }));
+    lines.push(KIT.t('map.shelter.note'));
+    el.replaceChildren(...lines.map(t => { const p = document.createElement('p'); p.textContent = t; return p; }));
+  };
+  redraw.push(renderShelter);
 
   // A map file is usable only if it starts with the PMTiles magic bytes.
   const isReady = url => fetch(url, { headers: { Range: 'bytes=0-6' } })
@@ -145,12 +164,12 @@
   const km = SR.km;
   const fmtKm = d => d < 1 ? Math.round(d * 100) * 10 + ' ' + KIT.t('map.unit.m') : (d < 10 ? d.toFixed(1) : Math.round(d)) + ' ' + KIT.t('map.unit.km');
 
-  function show(list, map, withDistance, from) {
-    resultsSrc = { list, withDistance, from };   // kept to write the list again when the language changes
+  function show(list, map, withDistance, from, fromKeyGiven) {
+    resultsSrc = { list, withDistance, from, fromKeyGiven };   // kept to write the list again when the language changes
     const ul = $('#results');
     ul.innerHTML = '';
     const c = map.getCenter(), shown = [];
-    const origin = from || [c.lng, c.lat], fromKey = from && gps.here && from === gps.here ? 'map.distance.fromyou' : 'map.distance.fromcentre';
+    const origin = from || [c.lng, c.lat], fromKey = fromKeyGiven || (from && gps.here && from === gps.here ? 'map.distance.fromyou' : 'map.distance.fromcentre');
     for (const e of list) {
       // the same place is often mapped twice (a point and a building): show it once
       if (shown.some(o => o[0] === e[0] && o.t === e.t && km([o[2], o[3]], [e[2], e[3]]) < 0.4)) continue;
@@ -202,6 +221,7 @@
 
   async function search(map, text) {
     note('');
+    shelterSrc = null; renderShelter();
     const m = text.match(/^\s*(-?\d+(?:[.,]\d+)?)\s*[,; ]\s*(-?\d+(?:[.,]\d+)?)\s*$/);
     if (m) {  // coordinates: lat, lon
       const lat = parseFloat(m[1].replace(',', '.')), lng = parseFloat(m[2].replace(',', '.'));
@@ -238,14 +258,26 @@
     if (house && list[0].t === LABELS.street) { jump(map, list[0]); note(() => KIT.t('map.search.nonumber', { number: house })); }
   }
 
+  // From the Kit Mac's position if there is one, else from the place marked on the map (a searched place, a
+  // tap), else from the map centre. The same place is often mapped twice, so a list shows each place once.
   async function nearest(map, types) {
     note('');
     const items = await loadIndex();
     const want = new Set(types.split(','));
-    const c = map.getCenter(), here = gps.on && gps.here ? gps.here : [c.lng, c.lat];
-    const list = items.filter(e => want.has(e.t)).map(e => [km([e[2], e[3]], here), e]).sort((a, b) => a[0] - b[0]).slice(0, 20).map(x => x[1]);
-    show(list, map, true, here);
-    if (!list.length) note(() => KIT.t('map.nearest.none'));
+    const c = map.getCenter();
+    let here = [c.lng, c.lat], fromKey = 'map.distance.fromcentre';
+    if (gps.on && gps.here) { here = gps.here; fromKey = 'map.distance.fromyou'; }
+    else if (pin && pin.getElement().isConnected) { const p = pin.getLngLat(); here = [p.lng, p.lat]; fromKey = 'map.distance.frompin'; }
+    const sorted = items.filter(e => want.has(e.t)).map(e => [km([e[2], e[3]], here), e]).sort((a, b) => a[0] - b[0]);
+    const list = [];
+    for (const [, e] of sorted) {
+      if (list.length >= 20) break;
+      if (!list.some(o => o[0] === e[0] && km([o[2], o[3]], [e[2], e[3]]) < 0.4)) list.push(e);
+    }
+    shelterSrc = want.has(LABELS.shelter) ? { km: sorted.length ? sorted[0][0] : null, fromKey } : null;
+    renderShelter();
+    show(list, map, true, here, fromKey);
+    if (!list.length && !shelterSrc) note(() => KIT.t('map.nearest.none'));
   }
 
   // label: a place name, or a function giving a text in the page language

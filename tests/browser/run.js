@@ -52,7 +52,7 @@ const ok = name => console.log('ok - ' + name);
       ok('the AI page offers the config\'s models and its emergency number');
 
       await page.goto(url + '/checklista/', { waitUntil: 'load' });
-      await page.waitForFunction(t => document.querySelector('#kit').textContent.includes(t), {}, expect.checklist);
+      await page.waitForFunction(t => document.querySelector('section[data-list=kit]').textContent.includes(t), {}, expect.checklist);
       ok('the checklist shows the config\'s own items');
 
       await page.goto(url + '/map/', { waitUntil: 'load' });

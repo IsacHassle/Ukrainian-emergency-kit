@@ -5,7 +5,7 @@
 <script src="/lib/country.js"></script>
 <script src="/lib/lang.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Skriv ut · {kit}</title>
+<title>Друк · {kit}</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icon-180.png">
 <meta name="apple-mobile-web-app-title" content="" data-kit-attr="content={kit}">
@@ -48,33 +48,64 @@
 </head>
 <main class="page">
   <a class="back" href="/">← <span data-kit></span></a>
-  <h1>Skriv ut</h1>
-  <div class="bar" style="margin-top:14px"><button onclick="print()">Skriv ut nu</button></div>
+  <h1 data-t="print.title"></h1>
+  <div class="bar" style="margin-top:14px"><button onclick="print()" data-t="print.now"></button></div>
   <p class="sub noprint" data-t="print.guides.intro"></p>
-  <div id="pack"><p>Laddar…</p></div>
+  <div id="pack"><p data-t="print.loading"></p></div>
 </main>
 <script src="../lib/md.js"></script>
 <script>
 (() => {
   const DIR = 'docs/' + COUNTRY.official_guides.folder + '/';
-  const PAGES = COUNTRY.official_guides.print_pages;   // the Official Guides that go on paper (country config)
-  // On paper, keep what to do; leave out background, hospital care, history and page furniture.
-  const SKIP = /^(På den här sidan|Vad händer i kroppen|På akutmottagningen|Behandling|Komplikationer|Påverka och delta|Mer information|Hur kan jag (minska risken|förebygga)|Orsaker|Vad är en |Varför|Relaterad|Dela sidan|Frågor och svar|Om du känner dig orolig|Film:|Kurser|Ansvar för|Byte till|Här finns|Ombyggnation|Jag hör inte|Falsklarm|Test av|VMA i reklamradion|Starkare befolkningsskydd|Utmana dig|Undersökning|Vård och behandling|Vad beror|Hur länge|Läs mer|Hitta|Vad kan jag göra själv för att lindra klåda)/i;
-  const trim = md => md.split(/\n(?=## )/).filter((part, i) => i === 0 || !SKIP.test(part.slice(3).trim())).join('\n');
-  // The emergency numbers, two to a line: "<b>112</b> nödsituation · <b>1177</b> sjukvårdsrådgivning<br>...".
+  // On paper, keep what to do and leave out page furniture: a heading that matches one of the country config's
+  // print_skip patterns is dropped with everything under it (up to the next heading of the same or higher level).
+  const SKIP = COUNTRY.official_guides.print_skip.map(p => new RegExp(p, 'i'));
+  // print_drop_lines are single lines that never print: the site's navigation tags ("## Resistance", "#Medicine").
+  const DROP = COUNTRY.official_guides.print_drop_lines.map(p => new RegExp(p));
+  const trim = md => {
+    const out = []; let skipLevel = 0;
+    for (const line of md.split('\n')) {
+      if (DROP.some(r => r.test(line))) continue;
+      const h = line.match(/^(#{1,6})\s+(.*)/);
+      if (h) {
+        if (skipLevel && h[1].length > skipLevel) continue;
+        skipLevel = (h[1].length > 1 && SKIP.some(r => r.test(h[2].trim()))) ? h[1].length : 0;
+      }
+      if (!skipLevel) out.push(line);
+    }
+    return out.join('\n');
+  };
+  // The emergency numbers, two to a line: "<b>112</b> all emergencies · <b>101</b> fire and rescue<br>...".
   const numbers = () => COUNTRY.emergency_numbers.map(n => `<b>${n.number}</b> ${COUNTRY.text(n.print_label)}`)
-    .map((t, i, all) => i % 2 ? t + (i < all.length - 1 ? '<br>' : '') : t + (i < all.length - 1 ? ' · ' : '')).join('');
-  const today = new Date().toLocaleDateString(COUNTRY.locale);
-  Promise.all(PAGES.map(p => fetchDoc(DIR + p + '.md').then(t => renderMarkdown(trim(t))).catch(() => null))).then(docs => {
-    const ok = docs.map((d, i) => d && { ...d, name: PAGES[i] }).filter(Boolean);
-    let html = `<section class="cover"><h1>${COUNTRY.kit()}: att ha på papper</h1>
-      <p class="nums">${numbers()}<br>Radio: <b>${COUNTRY.text(COUNTRY.radio.print_label)}</b> (batteri- eller vevradio)</p>
-      <p>${KIT.t('print.cover.saved', { date: today })}</p>
-      <h4>Innehåll</h4><ol class="toc">${ok.map(d => `<li>${d.title || d.name.split(' - ')[1]} <span class="src">(${d.name.split(' - ')[0]})</span></li>`).join('')}</ol></section>`;
-    html += ok.map(d => `<section>${d.html}</section>`).join('');
-    if (!ok.length) html = '<p>' + KIT.t('print.guides.missing') + '</p>';
-    document.getElementById('pack').innerHTML = html;
-  });
+    .map((t, i, all) => i % 2 ? t + (i < all.length - 1 ? '<br>' : '') : t + (i < all.length - 1 ? ' \u00b7 ' : '')).join('');
+  // The guides that go on paper in the page language: Ukrainian ones sit in the guides folder, the others in a
+  // folder named by language code (where the guide saver puts them).
+  const pagesFor = lang => (COUNTRY.official_guides.print_pages[lang] || COUNTRY.official_guides.print_pages[COUNTRY.default_language]);
+  const folderFor = lang => DIR + (lang === COUNTRY.default_language ? '' : lang + '/');
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  let drawn = 0;
+  function draw() {
+    const lang = KIT.lang, mine = ++drawn;
+    document.documentElement.dataset.title = KIT.t('print.title') + ' \u00b7 {kit}';
+    document.title = KIT.t('print.title') + ' \u00b7 ' + COUNTRY.kit();
+    const today = new Date().toLocaleDateString(KIT.locale);
+    const names = pagesFor(lang);
+    Promise.all(names.map(p => fetchDoc(folderFor(lang) + p + '.md').then(t => renderMarkdown(trim(t))).catch(() => null))).then(docs => {
+      if (mine !== drawn) return;
+      const ok = docs.map((d, i) => d && { ...d, name: names[i] }).filter(Boolean);
+      // Both names of the kit are on the paper, whichever language it is printed in.
+      const both = [lang, ...Object.keys(COUNTRY.kit_name).filter(l => l !== lang)].map(l => COUNTRY.kit_name[l]).filter(Boolean).join(' / ');
+      let html = `<section class="cover"><h1>${esc(both)}</h1>
+        <p class="nums">${numbers()}<br>${KIT.t('print.cover.radio', { radio: COUNTRY.text(COUNTRY.radio.print_label) })}</p>
+        <p>${KIT.t('print.cover.saved', { date: today })}</p>
+        <h4>${KIT.t('print.cover.contents')}</h4><ol class="toc">${ok.map(d => `<li>${esc(d.title || d.name.split(' - ')[1])} <span class="src">(${esc(d.name.split(' - ')[0])})</span></li>`).join('')}</ol></section>`;
+      html += ok.map(d => `<section>${d.html}</section>`).join('');
+      if (!ok.length) html = '<p>' + KIT.t('print.guides.missing') + '</p>';
+      document.getElementById('pack').innerHTML = html;
+    });
+  }
+  KIT.onChange(draw);
+  draw();
 })();
 </script>
 </body>

@@ -5,7 +5,7 @@
 <script src="/lib/country.js"></script>
 <script src="/lib/lang.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Checklista · {kit}</title>
+<title>Чекліст · {kit}</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icon-180.png">
 <meta name="theme-color" content="#0b5cad">
@@ -28,65 +28,115 @@
 <body>
 <main class="page">
   <a class="back" href="/">← <span data-kit></span></a>
-  <h1>Checklista för hemberedskap</h1>
-  <p class="meta">Bocka av det du har hemma. Målet är att klara dig själv i minst en vecka. Bockarna sparas i den här webbläsaren.</p>
+  <h1 data-t="checklist.title"></h1>
+  <p class="meta" data-t="checklist.intro"></p>
   <div class="progress"><div id="bar"></div></div>
   <p id="count"></p>
 
-  <h2 id="mcfhead"></h2>
-  <ul id="mcf"><li><label>Laddar…</label></li></ul>
-  <p class="src" id="mcfsrc"></p>
+  <div id="lists"></div>
 
-  <h2>Krislådan</h2>
-  <ul id="kit"></ul>
-
-  <p style="margin:18px 0 30px; display:flex; gap:8px"><button class="plain" onclick="print()">Skriv ut</button><button class="plain" id="reset">Börja om</button></p>
+  <p class="src" id="src"></p>
+  <p style="margin:18px 0 30px; display:flex; gap:8px"><button class="plain" onclick="print()" data-t="checklist.print"></button><button class="plain" id="reset" data-t="checklist.reset"></button></p>
 </main>
 <script src="../lib/md.js"></script>
 <script>
 (() => {
-  const KEY = COUNTRY.slug.toLowerCase() + '-checklista';
+  // Ticks are kept in this browser only. A country addition is ticked by its place in the config, so the tick
+  // follows the page language. An item from an Official Guide is ticked by its text and language: the English
+  // and Ukrainian guides word and order their lists differently, so one tick cannot stand for the other.
+  const KEY = COUNTRY.slug.toLowerCase() + '-checklist';
   let state = {};
-  try { state = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch {}
-  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
-  const KIT = COUNTRY.checklist.additions.map(a => COUNTRY.text(a));   // the country's own items (country config)
-  function list(el, items) {
-    el.innerHTML = '';
-    for (const text of items) {
-      const li = document.createElement('li');
-      li.innerHTML = '<label><input type="checkbox"><span></span></label>';
-      li.querySelector('span').textContent = text;
-      const box = li.querySelector('input');
-      box.checked = !!state[text]; li.classList.toggle('done', box.checked);
-      box.onchange = () => { state[text] = box.checked; li.classList.toggle('done', box.checked); save(); count(); };
-      el.appendChild(li);
+  try { state = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { state = {}; }
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* kept for this visit only */ } };
+  const DIR = 'docs/' + COUNTRY.official_guides.folder + '/';
+  const guides = {};   // guide name and language -> its text, or null when it is not saved
+
+  // The saved guide in a language: Ukrainian guides sit in the folder, the others in a folder named by language code.
+  const guideText = (name, lang) => {
+    const id = lang + ':' + name;
+    if (!(id in guides)) {
+      const path = DIR + (lang === COUNTRY.default_language ? '' : lang + '/') + name + '.md';
+      guides[id] = fetchDoc(path).catch(() => null);
     }
+    return guides[id];
+  };
+
+  // The list's lines: from the line that starts it to the line that ends it, each plain line one item.
+  const itemsOf = (text, list, lang) => {
+    const at = v => (v && typeof v === 'object') ? (v[lang] || '') : (v || '');
+    const lines = (text || '').split('\n');
+    const from = lines.findIndex(l => l.trim() === '### ' + at(list.section));
+    if (from < 0) return [];
+    let end = lines.findIndex((l, i) => i > from && /^#{1,3} /.test(l));
+    if (end < 0) end = lines.length;
+    const part = lines.slice(from + 1, end);
+    const start = part.findIndex(l => l.trim() === at(list.start));
+    const stop = part.findIndex(l => l.trim().startsWith(at(list.until)));
+    const body = part.slice(start + 1, stop < 0 ? part.length : stop);
+    return body.map(l => l.trim().replace(/^[-*•]\s+/, '').replace(/[;.,]$/, '')).filter(Boolean);
+  };
+
+  let drawn = 0;
+  function box(ul, key, text) {
+    const li = document.createElement('li');
+    li.innerHTML = '<label><input type="checkbox"><span></span></label>';
+    li.querySelector('span').textContent = text;
+    const input = li.querySelector('input');
+    input.checked = !!state[key]; li.classList.toggle('done', input.checked);
+    input.onchange = () => {
+      if (input.checked) state[key] = true; else delete state[key];
+      li.classList.toggle('done', input.checked); save(); count();
+    };
+    ul.appendChild(li);
+  }
+  function section(id, heading) {
+    const sec = document.createElement('section');
+    sec.dataset.list = id;
+    sec.innerHTML = '<h2></h2><ul></ul>';
+    sec.querySelector('h2').textContent = heading;
+    document.getElementById('lists').appendChild(sec);
+    return sec.querySelector('ul');
   }
   function count() {
     const boxes = [...document.querySelectorAll('input[type=checkbox]')];
     const done = boxes.filter(b => b.checked).length;
-    document.getElementById('count').textContent = `${done} av ${boxes.length} klart`;
+    document.getElementById('count').textContent = KIT.t('checklist.count', { done, total: boxes.length });
     document.getElementById('bar').style.width = (boxes.length ? 100 * done / boxes.length : 0) + '%';
   }
-  const OFFICIAL = COUNTRY.checklist.official_list;
-  document.getElementById('mcfhead').textContent = COUNTRY.text(OFFICIAL.heading);
-  list(document.getElementById('kit'), KIT);
-  // MCF's own list, from the saved page "Grunder i hemberedskap".
-  const doc = 'docs/' + COUNTRY.official_guides.folder + '/' + OFFICIAL.guide + '.md';
-  fetchDoc(doc).then(t => {
-    const part = (t.split(/\n(?=## )/).find(p => p.startsWith('## ' + OFFICIAL.section)) || '');
-    const items = part.split('\n').filter(l => /^\s*[-*•]\s+/.test(l)).map(l => l.replace(/^\s*[-*•]\s+/, '').trim());
-    if (!items.length) throw new Error('empty');
-    list(document.getElementById('mcf'), items);
-    const src = (t.match(new RegExp('^' + OFFICIAL.source_prefix + '.*$', 'm')) || [''])[0];
-    document.getElementById('mcfsrc').textContent = src + ' Mer om vatten, mat och värme: se Svenska myndigheters råd på startsidan.';
-    count();
-  }).catch(() => {
-    document.getElementById('mcf').innerHTML = '<li><label>MCF:s checklista saknas. Kör installationen igen med internet.</label></li>';
-    count();
-  });
-  document.getElementById('reset').onclick = () => { state = {}; save(); location.reload(); };
-  count();
+
+  // Draws the lists in the page language. A redraw that started before a language change gives way to the later one.
+  function draw() {
+    const lang = KIT.lang, mine = ++drawn;
+    // The title template is read again by the country layer when the language changes, so it is set there.
+    document.documentElement.dataset.title = KIT.t('checklist.title') + ' \u00b7 {kit}';
+    document.title = KIT.t('checklist.title') + ' \u00b7 ' + COUNTRY.kit();
+    const lists = COUNTRY.checklist.official_lists;
+    Promise.all(lists.map(l => guideText(l.guide[lang] || l.guide[COUNTRY.default_language], lang))).then(texts => {
+      if (mine !== drawn) return;
+      document.getElementById('lists').innerHTML = '';
+      let source = '';
+      lists.forEach((list, i) => {
+        const ul = section(list.id, COUNTRY.text(list.heading));
+        const items = itemsOf(texts[i], list, lang);
+        if (!items.length) {
+          const li = document.createElement('li');
+          li.innerHTML = '<label></label>';
+          li.querySelector('label').textContent = KIT.t('checklist.missing');
+          ul.appendChild(li);
+        }
+        items.forEach(item => box(ul, lang + ':' + list.id + ':' + item, item));
+        if (!source) source = ((texts[i] || '').match(/^(Джерело|Source): .*$/m) || [''])[0];
+      });
+      const kit = section('kit', KIT.t('checklist.kit.heading'));
+      COUNTRY.checklist.additions.forEach((a, i) => box(kit, 'kit:' + i, COUNTRY.text(a)));
+      document.getElementById('src').textContent = source;
+      count();
+    });
+  }
+
+  document.getElementById('reset').onclick = () => { state = {}; save(); draw(); };
+  KIT.onChange(draw);
+  draw();
 })();
 </script>
 </body>

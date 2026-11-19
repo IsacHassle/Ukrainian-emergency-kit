@@ -1,208 +1,100 @@
-# Krislåda · Swedish-doomsdaykit
+# Тривожна валіза · Emergency Kit
 
-En krislåda för Mac som fungerar helt utan internet. När internet, mobilnätet eller elen ligger nere har du ändå:
+Українська · [English](README.en.md)
 
-- **Första hjälpen och sjukvård:** 29 akuta ämnen ett klick bort, medicinska uppslagsverk, fältsjukvårdsböcker och NHS läkemedelsguide
-- **En AI du kan fråga på svenska**, som svarar ur krislådans böcker, visar källan och kan titta på foton
-- **Karta över hela Sverige** ner till enskilda hus, med sökning på varje ort, gata och adress, och närmaste sjukhus, apotek, polis, dricksvatten, mat och bensin
-- **Vad du gör i varje slags kris:** myndigheternas broschyr *Om krisen eller kriget kommer*, och guider för strålning, kemolyckor, strömavbrott, vinterstormar med mera
-- **Mobiler på samma wifi kan använda allt.** Macen gör jobbet, inget internet behövs
+Тривожна валіза працює на Mac без інтернету: офіційні поради, медичні бібліотеки, мапа України і ШІ, що відповідає українською. Усе працює на вашому комп’ютері, нічого нікуди не надсилається.
 
-Allt körs på din egen dator. Inget skickas någonstans.
+## Встановлення
 
-## Ladda ner och installera
+*Цей розділ буде переписано (завдання 13). Поки що встановлення описано в `install.sh`.*
 
-**Du behöver:** en Mac med Apple-chip (M1 eller nyare; se Apple-menyn → Om den här datorn → "Chip: Apple M…"), cirka **50 GB** ledigt utrymme, gärna 16 GB minne för AI:n, och internet medan den installeras. Installationen tar några timmar, mest nedladdning. Låt Macen vara på och ansluten till ström.
+<!-- user-guide:start -->
+## Почніть тут
 
-### Sätt 1: ladda ner och dubbelklicka
+1. Двічі клацніть файл запуску **Start** у теці валізи (назва двома мовами). Не закривайте вікно Terminal, що відкриється: поки воно відкрите, валіза працює.
+2. У браузері відкриється **початкова сторінка**, `http://localhost:8091`. На ній:
+    - **Невідкладно**: кнопки для ситуацій, коли важлива кожна хвилина (кровотеча, завали, міни, чадний газ, радіація та інші). Кнопка відкриває офіційну пораду, а за нею статтю ВікіМед.
+    - **Пошук у бібліотеках**: один рядок для всіх бібліотек. Англійською знаходиться найбільше, є й кнопка пошуку українською.
+    - **Запитати ШІ**: опишіть ситуацію своїми словами.
+    - **Мапа** і **Де я?**: мапа без інтернету, пошук адрес, найближчі лікарня, аптека й вода.
+    - **Офіційні поради**: сторінки ДСНС, МОЗ, ЦГЗ, Червоного Хреста та dovidka.info, збережені для читання без інтернету, а також посібник «У разі надзвичайної ситуації або війни».
+    - **Підготуйтеся**: **Друк** і **Чекліст** (про них нижче).
+3. **Мова.** У верхньому правому куті кожної сторінки перемикач **УКР | ENG**. Вибір запам’ятовується на цьому пристрої.
+4. **Телефони родини.** Підключіть їх до тієї самої Wi-Fi-мережі й відкрийте в браузері адресу, яку показує вікно Terminal (наприклад `http://192.168.1.23:8091`). Інтернет не потрібен: ШІ і мапа працюють і з телефона, усю роботу робить Mac. Роутеру потрібне живлення: його вистачить від павербанка.
 
-1. **[⬇️ Ladda ner Krislåda](https://github.com/IsacHassle/Swedish-doomsdaykit/releases/latest/download/Krislada.zip)** (cirka 11 MB).
-2. Öppna **Hämtade filer** och dubbelklicka på **Krislada.zip**. Du får en mapp som heter **Krislåda**.
-3. Öppna mappen och dubbelklicka på **Installera Krislåda.command**.
-4. Macen säger troligen att den inte kan kontrollera filen, eftersom den inte kommer från App Store. Klicka **Klar**, öppna **Systeminställningar → Integritet och säkerhet**, scrolla ner och klicka **Öppna ändå** vid "Installera Krislåda.command". Bekräfta med ditt lösenord eller Touch ID.
-5. Ett Terminal-fönster öppnas och visar hur det går. Krislådan flyttar sig själv till mappen **Krislåda** i din hemmapp.
-
-### Sätt 2: en rad i Terminal
-
-1. Öppna **Terminal** (tryck Cmd + mellanslag, skriv *Terminal*, tryck Enter).
-2. Klistra in den här raden och tryck Enter:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/IsacHassle/Swedish-doomsdaykit/main/hamta.sh | bash
-```
-
-Krislådan hamnar i mappen **Krislåda** i din hemmapp.
-
-### Bra att veta
-
-- Om något avbryts: kör installationen igen (dubbelklicka igen eller klistra in raden igen). Den fortsätter där den slutade.
-- Installationen hämtar allt från originalkällorna och kontrollerar varje bibliotek mot dess kontrollsumma. Den installerar **Ollama** och **AnythingLLM** (AI-apparna) om de saknas.
-- Första gången AnythingLLM öppnas kan den visa en välkomstskärm. Klicka dig igenom den och kör installationen igen om den stannade där.
-- Har du en äldre Mac eller lite utrymme: kör `./install.sh --utan-ai` i mappen, så får du allt utom AI:n (cirka 20 GB).
-- När den är klar: **skriv ut `Krislåda - guide att skriva ut.pdf`**, och tryck **Skriv ut** på startsidan för första hjälpen, varningssignaler, vatten och värme från 1177, MCF och Livsmedelsverket (cirka 26 sidor). Lägg papperen hos din hemberedskap. Om Macen saknar ström är papperet det du fortfarande kan läsa.
-
----
-
-Resten av sidan är bruksanvisningen. Samma text finns i utskriftsguiden, och AI:n har läst den.
-
-## Börja här
-
-1. Dubbelklicka på **Starta Krislåda.command** (i mappen Krislåda, eller genvägen **Krislåda** på skrivbordet). Den startar också AI-apparna Ollama och AnythingLLM i bakgrunden. Låt Terminal-fönstret som öppnas vara kvar.
-2. **Startsidan** öppnas i webbläsaren på http://localhost:8091. Där finns:
-    - **en sökruta** över alla bibliotek (engelska ord fungerar bäst, det finns en svensk knapp också)
-    - **Fråga AI**: fråga AI:n på svenska, se guiden nedan
-    - **Karta**: kartan över Sverige, med adressökning
-    - **Var är jag?**: din position på kartan, med en USB GPS-mottagare i datorn
-    - **Skriv ut**: det viktigaste från 1177, MCF och Livsmedelsverket på papper, att skriva ut medan det finns ström
-    - **Checklista**: MCF:s lista för hemberedskap att bocka av, plus det krislådan själv behöver
-    - **29 akutknappar**: hjärt-lungräddning, blödning, brännskador, nedkylning, kolmonoxid, förgiftning, förlossning med mera. De flesta öppnar 1177:s eller MCF:s råd på svenska, med den engelska artikeln ett tryck bort
-    - **Svenska myndigheters råd**: 63 sidor från 1177, MCF, Livsmedelsverket och Krisinformation, sparade för läsning utan internet
-    - **de 10 viktigaste böckerna** som PDF, och **alla dokument**
-3. **Familjens mobiler:** anslut till samma wifi och öppna adressen som Terminal-fönstret visar, till exempel `http://Annas-MacBook-Air.local:8091` (samma adress varje gång, fungerar på iPhone) eller `http://192.168.1.23:8091` (kan ändras, fungerar överallt). Inget internet behövs. AI:n och kartan fungerar från mobilen också, Macen gör jobbet. Wifi-routern behöver ström: en router kopplad till en powerbank eller ett batteripaket räcker långt. Tips: tryck **Dela → Lägg till på hemskärmen** (iPhone) eller **⋮ → Lägg till på startskärmen** (Android), så får mobilen en Krislåda-ikon.
-
-| Jag behöver... | Gör så här |
+| Що мені потрібно | Що робити |
 |---|---|
-| Agera snabbt vid skada eller sjukdom | Startsidan → **Akut**-knapp. Ring **112** om någon telefon fungerar |
-| Ställa en fråga på vanlig svenska | Startsidan → **Fråga AI**. Den svarar ur böckerna och visar källan |
-| Fråga om ett foto (sår, utslag, växt, trasig sak) | **Fråga AI** → **Foto** |
-| Fråga utan att skriva | Macens diktering: 🎤-tangenten, eller tryck Fn två gånger. På mobilen: mikrofonen på tangentbordet |
-| Veta vad myndigheterna råder | Startsidan → *Om krisen eller kriget kommer* |
-| Hitta en adress, närmaste sjukhus, apotek eller dricksvatten | Startsidan → **Karta** → sökrutan eller knapparna Sjukhus, Apotek och Vatten |
-| Läsa av koordinater att skicka vidare | **Karta** → tryck på kartan |
-| Höra viktiga meddelanden | Batteri- eller vevradio på **Sveriges Radio P4** |
+| Швидко діяти при травмі чи отруєнні | Початкова сторінка, розділ **Невідкладно**. Телефонуйте **112**, якщо працює бодай один телефон |
+| Поставити запитання простими словами | **Запитати ШІ** |
+| Запитати про фото (рана, висип, пошкодження) | **Запитати ШІ**, кнопка фото (режим **Швидка відповідь**) |
+| Знати, що радять органи влади | **Офіційні поради** |
+| Знайти адресу, лікарню, аптеку чи воду | **Мапа**, рядок пошуку або кнопки «Найближче» |
+| Дізнатися координати, щоб передати їх далі | **Мапа**, торкніться потрібного місця |
+| Мати поради на папері | **Друк** (поки є електрика) |
+| Перевірити, чи все готово вдома | **Чекліст** |
 
-Nummer: **112** nödsituation · **1177** sjukvårdsrådgivning · **113 13** information vid kris · **114 14** polisen, ej akut.
+Номери: **112** єдиний номер екстрених служб · **101** пожежно-рятувальна служба · **102** поліція · **103** швидка допомога · **104** аварійна служба газу.
 
-## Så använder du AI:n
+## Як користуватися ШІ
 
-AI:n körs helt på Macen. Öppna den från startsidan: **Fråga AI** (eller direkt på http://localhost:8091/ai/). Samma sida fungerar på familjens mobiler på wifi:t.
+ШІ працює повністю на Mac. Відкрийте **Запитати ШІ** на початковій сторінці (або `http://localhost:8091/ai/`). Та сама сторінка працює й на телефонах родини в Wi-Fi.
 
-1. **Välj läge** under rubriken (flikarna Ur böckerna, Snabbt svar och Spara batteri):
+1. **Оберіть режим** над полем запиту:
 
-    | Läge | Använd när | Tid |
-    |---|---|---|
-    | **Ur böckerna** | Det mesta: skador, sjukdom, läkemedel, vatten, mat, värme, myndigheternas råd. Den läser krislådans böcker (1177, MCF och Livsmedelsverket på svenska, sjukvårdsböcker, NHS läkemedelsfakta, vattenrening, mat, MCF-broschyren, Ready.gov-guiderna) och artiklar ur de stora medicinska biblioteken (WikiMed, MDWiki, MedlinePlus), och visar källorna under svaret. Tryck på en för att öppna den | Cirka 10 till 40 s |
-    | **Snabbt svar** | När det är bråttom, eller för att fråga om ett **foto**. Samma stora AI, utan böckerna | Cirka 5 till 20 s |
-    | **Spara batteri** | När Macen går på batteri och du inte vet när du kan ladda. Mindre AI, enklare svar, tar också foton | Snabbare, lättare |
+    | Режим | Коли використовувати |
+    |---|---|
+    | **З джерел** | У більшості випадків: травми, хвороби, ліки, вода, їжа, тепло, поради органів влади. ШІ спершу знаходить потрібні офіційні посібники, книги й статті бібліотек, відповідає з них і показує їхній перелік під відповіддю. Торкніться джерела, щоб відкрити його |
+    | **Швидка відповідь** | Коли поспішаєте або хочете запитати про **фото**. Відповідь без пошуку джерел |
+    | **Економія батареї** | Коли Mac працює від батареї. Менша модель, простіші відповіді, фото теж приймає |
 
-2. **Skriv som när du ringer 1177.** Vem (ålder, vikt för barn), vad som hände, när, vad du ser, vad du har hemma. Exempel: *Min pappa är 72 år. Han föll i trappan för 20 minuter sedan och slog i huvudet. Han blöder lite från pannan och verkar förvirrad. Vi har plåster, kompresser och Alvedon. Vad ska vi göra?*
-3. **Fortsätt fråga.** Den minns samtalet ("Vad gör jag om det blir värre?", "Förklara steg 3 enklare"). Tryck **Ny konversation** när du byter ämne.
-4. **Foton:** tryck **Foto**. Bra ljus, nära, en sak per bild, och skriv vad du undrar.
-5. **Prata i stället för att skriva:** Macens diktering (🎤-tangenten, eller Fn två gånger), eller mikrofonen på mobilens tangentbord.
-6. **Kontrollera det viktiga.** AI kan ha fel. Öppna källan under svaret, särskilt för doser. Ät aldrig en svamp eller växt för att AI:n säger att den är ätlig.
-7. **Spara ström:** AI:n drar mycket ström medan den svarar. Ställ få och tydliga frågor, välj Spara batteri, stäng andra appar.
-8. **Om det inte fungerar** visar raden högst upp på AI-sidan vad som saknas: öppna appen **Ollama** för AI-motorn, eller appen **AnythingLLM** för böckerna (utan den svarar Ur böckerna bara ur biblioteken). Första svaret efter start tar längre tid medan AI:n laddas.
+2. **Пишіть так, ніби телефонуєте до служби порятунку:** хто (вік, вага дитини), що сталося, коли, що ви бачите, що є вдома. Приклад: *Моєму батькові 72 роки. Він упав зі сходів 20 хвилин тому й вдарився головою. З чола трохи тече кров, він розгублений. Є пластир, стерильні серветки й парацетамол. Що робити?*
+3. **Питайте далі.** ШІ пам’ятає розмову («А якщо стане гірше?», «Поясни крок 3 простіше»). Коли змінюєте тему, почніть нову розмову.
+4. **Фото:** добре світло, зблизька, один предмет на знімку, і напишіть, що саме вас цікавить.
+5. **Говоріть замість друкування:** диктування на Mac (клавіша 🎤 або двічі Fn) чи мікрофон на клавіатурі телефона.
+6. **Перевіряйте важливе.** ШІ може помилятися. Відкрийте джерело під відповіддю, особливо для доз ліків. Ніколи не їжте гриб чи рослину лише тому, що ШІ каже, що вони їстівні.
+7. **Заощаджуйте струм.** ШІ споживає багато енергії під час відповіді. Ставте мало чітких запитань, оберіть Економію батареї, закрийте інші програми.
+8. **Якщо не працює:** рядок угорі сторінки ШІ показує, чого бракує: рушій ШІ, індекс книг чи бібліотеки. Без індексу книг режим «З джерел» шукає лише в статтях бібліотек. Перша відповідь після запуску триває довше.
+9. **Приватність.** Ваші запитання й відповіді ніде не зберігаються на Mac.
 
-Livsfara går först: ring **112** om någon telefon fungerar, och använd **Akut**-knapparna i stället för att vänta på ett svar från AI:n.
+ШІ не замінює лікаря чи рятувальників. Загроза життю: телефонуйте **112** і користуйтеся кнопками **Невідкладно**, а не чекайте на відповідь ШІ. ШІ скаже вам телефонувати **112** чи **101**, якщо є загроза життю. Про знайдений підозрілий предмет він нагадає: не торкатися, позначити місце, телефонувати **101**.
 
-### Andra sätt att använda samma AI på Macen
+## Мапа
 
-| Var | Modell | När |
-|---|---|---|
-| Appen **AnythingLLM**, arbetsytan **Crisis** | Gemma 4 26B via Ollama | Svarar ur böckerna, men inte ur WikiMed, MDWiki och MedlinePlus. Du kan dra in egna filer där |
-| Appen **Ollama**, modellen **crisis** | Gemma 4 26B med krisinstruktionerna inbyggda | Samma som Snabbt svar. Dra in ett foto i rutan för att fråga om det |
-| Appen **Ollama**, modellen **crisis-small** | Gemma 4 E4B, samma instruktioner | Samma som Spara batteri |
-| Terminal: `ollama run crisis` | | Skriv frågan, `/bye` för att avsluta |
+Мапа без інтернету охоплює Україну та Молдову, а також смугу близько 100 км у Польщі, Словаччині, Угорщині та Румунії. Назви українською та англійською. Усередині цієї території вона детальна, до окремих будинків.
 
-Instruktionerna som AI:n följer finns i `config/AI-PROMPT.txt`.
+- **Пошук:** населений пункт, вулиця чи адреса, наприклад *Хрещатик 22, Київ*. Працюють і написання *Київ*, *Kyiv*, *Kiev*. Якщо в даних мапи немає номера будинку, мітка стає між сусідніми будинками, і мапа каже, що місце приблизне.
+- **Найближче:** кнопки показують найближчі лікарні, аптеки, пожежні частини, воду та інше від центру мапи (або від вас, якщо відомо ваше місце).
+- **Де я?** показує вашу позицію на мапі без інтернету. **У Mac немає власного GPS**: підключіть **USB GPS-приймач** (шукайте «USB GPS», більшість працює на чипі u-blox) і, якщо в комп’ютері лише USB-C, перехідник. Перший раз приймачеві може знадобитися кілька хвилин біля вікна чи надворі. Без приймача можна позичити позицію телефона: на телефоні відкрийте `/mobil/` і виконайте кроки для iPhone чи Android, потім увімкніть позичання позиції на Mac. Воно вимкнене, доки власник чи відповідальний за пункт його не ввімкне.
+- **Торкніться мапи,** щоб побачити точні координати, які можна передати по радіо чи записати.
 
-## Vad finns i krislådan, och varför
+## Підготуйтеся
 
-Cirka 45 GB totalt: 14 GB bibliotek, 4,5 GB kartor, 1 GB dokument, 27 GB AI-modeller. Den täcker det som spelar roll först när vardagen slutar fungera: att hålla människor vid liv, sedan vatten, värme, mat och information, sedan att hitta rätt.
+### Чекліст
 
-### 1. Sjukvård: den viktigaste delen
+**Чекліст** на початковій сторінці допомагає крок за кроком підготуватися до тижня без електрики, води й магазинів. Він складається з трьох частин:
 
-När ambulansen dröjer eller inte går att nå avgör rätt första hjälpen hur det går. Flera källor finns med eftersom var och en täcker olika saker, och det är viktigt att kunna jämföra.
+- **Вдома** і **Що покласти в тривожну валізу**: офіційний перелік dovidka.info («Як підготуватися до надзвичайної ситуації»), збережений у валізі;
+- **Для самої валізи**: що потрібно самій Тривожній валізі (радіо, павербанк, GPS-приймач, мапа й бібліотеки на телефоні).
 
-| Bibliotek | Varför det finns med |
-|---|---|
-| Medical Library | Böcker skrivna för när det inte finns någon läkare: Where There Is No Doctor, Survival and Austere Medicine, Emergency War Surgery, A Book for Midwives, Where There Is No Dentist |
-| Military Medicine | Trauma: stoppa blödning, spjäla, nödförlossning, ta hand om någon i flera dagar med lite material |
-| WikiMed och MDWiki | Medicinska uppslagsverk med bilder: symtom och sjukdomar, känna igen utslag, bett, skador |
-| MedlinePlus | Lättläst information om hälsa och läkemedel från USA:s nationalbibliotek för medicin |
-| NHS Medicines A to Z | Vad ett läkemedel är till för, biverkningar, vem som inte får ta det |
-| CDC Health Information | Smittsamma sjukdomar och utbrott: hur sjukdom sprids, hur man skyddar ett hushåll |
+Позначайте те, що вже є. Позначки зберігаються в браузері цього пристрою. Кнопка **Почати спочатку** скидає їх, а **Друкувати** друкує список. Перелік dovidka.info має окремі версії українською й англійською, тому позначки в них ведуться окремо; позначки для самої валізи спільні для обох мов.
 
-### 2. Vatten, mat, skydd och varje slags kris
+### Друк
 
-Man klarar sig veckor utan mat men bara dagar utan vatten.
+**Друк** на початковій сторінці готує пакет: перша допомога, поранення й кровотеча, чадний газ, чиста вода, радіаційна аварія (у англійській версії набір дещо інший, бо не всі поради є англійською). Друкуйте його **мовою сторінки**, поки є електрика, і тримайте аркуші разом з тривожною валізою. Якщо в Mac немає струму, папір ви ще зможете прочитати. Коли з’явиться інтернет, перевірте найновіші поради на dovidka.info, moz.gov.ua, phc.org.ua і redcross.org.ua.
 
-| Bibliotek | Varför det finns med |
-|---|---|
-| Water Treatment Library | Koka, filtrera och rena vatten kemiskt |
-| Food for Preppers | Förvara mat och laga mat utan el eller vanliga råvaror |
-| Post Disaster Resource Library | Skydd, sanitet och återuppbyggnad efter en katastrof, plus SAS Survival Handbook |
-| Low-tech Magazine | Värme, matlagning och vardag med lite eller ingen el |
-| Ready.gov (USA:s FEMA) | Steg-för-steg-guider som den svenska broschyren inte går in på: strålning, kärnvapenexplosion, kemolyckor, explosioner, långa strömavbrott, vinterväder, pandemier. AI:n läser guiderna och FEMA:s handbok "Are You Ready?" |
-| A Library of Knots | Knopar för skydd, surrning och bärande |
+Цей посібник теж можна роздрукувати: файли «Тривожна валіза - посібник для друку.pdf» (українською) і «Emergency Kit - printable guide.pdf» (англійською) лежать у теці валізи.
 
-### 3. Svenska myndigheters råd och information
+### Ще підготуйте
 
-| Innehåll | Varför det finns med |
-|---|---|
-| 1177: första hjälpen och skador | Hjärt-lungräddning på vuxna och barn, stabilt sidoläge, luftvägsstopp, blödning, chock, allergisk chock, förgiftning, brännskador, köldskador, sår, hjärnskakning, huggorms- och fästingbett med mera, på svenska. Akutknapparna öppnar dem direkt |
-| MCF: hemberedskap, varningar, skyddsrum | Vatten, värme, mat, medicin, kommunikation och kontanter för en vecka; VMA och Hesa Fredrik, varning kring kärnkraftverk, skyddsrum, utrymning, höjd beredskap, brand, översvämning, värmebölja |
-| Livsmedelsverket | Dricksvatten i dunk, laga mat utan el, matförråd |
-| MCF:s broschyr, på svenska och engelska | Myndigheternas råd: hemberedskap, varningssignaler, vad samhället förväntar sig av dig |
-| Svenska Wikipedia | Inledningen av varje artikel: svenska platser, växter, djur, svampar och nästan allt annat |
+- Встановіть на телефон **Organic Maps** і завантажте мапу України: друга мапа, яка кілька днів працює від павербанка.
+- Встановіть на телефон **Kiwix** і скопіюйте медичні бібліотеки.
+- Придбайте радіо на батарейках або з ручним заводом і павербанк для Mac.
+- Придбайте **USB GPS-приймач** і один раз перевірте його кнопкою **Де я?** на мапі.
+- Запропонуйте літнім сусідам допомогу з підготовкою (так радить dovidka.info).
 
-### 4. Kartan
+Тривожна валіза не є медичною консультацією і не замінює службу порятунку. У надзвичайній ситуації телефонуйте **112**.
+<!-- user-guide:end -->
 
-En offline-karta över hela Sverige (med delar av Norge, Finland och Danmark i samma ram) och en översikt över världen, från OpenStreetMap. Ortnamnen är på svenska. Den har de gator, hus, stigar och husnummer som finns i OpenStreetMap, och du kan zooma in på enskilda hus.
+## Решта
 
-- **Sök** efter vilken ort, by, gata eller adress som helst i Sverige, till exempel *Hornsgatan 50* eller *Storgatan 30, Umeå*. Saknas ett husnummer i OpenStreetMap sätts nålen mellan grannhusen, och kartan säger att läget är ungefärligt.
-- **Närmaste**-knapparna listar de närmaste sjukhusen, vårdcentralerna, apoteken, polisstationerna, brandstationerna, dricksvattenställena, matbutikerna och bensinstationerna från kartans mitt.
-- Knapparna **Stockholm** och **Sverige** hoppar dit.
-- **Var är jag?** visar din position på kartan, följer med när du rör dig, och då räknar närmaste-knapparna från där du står ("1,2 km från dig"). Det fungerar helt utan internet, men **Macen har ingen egen GPS**: koppla in en **USB GPS-mottagare**. Sök efter "USB GPS" (de flesta har en u-blox-krets och kostar cirka 200–400 kr), och skaffa en USB-C-adapter om datorn bara har USB-C. Krislådan hittar mottagaren själv, inga drivrutiner behövs. Första gången kan den behöva några minuter vid ett fönster eller utomhus för att hitta satelliterna. Utan mottagare: sök på en gata, adress eller plats du ser omkring dig.
-- **Ingen USB-mottagare? Låt mobilen vara datorns GPS.** Varje mobil har en riktig GPS som fungerar utan internet. Ställ in mobilen en gång (öppna `/mobil/` på mobilen och följ stegen för iPhone eller Android), tryck sedan **Dela min position med Macen** och låt sidan vara öppen. Då visar Macens karta var du är när du trycker ⌖ (Var är jag?). Krislådan gör ett eget certifikat för det, som bara gäller adresser i ditt hemnätverk och inte kan användas för webbplatser på internet.
-- **Tryck** på kartan för att läsa av exakta koordinater, som du kan skicka vidare via radio eller skriva ner.
-
-### 5. Fler bibliotek, om du har plats
-
-`config/libraries.txt` listar extra bibliotek som du slår på genom att ta bort `#` framför dem och köra `bash scripts/download-library.sh`: Svenska Wikipedia i sin helhet med bilder (17 GB), engelska Wikipedia (13 GB, eller 49 GB i sin helhet), iFixits reparationsguider, och frågor och svar om husreparationer, bilar, odling, matlagning, friluftsliv och amatörradio. Kör `bash scripts/get-documents.sh` och `bash scripts/embed-documents.sh` efteråt om du lägger till bibliotek med böcker i.
-
-## Lägg till egna dokument
-
-Lägg filer i krislådans mapp `documents/` (kontaktlistor, läkemedelslistor, försäkringspapper, manualer till elverk eller vattenfilter) och kör `bash scripts/embed-documents.sh`. Då kan AI:n svara ur dem också. Du kan också dra in filer direkt i arbetsytan Crisis i AnythingLLM. Dina egna dokument lämnar aldrig Macen.
-
-## Mappar
-
-| Sökväg | Innehåll |
-|---|---|
-| `Installera Krislåda.command` | Installerar eller lagar allt |
-| `Starta Krislåda.command` | Dubbelklicka för att starta allt |
-| `Kontrollera Krislåda.command` | Dubbelklicka för att kontrollera att allt fungerar |
-| `config/` | `libraries.txt` (vilka bibliotek), `swedish-pages.txt` (vilka myndighetssidor), `AI-PROMPT.txt` (AI:ns instruktioner), `document-names.json` (boktitlar) |
-| `scripts/` | `share-library.sh` (start), `serve-web.py` (webbservern, och kopplingen mellan AI-sidan och Ollama/AnythingLLM), `kit_search.py` (det AI:n läser i Ur böckerna), `build-home.py` (startsidan), nedladdningsstegen `get-*.sh`, `setup-ai.sh`, `embed-documents.sh`, `extract-documents.py`, `fetch-swedish-pages.py` (myndigheternas råd), `update-libraries.sh`, `kontroll.sh`, `make-cert.sh` (https för mobilens GPS), `build-map-index.py` (kartans sökning) |
-| `web/` | Startsidan, AI-sidan (`web/ai/`), kartan (`web/map/`), läsaren för textdokument (`web/las/`), utskriftspaketet (`web/skriv-ut/`), checklistan (`web/checklista/`) och GPS-inställningen för mobiler (`web/mobil/`) |
-| `library/` | Biblioteken (.zim-filer), nedladdade. Appen Kiwix kan också öppna dem |
-| `documents/` | MCF-broschyren, och `library/` med varje bok som PDF, namngiven efter titel |
-| `maps/` | Kartfilerna för Sverige och världen |
-| `tools/`, `logs/` | Hjälpprogram och loggar |
-
-## Håll den uppdaterad
-
-Några gånger om året, med internet: kör `bash scripts/update-libraries.sh`. Den hämtar de senaste versionerna av biblioteken och myndigheternas sidor, tar bort de gamla versionerna och läser in nya böcker i AI:n. Det är alltid säkert att köra igen: färdiga filer hoppas över och avbrutna fortsätter. Startsidan bygger om sig själv varje gång du startar krislådan. `git pull` (eller en ny nedladdning) ger dig den senaste versionen av själva krislådan.
-
-Om Kiwix har tagit bort en version som står i listan hämtar installationen automatiskt den senaste versionen av samma bibliotek, så krislådan går att installera även om några år.
-
-Kartans sökning kan byggas om från färsk OpenStreetMap-data med `scripts/build-map-index.py` (kräver `brew install osmium-tool` och `maps/osm/sweden-latest.osm.pbf` från download.geofabrik.de).
-
-**En gång i månaden:** stäng av wifi och dubbelklicka på **Kontrollera Krislåda.command**. Den går igenom bibliotek, kartor, dokument och AI (den ställer en testfråga) och visar ✅ eller ⚠️ för varje del, med vad du ska göra om något saknas.
-
-## Gör också detta
-
-- Installera **Organic Maps** på mobilen och ladda ner Sverige: en andra karta som klarar sig i dagar på en powerbank.
-- Installera **Kiwix** på mobilen och kopiera över de medicinska biblioteken.
-- Skaffa en batteri- eller vevradio för P4, och en powerbank eller ett batteripaket för Macen.
-- Skaffa en **USB GPS-mottagare** till datorn (cirka 200–400 kr), så visar kartan var du är utan internet. Testa den en gång med Var är jag? på kartan.
-
-## Tack och licenser
-
-Krislådans egen kod har MIT-licens (`LICENSE`). Biblioteken, kartorna, broschyrerna och AI-modellerna hämtas från sina originalkällor och har sina egna licenser, se `CREDITS.md`. Inspirerad av [Project N.O.M.A.D.](https://github.com/Crosstalk-Solutions/project-nomad).
-
-Krislådan är inte medicinsk rådgivning och ersätter inte räddningstjänsten. Vid nödsituation, ring 112.
-
-## In English
-
-Krislåda is an offline crisis kit for Sweden on a Mac with Apple Silicon: medical libraries and 29 one-tap emergency topics, a local AI (Ollama and AnythingLLM) that answers in Swedish from the kit's books and medical libraries and can look at photos, an offline map of all of Sweden with search for every town, street and address, and the official Swedish brochure *In case of crisis or war*. Phones on the same Wi-Fi can use it too. Install with the one line above (or download `Krislada.zip` and double-click `Installera Krislåda.command`); it needs about 50 GB and a few hours of downloading, then works with no internet. Sources and licences are in `CREDITS.md`.
+*Розділи про перевірку, Пункт для всіх, ліцензії та подяки буде написано в завданні 13. Подяки й ліцензії: `CREDITS.md`.*
