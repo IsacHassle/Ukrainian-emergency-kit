@@ -315,7 +315,7 @@ class Grid:
         for dx in (-1, 0, 1):
             for dy in (-1, 0, 1):
                 for p in self.g.get((gx + dx, gy + dy), ()):
-                    d = km((lon, lat), p)
+                    d = distance_km((lon, lat), p)
                     if d < bd:
                         best, bd = p[2], d
         return best
@@ -338,7 +338,7 @@ def group_crossings(objs, limit=GROUP_KM):
         for dx in (-1, 0, 1):
             for dy in (-1, 0, 1):
                 for j in grid.get((gx + dx, gy + dy), ()):
-                    if j > i and km((lon, lat), objs[j][:2]) <= limit:
+                    if j > i and distance_km((lon, lat), objs[j][:2]) <= limit:
                         parent[find(j)] = find(i)
     groups = defaultdict(list)
     for i in range(len(objs)):
@@ -555,7 +555,7 @@ def build(osm_dir, poly_dir, work):
             grid.setdefault((round(p[0] / 0.025), round(p[1] / 0.0135)), []).append(p)
         for cell in grid.values():
             cx, cy = sum(p[0] for p in cell) / len(cell), sum(p[1] for p in cell) / len(cell)
-            mid = min(cell, key=lambda p: km(p, (cx, cy)))
+            mid = min(cell, key=lambda p: distance_km(p, (cx, cy)))
             per_letter[T.letter_of(name)].append([name, STREET, round(mid[0], 5), round(mid[1], 5), "|".join(sorted(keys)), en])
     log("street entries")
 
