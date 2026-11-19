@@ -165,10 +165,22 @@ class StandInLibrary:
                         '<entry><title>%s</title><language>%s</language><link type="text/html" href="/content/%s"/></entry>'
                         % (b["title"], b["language"], b["name"]) for b in lib.catalog)
                     return self.send_body(("<feed>%s</feed>" % entries).encode(), "application/atom+xml")
+                if url.path == "/suggest":   # titles that start like the term, as kiwix-serve does (works with no full-text index)
+                    qs = urllib.parse.parse_qs(url.query)
+                    term, book = qs.get("term", [""])[0].lower(), qs.get("content", [""])[0]
+                    found = []
+                    if os.path.isdir(os.path.join(lib.root, book)):
+                        for f in sorted(os.listdir(os.path.join(lib.root, book))):
+                            title = f[:-5].replace("_", " ")
+                            if term and title.lower().startswith(term):
+                                found.append({"value": title, "label": title, "kind": "path", "path": f[:-5]})
+                    return self.send_body(json.dumps(found, ensure_ascii=False).encode(), "application/json")
                 if url.path == "/search":
                     q = urllib.parse.parse_qs(url.query).get("pattern", [""])[0].lower()
                     items = ""
                     for b in lib.catalog:
+                        if b["language"] == "ukr":   # the Ukrainian WikiMed has titles only, no full-text search
+                            continue
                         for f in sorted(os.listdir(os.path.join(lib.root, b["name"]))):
                             title = f[:-5].replace("_", " ")
                             if q and q in title.lower():
