@@ -3,6 +3,9 @@
   StandInAI       listens where the kit expects Ollama and AnythingLLM and answers predictably.
   StandInLibrary  listens where the kit expects the Library server (kiwix-serve) and serves the
                   tiny Library in tests/kit/library.
+  StandInInternet the authorities' websites: an HTTP proxy (the scripts honour http_proxy) that answers
+                  from pages in tests/internet, so the guide saver and the link check never reach the real
+                  internet.
 
 Each listens on a port the operating system picks (port 0), so it never meets a running kit.
 Python 3.9 compatible, standard library only.
@@ -181,6 +184,76 @@ class StandInLibrary:
 
         self._server = _Server(Library)
         self.port = self._server.port
+
+    def start(self):
+        self._server.start()
+        return self
+
+    def stop(self):
+        self._server.stop()
+
+
+class StandInInternet:
+    """The authorities' websites, for the guide saver and the link check. It is an HTTP proxy: a script run with
+    http_proxy pointing here asks for the real address (http://dovidka.info/...) and gets the stand-in page.
+
+        net = StandInInternet().start()
+        net.page("http://dovidka.info/ukryttya/", "dovidka-article.html")   # a fixture file in tests/internet
+        net.refuse("http://dsns.gov.ua/x")                                  # Cloudflare's challenge, 403
+        net.add("http://x.test/y", 404, b"gone", "text/plain")
+        net.requests                                                        # [(method, host, path, headers, time)]
+    """
+
+    def __init__(self):
+        self.routes = {}
+        self.requests = []
+        net = self
+
+        class Proxy(_Handler):
+            def do_GET(self):
+                url = urllib.parse.urlsplit(self.path)
+                key = (url.hostname, urllib.parse.unquote(url.path))
+                net.requests.append((self.command, url.hostname, urllib.parse.unquote(url.path), dict(self.headers), time.time()))
+                status, ctype, body, headers = net.routes.get(key, (404, "text/plain", b"not found", {}))
+                self.send_response(status)
+                self.send_header("Content-Type", ctype)
+                self.send_header("Content-Length", str(len(body)))
+                for k, v in headers.items():
+                    self.send_header(k, v)
+                self.end_headers()
+                if self.command != "HEAD":
+                    self.wfile.write(body)
+
+            do_HEAD = do_GET
+
+        self._server = _Server(Proxy)
+        self.port = self._server.port
+        self.proxy = "http://127.0.0.1:%d" % self.port
+
+    def add(self, url, status, body, ctype="text/html; charset=utf-8", headers=None):
+        u = urllib.parse.urlsplit(url)
+        self.routes[(u.hostname, urllib.parse.unquote(u.path))] = (status, ctype, body, headers or {})
+        return self
+
+    def page(self, url, fixture, status=200):
+        """Serve a fixture file (tests/internet/<fixture>) at an address; a .pdf is served as a PDF."""
+        with open(os.path.join(HERE, "internet", fixture), "rb") as f:
+            body = f.read()
+        return self.add(url, status, body, "application/pdf" if fixture.endswith(".pdf") else "text/html; charset=utf-8")
+
+    def refuse(self, url):
+        """What a State Emergency Service address answers from outside Ukraine."""
+        with open(os.path.join(HERE, "internet", "cloudflare.html"), "rb") as f:
+            body = f.read()
+        return self.add(url, 403, body, headers={"Server": "cloudflare", "cf-mitigated": "challenge"})
+
+    def redirect(self, url, to):
+        return self.add(url, 302, b"", headers={"Location": to})
+
+    def env(self):
+        """Environment for a script that must reach the stand-in internet (and nothing else)."""
+        return {"http_proxy": self.proxy, "HTTP_PROXY": self.proxy, "https_proxy": self.proxy, "HTTPS_PROXY": self.proxy,
+                "no_proxy": "", "NO_PROXY": "", "EK_FETCH_PAUSE": "0"}
 
     def start(self):
         self._server.start()

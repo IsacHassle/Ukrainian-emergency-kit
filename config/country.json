@@ -124,19 +124,84 @@
   }
  },
  "official_guides": {
-  "folder": "library/Svenska myndigheter",
+  "folder": "Official Guides",
   "sources": [
    {
-    "id": "ДСНС",
+    "id": "dovidka.info",
+    "host": "dovidka.info",
+    "container": [
+     "article",
+     "main"
+    ],
+    "title_suffix": [
+     " - Dovidka.info"
+    ],
     "label": {
-     "uk": "ДСНС · Перша допомога, пожежі, укриття",
-     "en": "DSNS · First aid, fires, shelters"
-    },
-    "host": "dsns.gov.ua"
+     "uk": "dovidka.info · Укриття, війна, перша допомога",
+     "en": "dovidka.info · Shelter, war, first aid"
+    }
+   },
+   {
+    "id": "МОЗ",
+    "host": "moz.gov.ua",
+    "container": [
+     "div.article_content--post"
+    ],
+    "label": {
+     "uk": "МОЗ · Перша допомога, радіація, чадний газ",
+     "en": "Ministry of Health · First aid, radiation, carbon monoxide"
+    }
+   },
+   {
+    "id": "ЦГЗ",
+    "host": "phc.org.ua",
+    "container": [
+     "div.full-news-content"
+    ],
+    "title_suffix": [
+     " | Центр громадського здоров’я"
+    ],
+    "label": {
+     "uk": "ЦГЗ · Вода, інфекції, переохолодження",
+     "en": "Public Health Center · Water, infections, hypothermia"
+    }
+   },
+   {
+    "id": "Червоний Хрест",
+    "host": "redcross.org.ua",
+    "container": [
+     "div.wpb-content-wrapper"
+    ],
+    "title_suffix": [
+     " – Товариство Червоного Хреста України",
+     " – Ukrainian Red Cross Society"
+    ],
+    "label": {
+     "uk": "Червоний Хрест · Перша допомога, міни, тепло",
+     "en": "Red Cross · First aid, mines, warmth"
+    }
+   },
+   {
+    "id": "ДСНС",
+    "host": "dsns.gov.ua",
+    "optional": true,
+    "container": [
+     "article",
+     "main"
+    ],
+    "label": {
+     "uk": "ДСНС · Тривога, укриття, міни",
+     "en": "State Emergency Service · Alerts, shelters, mines"
+    }
    }
   ],
   "print_pages": [
-   "ДСНС - Перша допомога"
+   "dovidka.info - Як надати допомогу пораненому",
+   "dovidka.info - Тактична медицина, як зупинити кровотечу",
+   "МОЗ - МОЗ нагадує, базові правила домедичної допомоги",
+   "МОЗ - Тихий вбивця, як уберегтися від отруєння чадним газом",
+   "dovidka.info - Як очистити воду за будь-яких умов",
+   "МОЗ - Що робити у разі радіаційної аварії"
   ]
  },
  "emergency_topics": [
@@ -150,6 +215,14 @@
     "uk": "Зупинка_кровотечі",
     "en": "Bleeding"
    },
+   "official_guide": {
+    "uk": [
+     "dovidka.info - Тактична медицина, як зупинити кровотечу"
+    ],
+    "en": [
+     "dovidka.info - Tactical medicine, how to stop bleeding"
+    ]
+   },
    "first": 1
   },
   {
@@ -161,6 +234,14 @@
    "wikimed": {
     "uk": "Вибухова_травма",
     "en": "Blast_injury"
+   },
+   "official_guide": {
+    "uk": [
+     "dovidka.info - У зоні бойових дій"
+    ],
+    "en": [
+     "dovidka.info - In the combat area"
+    ]
    },
    "first": 2
   },
@@ -174,6 +255,14 @@
     "uk": "Травматичний_токсикоз",
     "en": "Crush_syndrome"
    },
+   "official_guide": {
+    "uk": [
+     "dovidka.info - Росіяни обстрілюють українські міста, як облаштувати укриття та вибратися з-під завалів"
+    ],
+    "en": [
+     "dovidka.info - Russians are shelling Ukrainian cities, how to equip a shelter and get out of the rubble"
+    ]
+   },
    "first": 3
   },
   {
@@ -185,6 +274,15 @@
    "wikimed": {
     "uk": "Серцево-легенева_реанімація",
     "en": "Cardiopulmonary_resuscitation"
+   },
+   "official_guide": {
+    "uk": [
+     "Червоний Хрест - Перша допомога, довідник для населення",
+     "dovidka.info - Порятунок у наших руках, правила надання домедичної допомоги"
+    ],
+    "en": [
+     "dovidka.info - Rescue is in our hands, the rules of first aid"
+    ]
    },
    "first": 4
   },
@@ -198,6 +296,14 @@
     "uk": "Опік",
     "en": "Burn"
    },
+   "official_guide": {
+    "uk": [
+     "Червоний Хрест - Пожежі та опіки, перша допомога"
+    ],
+    "en": [
+     "dovidka.info - Rescue is in our hands, the rules of first aid"
+    ]
+   },
    "first": 5
   },
   {
@@ -209,6 +315,14 @@
    "wikimed": {
     "uk": "Шок_(медицина)",
     "en": "Shock_(circulatory)"
+   },
+   "official_guide": {
+    "uk": [
+     "dovidka.info - Як надати допомогу пораненому"
+    ],
+    "en": [
+     "dovidka.info - How to help a wounded person"
+    ]
    },
    "first": 6
   },
@@ -222,6 +336,12 @@
     "uk": "Гіпотермія",
     "en": "Hypothermia"
    },
+   "official_guide": {
+    "uk": [
+     "ЦГЗ - Як уберегтися від переохолодження",
+     "Червоний Хрест - Переохолодження, перша допомога"
+    ]
+   },
    "first": 7
   },
   {
@@ -233,6 +353,15 @@
    "wikimed": {
     "uk": "Отруєння_чадним_газом",
     "en": "Carbon_monoxide_poisoning"
+   },
+   "official_guide": {
+    "uk": [
+     "МОЗ - Тихий вбивця, як уберегтися від отруєння чадним газом",
+     "Червоний Хрест - Отруєння чадним газом, перша допомога"
+    ],
+    "en": [
+     "dovidka.info - Blackout"
+    ]
    },
    "first": 8
   },
@@ -246,6 +375,16 @@
     "uk": "Вибухова_травма",
     "en": "Blast_injury"
    },
+   "official_guide": {
+    "uk": [
+     "dovidka.info - Мінна безпека",
+     "Червоний Хрест - Мінна небезпека"
+    ],
+    "en": [
+     "dovidka.info - A guide to handling the threat of mining",
+     "Червоний Хрест - Mine danger"
+    ]
+   },
    "first": 9
   },
   {
@@ -257,6 +396,15 @@
    "wikimed": {
     "uk": "Променева_хвороба",
     "en": "Acute_radiation_syndrome"
+   },
+   "official_guide": {
+    "uk": [
+     "dovidka.info - Як врятуватись від брудної бомби, ядерної зброї чи аварії на АЕС",
+     "МОЗ - Що робити у разі радіаційної аварії"
+    ],
+    "en": [
+     "dovidka.info - How to protect yourself from a dirty bomb, a nuclear attack or an accident at a nuclear power plant"
+    ]
    },
    "first": 10
   }
@@ -349,16 +497,6 @@
     "en": "Dressings, slings and splints"
    },
    "path": "library/Military Medicine/Bandaging and Splinting.pdf"
-  }
- ],
- "brochures": [
-  {
-   "url": "https://rib.msb.se/filer/pdf/30828.pdf",
-   "file": "Om-krisen-eller-kriget-kommer.pdf"
-  },
-  {
-   "url": "https://rib.msb.se/filer/pdf/31523.pdf",
-   "file": "In-case-of-crisis-or-war.pdf"
   }
  ],
  "library_groups": [
@@ -823,8 +961,7 @@
   "Values below are still Sweden's and belong to later tickets; they are marked here so nobody ships them.",
   "ai.authorities, ai.example_source (07)",
   "radio (12)",
-  "official_guides.* and checklist.official_list.guide, checklist.official_list.source_prefix (06)",
-  "brochures (06)",
+  "checklist.official_list.guide, checklist.official_list.source_prefix (12)",
   "map.* except overview_label and nearest labels: regions, pmtiles, bbox, center, zoom, shortcuts, name_tags, labels, zoom_by_type, search_priority (08, 09)"
  ]
 }
