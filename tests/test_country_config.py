@@ -51,7 +51,7 @@ def testland(c):
     ]
     c["radio"] = {"label": {"uk": "Radio Test"}, "print_label": {"uk": "Testradion"}}
     c["official_guides"]["folder"] = "Testguides"
-    c["official_guides"]["print_pages"] = ["TL1 - Stop bleeding"]
+    c["official_guides"]["print_pages"] = {"uk": ["TL1 - Stop bleeding"]}
     c["official_guides"]["sources"] = [{"id": "TL1", "label": {"uk": "TL1 · Testråd"}}]
     c["emergency_topics"] = [{"id": "bleeding", "wikimed": {"uk": "Bleeding", "en": "Bleeding"}, "label": {"uk": "Testblödning", "en": "Test bleeding"},
                               "official_guide": {"uk": "TL1 - Stop bleeding"}, "first": 1}]

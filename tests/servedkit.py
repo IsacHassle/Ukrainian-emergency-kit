@@ -148,8 +148,15 @@ class ServedKit:
     def saved_guides(self):
         """{path under the guides folder: text or bytes} saved in the test kit. Names follow the real config
         (config/country.json) unless the test runs another country, which has only its first print page."""
-        name = self.facts["official_guides"]["print_pages"][0]
+        name = self.facts["official_guides"]["print_pages"]["uk"][0]
         saved = {name + ".md": "# %s\n\nPress hard on the wound.\n" % name.split(" - ", 1)[1]}
+        if self.country is None:
+            # a guide as saved from the site: with its navigation tag and the media notice, which stay off paper
+            saved[name + ".md"] = ("# Як надати допомогу пораненому\n\n## Спротив\n\n#Медицина\n\n### Як надати допомогу пораненому\n\n"
+                                   "Натисніть на рану.\n\n#### Важлива інформація для ЗМІ\n\n##### Що заборонено\n\nНе публікуйте позиції.\n")
+            saved["en/dovidka.info - How to help a wounded person.md"] = (
+                "# How to help a wounded person\n\n## Resistance\n\n#Medicine\n\n### How to help a wounded person\n\n"
+                "Press firmly on the wound.\n\n#### Important information for the media\n\n##### Banned\n\nDo not post positions.\n")
         if self.country is None:
             d = "dovidka.info - "
             saved.update({

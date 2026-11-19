@@ -195,13 +195,33 @@
     }
    }
   ],
-  "print_pages": [
-   "dovidka.info - Як надати допомогу пораненому",
-   "dovidka.info - Тактична медицина, як зупинити кровотечу",
-   "МОЗ - МОЗ нагадує, базові правила домедичної допомоги",
-   "МОЗ - Тихий вбивця, як уберегтися від отруєння чадним газом",
-   "dovidka.info - Як очистити воду за будь-яких умов",
-   "МОЗ - Що робити у разі радіаційної аварії"
+  "print_pages": {
+   "uk": [
+    "dovidka.info - Як надати допомогу пораненому",
+    "dovidka.info - Тактична медицина, як зупинити кровотечу",
+    "МОЗ - МОЗ нагадує, базові правила домедичної допомоги",
+    "МОЗ - Тихий вбивця, як уберегтися від отруєння чадним газом",
+    "dovidka.info - Як очистити воду за будь-яких умов",
+    "МОЗ - Що робити у разі радіаційної аварії"
+   ],
+   "en": [
+    "dovidka.info - How to help a wounded person",
+    "dovidka.info - Tactical medicine, how to stop bleeding",
+    "dovidka.info - Rescue is in our hands, the rules of first aid",
+    "dovidka.info - How to purify water in any conditions",
+    "dovidka.info - How to protect yourself from a dirty bomb, a nuclear attack or an accident at a nuclear power plant"
+   ]
+  },
+  "print_skip": [
+   "^Важлива інформація для ЗМІ",
+   "^Important information for the media",
+   "^Поради, як підготуватись",
+   "^See also the video",
+   "^https?://"
+  ],
+  "print_drop_lines": [
+   "^#{1,2}\\s+(Спротив|Resistance)\\s*$",
+   "^#[^\\s#]"
   ]
  },
  "emergency_topics": [
