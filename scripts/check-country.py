@@ -240,7 +240,7 @@ def main():
     lab = get("map", m, "labels", dict) or {}
     for k in ("place", "service", "landmark"):
         get("map.labels", lab, k, dict)
-    for k in ("street", "address", "approximate_prefix", "approximate"):
+    for k in ("street", "address", "border_crossing"):
         get("map.labels", lab, k, str)
     for k in ("base_places", "area_types", "town_types"):
         get("map.labels", lab, k, list)
