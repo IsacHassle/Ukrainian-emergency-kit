@@ -16,6 +16,8 @@ DIR="$KIT/library"
 LIST="${1:-$KIT/config/libraries.txt}"
 LOG="$KIT/logs/download.log"
 mkdir -p "$DIR" "$(dirname "$LOG")"
+# shellcheck source=say.sh
+. "$KIT/scripts/say.sh"
 
 # The listed URL if Kiwix still has it, otherwise the newest version of the same library.
 # A version is a year and month, sometimes with a letter after (nhs.uk_en_medicines_2026-09b).
@@ -30,11 +32,11 @@ resolve() {
 fetch() {
   local listed="$1" url name stem f want got ok old
   name=$(basename "$listed")
-  if [ -f "$DIR/$name" ]; then echo "SKIP $name (finns redan)"; return 0; fi
+  if [ -f "$DIR/$name" ]; then echo "SKIP $name (вже є / already there)"; return 0; fi
   url=$(resolve "$listed")
   name=$(basename "$url"); stem="${name%_*}"; f="$DIR/$name"
-  if [ -f "$f" ]; then echo "SKIP $name (finns redan)"; return 0; fi
-  [ "$url" != "$listed" ] && echo "NEW  $name (Kiwix har inte längre $(basename "$listed"), hämtar den senaste versionen)"
+  if [ -f "$f" ]; then echo "SKIP $name (вже є / already there)"; return 0; fi
+  [ "$url" != "$listed" ] && echo "NEW  $name (Kiwix більше не має $(basename "$listed"), беру найновішу версію / Kiwix no longer has $(basename "$listed"), taking the newest version)"
 
   want=$(curl -sSL --fail "$url.sha256" 2>/dev/null | awk '{print $1}')
   if [ -f "$f.part" ] && [ -n "$want" ] && [ "$(shasum -a 256 "$f.part" | awk '{print $1}')" = "$want" ]; then
@@ -44,19 +46,19 @@ fetch() {
     ok=0
     for attempt in 1 2 3 4 5; do
       curl -sSL --fail -C - --retry 5 --retry-delay 15 -o "$f.part" "$url" && { ok=1; break; }
-      echo "RETRY $name (försök $attempt)"; sleep 30
+      echo "RETRY $name (спроба $attempt / attempt $attempt)"; sleep 30
     done
-    if [ $ok = 0 ]; then echo "FAIL $name (hämtningen avbröts, kör igen så fortsätter den där den slutade)"; return 0; fi
+    if [ $ok = 0 ]; then echo "FAIL $name (завантаження перервалося, запустіть ще раз: воно продовжиться з того місця / the download stopped, run again and it continues where it stopped)"; return 0; fi
     got=$(shasum -a 256 "$f.part" | awk '{print $1}')
     if [ -n "$want" ] && [ "$got" = "$want" ]; then
       mv "$f.part" "$f"; echo "OK   $name"
     else
-      rm -f "$f.part"; echo "FAIL $name (kontrollsumman stämmer inte, kör igen)"; return 0
+      rm -f "$f.part"; echo "FAIL $name (контрольна сума не збігається, запустіть ще раз / the checksum does not match, run again)"; return 0
     fi
   fi
   # A newer version is in place: remove the older ones of the same library.
   for old in "$DIR/${stem}_"*.zim; do
-    [ "$old" != "$f" ] && [ -f "$old" ] && rm -f "$old" && echo "DEL  $(basename "$old") (ersatt av $name)"
+    [ "$old" != "$f" ] && [ -f "$old" ] && rm -f "$old" && echo "DEL  $(basename "$old") (замінено на $name / replaced by $name)"
   done
   return 0
 }

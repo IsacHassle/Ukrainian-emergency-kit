@@ -68,20 +68,20 @@ def pdf_collections(mixed=False):
             continue
         z = archive(prefix)
         if not z:
-            print(f"  {folder}: biblioteket är inte hämtat, hoppar över")
+            print(f"  {folder}: бібліотеку не завантажено, пропускаю / the Library is not downloaded, skipping")
             continue
         names, n = cfg["names"].get(prefix, {}), 0
         for e, it in entries(z):
             if it.mimetype == "application/pdf":
                 rel = names.get(e.path) or os.path.join(folder, safe(os.path.basename(e.path)))
                 n += save(os.path.join(OUT, rel), bytes(it.content))
-        print(f"  {folder}: {n} nya")
+        print(f"  {folder}: нових {n} / {n} new")
 
 
 def nhs_medicines():
     z = archive("nhs.uk_en_medicines")
     if not z:
-        print("  NHS Medicines: biblioteket är inte hämtat, hoppar över")
+        print("  NHS Medicines: бібліотеку не завантажено, пропускаю / the Library is not downloaded, skipping")
         return
     n = 0
     for e, it in entries(z):
@@ -98,11 +98,11 @@ def nhs_medicines():
             name = re.sub(r"\s+", " ", re.sub(r"[/:\\]", "", title)).strip().rstrip(".")
             n += save(os.path.join(OUT, "NHS Medicines", name + ".md"),
                       f"# {title}\n\nSource: NHS Medicines A to Z (nhs.uk), offline copy.\n\n{text}\n")
-    print(f"  NHS Medicines: {n} nya")
+    print(f"  NHS Medicines: нових {n} / {n} new")
 
 
 if __name__ == "__main__":
-    print("Plockar ut böckerna ur biblioteken:")
+    print("Видобуваю книги з бібліотек / Taking the Books out of the Libraries:")
     pdf_collections()
     nhs_medicines()
     pdf_collections(mixed=True)

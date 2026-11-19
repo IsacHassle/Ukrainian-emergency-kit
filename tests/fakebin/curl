@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+"""A stand-in for curl in the installer tests: answers from the files the test put in EK_FAKE_DOWNLOADS (named by
+the SHA-256 of the address). An address the test did not serve is a 404 (curl exit 22 with -f), so a test can never
+reach the internet through it. Only the options the kit's scripts use are understood."""
+import hashlib, os, sys
+
+args = sys.argv[1:]
+takes_value = {"-o", "-C", "--retry", "--retry-delay", "--max-time", "-X", "-H", "-d", "-F", "--output"}
+out, head, fail, url, i = None, False, False, None, 0
+while i < len(args):
+    a = args[i]
+    if a in takes_value:
+        if a in ("-o", "--output"):
+            out = args[i + 1]
+        i += 2
+        continue
+    if a.startswith("-") and not a.startswith("--") and len(a) > 1:
+        head = head or "I" in a
+        fail = fail or "f" in a
+    elif a.startswith("--"):
+        pass
+    else:
+        url = a
+    i += 1
+host = (url or "").split("/")[2] if (url or "").count("/") >= 2 else ""
+if host.split(":")[0] in ("127.0.0.1", "localhost"):   # the stand-ins of the tests: the real curl
+    os.execv("/usr/bin/curl", ["curl"] + args)
+with open(os.environ.get("EK_FAKE_LOG", os.devnull), "a") as log:
+    log.write("curl %s\n" % url)
+path = os.path.join(os.environ["EK_FAKE_DOWNLOADS"], hashlib.sha256((url or "").encode()).hexdigest())
+if not os.path.exists(path):
+    sys.exit(22 if fail else 0)
+if head:
+    sys.exit(0)
+data = open(path, "rb").read()
+if out:
+    with open(out, "wb") as f:
+        f.write(data)
+else:
+    sys.stdout.buffer.write(data)

@@ -11,10 +11,13 @@ KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROMPT="$KIT/config/AI-PROMPT.txt"
 # shellcheck source=country.sh
 . "$KIT/scripts/country.sh"   # the country's facts (config/country.json)
+# shellcheck source=say.sh
+. "$KIT/scripts/say.sh"
 MODEL_MAIN=$(country ai.models.main); MODEL_SMALL=$(country ai.models.small)
 BASE_MAIN=$(country ai.base_models.main); BASE_SMALL=$(country ai.base_models.small)
 WORKSPACE=$(country ai.workspace); WORKSPACE_NAME=$(country ai.workspace_name)
-A=http://localhost:3001/api
+A=http://${EK_ANYTHINGLLM:-localhost:3001}/api   # EK_OLLAMA, EK_ANYTHINGLLM: where the tests put stand-ins
+OLLAMA_ADDR=${EK_OLLAMA:-127.0.0.1:11434}
 OLLAMA=$(command -v ollama || echo /Applications/Ollama.app/Contents/Resources/ollama)
 
 wait_for() {   # url, seconds, what
@@ -24,7 +27,7 @@ wait_for() {   # url, seconds, what
 
 # 1. Ollama and the models.
 open -g -a Ollama
-wait_for http://127.0.0.1:11434/api/version 60 "Ollama"
+wait_for "http://$OLLAMA_ADDR/api/version" 60 "Ollama"
 for m in "$BASE_MAIN" "$BASE_SMALL" bge-m3; do
   "$OLLAMA" show "$m" >/dev/null 2>&1 || { echo "Завантажую модель ШІ $m / Downloading the AI model $m"; "$OLLAMA" pull "$m"; }
 done
@@ -57,5 +60,6 @@ PY
 # 3. The books.
 echo "Завантажую документи в ШІ (близько 40 хвилин вперше, хід у logs/embed.log) / Loading the documents into the AI (about 40 minutes the first time, progress in logs/embed.log)"
 bash "$KIT/scripts/embed-documents.sh"
-grep -E "embedded|to embed" "$KIT/logs/embed.log" | tail -1
-echo "ШІ готовий / The AI is ready."
+progress=$(grep -E "embedded|to embed" "$KIT/logs/embed.log" | tail -1 || true)
+say "Індекс книг: ${progress:-порожній}" "Book index: ${progress:-empty}"
+say "ШІ готовий" "The AI is ready"

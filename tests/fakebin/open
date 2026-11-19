@@ -1,0 +1,3 @@
+#!/bin/bash
+echo "open $*" >> "${EK_FAKE_LOG:-/dev/null}"
+exit 0

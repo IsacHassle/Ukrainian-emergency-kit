@@ -83,6 +83,7 @@ class StandInAI:
         self.chat_requests = []
         self.searched_workspaces = []
         self.aborted = 0
+        self.setup_posts = []   # what the installer sent to AnythingLLM's settings (path, body)
         # The Book index's document store, shared by all workspaces as in the real app. Tests may put another
         # kit's files in it (store_add); `uploads` lists the names uploaded, `embedded[workspace]` the files embedded.
         self.storage = tempfile.mkdtemp(prefix="ek-store-")
@@ -97,6 +98,8 @@ class StandInAI:
 
         class Ollama(_Handler):
             def do_GET(self):
+                if self.path == "/api/version":
+                    return self.send_json({"version": "0.0-stand-in"})
                 if self.path == "/api/tags":
                     return self.send_json({"models": [{"name": m + ":latest"} for m in ai.models]})
                 self.send_json({"error": "unknown"}, 404)
@@ -154,6 +157,10 @@ class StandInAI:
                         ai.embedded.setdefault(m.group(1), []).extend(self.body_json().get("adds", []))
                     return self.send_json({"workspace": {}})
                 body = self.body_json()
+                if self.path in ("/api/system/update-env", "/api/workspace/new") or re.fullmatch(r"/api/workspace/([\w-]+)/update", self.path):
+                    with lock:   # the installer's setup calls; a test may read what was sent
+                        ai.setup_posts.append((self.path, body))
+                    return self.send_json({"success": True})
                 m = re.fullmatch(r"/api/v1/workspace/([\w-]+)/vector-search", self.path)
                 if m:
                     with lock:

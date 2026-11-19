@@ -1,82 +1,100 @@
 #!/bin/bash
-# Krislåda (Swedish-doomsdaykit): installation.
+# Тривожна валіза / Emergency Kit: installation. Every message is on one line in both languages.
 #
-#   ./install.sh           allt (cirka 45 GB, några timmar)
-#   ./install.sh --utan-ai utan AI:n (cirka 20 GB)
+#   ./install.sh           everything (about 45 GB, a few hours)
+#   ./install.sh --no-ai   without the AI (about 20 GB)
 #
-# Kräver en Mac med Apple-chip (M1 eller nyare) och internet medan den installeras.
-# Sedan fungerar allt utan internet. Kör den igen när som helst: den fortsätter där
-# den slutade och hoppar över det som redan är klart.
+# Needs a Mac with Apple silicon (M1 or newer) and internet while it installs. After that everything works without
+# internet. Run it again at any time: it continues where it stopped and skips what is already done.
+#
+# For tests, EK_UNAME_S and EK_UNAME_M stand in for the kind of Mac, EK_FREE_GB for the free space and EK_APPS for
+# the folder the apps go in (/Applications), so the refusals can be tested without a full disk or another Mac.
 set -eu
 KIT="$(cd "$(dirname "$0")" && pwd)"
 AI=1
-case "${1:-}" in --utan-ai|--no-ai) AI=0 ;; esac
-step() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
+case "${1:-}" in --no-ai) AI=0 ;; esac
+# shellcheck source=scripts/say.sh
+. "$KIT/scripts/say.sh"
+step() { printf '\n\033[1m==> %s / %s\033[0m\n' "$1" "$2"; }
+APPS="${EK_APPS:-/Applications}"
+KIT_HOME="$HOME/Emergency-Kit"
 
-# Ligger mappen i Hämtade filer? Flytta den till hemmappen först, så att Krislådan har ett fast hem.
-if [[ "$KIT" == "$HOME/Downloads/"* ]] && [ ! -e "$HOME/Krislåda" ]; then
-  echo "Flyttar Krislåda från Hämtade filer till $HOME/Krislåda"
-  mv "$KIT" "$HOME/Krislåda"
-  exec bash "$HOME/Krislåda/install.sh" "$@"
+# A folder in Downloads moves to the home folder first, so that the kit has a fixed home.
+if [[ "$KIT" == "$HOME/Downloads/"* ]] && [ ! -e "$KIT_HOME" ]; then
+  say "Переношу валізу з Завантажень до $KIT_HOME" "Moving the kit from Downloads to $KIT_HOME"
+  mv "$KIT" "$KIT_HOME"
+  exec bash "$KIT_HOME/install.sh" "$@"
 fi
 cd "$KIT"
-# shellcheck source=country.sh
+# shellcheck source=scripts/country.sh
 . "$KIT/scripts/country.sh"   # the country's facts (config/country.json)
 
-if [ "$(uname -s)" != Darwin ] || [ "$(uname -m)" != arm64 ]; then
-  echo "Krislådan kräver en Mac med Apple-chip (M1 eller nyare)."; exit 1
+# The checks come first, before anything is downloaded.
+if [ "${EK_UNAME_S:-$(uname -s)}" != Darwin ] || [ "${EK_UNAME_M:-$(uname -m)}" != arm64 ]; then
+  say "Потрібен Mac з чипом Apple (M1 або новіший)" "The kit needs a Mac with an Apple chip (M1 or newer)"; exit 1
 fi
-free_gb=$(df -g "$KIT" | awk 'NR==2 {print $4}')
-need=$([ $AI = 1 ] && echo 50 || echo 22)
+free_gb=${EK_FREE_GB:-$(df -k "$KIT" | awk 'NR==2 {print int($4 / 1048576)}')}
+need=$([ $AI = 1 ] && echo 55 || echo 22)
+# Once the map is in place the install is a resume, and the space it still needs is smaller.
 if [ ! -f "$KIT/maps/$(country map.pmtiles).pmtiles" ] && [ "$free_gb" -lt "$need" ]; then
-  echo "Bara $free_gb GB ledigt här, Krislådan behöver cirka $need GB. Frigör utrymme och kör igen."; exit 1
+  say "Тут вільно лише $free_gb ГБ, а валізі потрібно $need ГБ. Звільніть місце й запустіть знову" \
+      "Only $free_gb GB free here, the kit needs $need GB. Free up some space and run it again"; exit 1
 fi
 chmod +x "$KIT"/scripts/*.sh "$KIT"/*.command
-xattr -dr com.apple.quarantine "$KIT" 2>/dev/null || true   # so "Starta Krislåda.command" opens without a warning
+xattr -dr com.apple.quarantine "$KIT" 2>/dev/null || true   # so the double-click files open without a warning
 
-install_app() {   # namn, adress till dmg-filen
-  [ -d "/Applications/$1.app" ] && return 0
-  step "Installerar $1"
+# The app installers are kept in installers/ (a Kit Drive carries them to a Mac with no internet), so the app is
+# installed from the kept file.
+mkdir -p "$KIT/installers" "$APPS"
+install_app() {   # name, address of the dmg file
+  local dmg="$KIT/installers/$1.dmg" tmp vol
+  if [ ! -s "$dmg" ]; then
+    say "Завантажую інсталятор $1" "Downloading the $1 installer"
+    curl -fL --progress-bar -o "$dmg.part" "$2"
+    mv "$dmg.part" "$dmg"
+  fi
+  [ -d "$APPS/$1.app" ] && return 0
+  say "Встановлюю $1" "Installing $1"
   tmp=$(mktemp -d)
-  curl -fL --progress-bar -o "$tmp/app.dmg" "$2"
-  vol=$(hdiutil attach -nobrowse -readonly "$tmp/app.dmg" | awk -F'\t' '/\/Volumes\// {print $NF; exit}')
-  cp -R "$vol/$1.app" /Applications/
+  vol=$(hdiutil attach -nobrowse -readonly "$dmg" | awk -F'\t' '/\/Volumes\// {print $NF; exit}')
+  [ -n "$vol" ] || vol=$(hdiutil attach -nobrowse -readonly "$dmg" | awk -F'\t' '{print $NF; exit}')
+  cp -R "$vol/$1.app" "$APPS/"
   hdiutil detach -quiet "$vol"
   rm -rf "$tmp"
 }
 
-step "1/5 Verktyg"
+step "1/5 Інструменти" "1/5 Tools"
 bash scripts/get-tools.sh
 
-step "2/5 Bibliotek för offline-läsning (cirka 14 GB)"
+step "2/5 Бібліотеки для читання без інтернету (близько 13 ГБ)" "2/5 Libraries for reading offline (about 13 GB)"
 bash scripts/download-library.sh
 if tail -n 60 logs/download.log | grep -q "^FAIL"; then
-  echo "Några bibliotek kunde inte hämtas. Kör installationen igen så försöker den på nytt."
+  say "Деякі бібліотеки не вдалося завантажити. Запустіть встановлення ще раз: воно спробує знову" \
+      "Some libraries could not be downloaded. Run the installation again and it will try again"
 fi
 
-step "3/5 Kartor över $(country map.overview_label) och världen (cirka 4,5 GB)"
+step "3/5 Мапа: $(country map.overview_label.uk) та світ (близько 3 ГБ)" "3/5 Map: $(country map.overview_label.en) and the world (about 3 GB)"
 bash scripts/get-maps.sh
 
-step "4/5 Dokument och böcker"
+step "4/5 Офіційні посібники та книги" "4/5 Official Guides and Books"
 bash scripts/get-documents.sh
 
 if [ $AI = 1 ]; then
-  step "5/5 AI på din Mac (cirka 27 GB modeller, sedan läses böckerna in)"
+  step "5/5 ШІ на вашому Mac (близько 27 ГБ моделей, потім книги додаються до індексу)" "5/5 The AI on your Mac (about 27 GB of models, then the Books are indexed)"
   install_app Ollama "https://ollama.com/download/Ollama.dmg"
   install_app AnythingLLM "https://cdn.anythingllm.com/latest/AnythingLLMDesktop-Silicon.dmg"
   bash scripts/setup-ai.sh
 else
-  step "5/5 AI hoppades över (--utan-ai)"
+  step "5/5 ШІ пропущено (--no-ai)" "5/5 The AI is skipped (--no-ai)"
 fi
 
-ln -sfn "$KIT" "$HOME/Desktop/Krislåda"
-step "Klart"
-cat <<EOF
-Krislådan finns i $KIT (genväg på skrivbordet: "Krislåda").
-
-  Starta:   dubbelklicka på "Starta Krislåda.command"
-  Öppna:    http://localhost:8091  (mobiler på samma wifi: adressen som visas)
-
-Skriv ut "Krislåda - guide att skriva ut.pdf" och lägg den hos din hemberedskap.
-Testa en gång i månaden med wifi avstängt.
-EOF
+# The Desktop shortcut: a link to the kit folder, named in Ukrainian, which is the name people know.
+mkdir -p "$HOME/Desktop"
+ln -sfn "$KIT" "$HOME/Desktop/$(country kit_name.uk)"
+step "Готово" "Done"
+say "Валіза лежить у $KIT (ярлик на робочому столі: «$(country kit_name.uk)»)" "The kit is in $KIT (shortcut on the Desktop: \"$(country kit_name.en)\")"
+say "Запустити: двічі клацніть «Запустити - Start.command»" "Start: double-click \"Запустити - Start.command\""
+say "Відкрити: http://localhost:8091 (телефони в тій самій Wi-Fi: адреса, яку покаже вікно запуску)" "Open: http://localhost:8091 (phones on the same Wi-Fi: the address the start window shows)"
+say "Перевірити: двічі клацніть «Перевірити - Check.command»" "Check: double-click \"Перевірити - Check.command\""
+say "Роздрукуйте «Тривожна валіза - посібник для друку.pdf» і покладіть біля валізи. Перевіряйте раз на місяць, вимкнувши Wi-Fi" \
+    "Print \"Emergency Kit - printable guide.pdf\" and keep it with the kit. Check once a month with Wi-Fi turned off"

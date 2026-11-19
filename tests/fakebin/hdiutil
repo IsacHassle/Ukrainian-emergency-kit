@@ -1,0 +1,12 @@
+#!/bin/bash
+# Stand-in for hdiutil: "attach" makes a volume folder holding the app the test dmg stands for.
+echo "hdiutil $*" >> "${EK_FAKE_LOG:-/dev/null}"
+case "$1" in
+  attach)
+    file="${@: -1}"
+    name=$(sed -n 's/^dmg //p' "$file" | head -1)
+    vol="$(dirname "$file")/vol-$name"
+    mkdir -p "$vol/$name.app"
+    printf '/dev/disk9\tApple_HFS\t%s\n' "$vol" ;;
+esac
+exit 0
