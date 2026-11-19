@@ -872,14 +872,27 @@
     "amenity=veterinary": "veterinary",
     "shop=supermarket": "supermarket",
     "shop=convenience": "convenience",
-    "shop=hardware": "hardware"
+    "shop=hardware": "hardware",
+    "healthcare=hospital": "hospital",
+    "healthcare=clinic": "clinic",
+    "healthcare=centre": "clinic",
+    "healthcare=doctor": "doctors",
+    "healthcare=pharmacy": "pharmacy",
+    "emergency=fire_station": "fire_station",
+    "man_made=water_tap": "drinking_water",
+    "natural=spring": "drinking_water",
+    "man_made=water_well": "drinking_water",
+    "shop=grocery": "grocery",
+    "shop=greengrocer": "greengrocer",
+    "shop=bakery": "bakery",
+    "shop=butcher": "butcher",
+    "shop=general": "general"
    },
    "landmark": {
     "railway=station": "station",
     "public_transport=station": "station",
     "amenity=school": "school",
     "amenity=place_of_worship": "place_of_worship",
-    "amenity=shelter": "shelter",
     "leisure=park": "park",
     "leisure=nature_reserve": "nature_reserve",
     "natural=peak": "peak",
@@ -904,7 +917,8 @@
    "town_types": [
     "city",
     "town"
-   ]
+   ],
+   "shelter": "shelter"
   },
   "zoom_by_type": {
    "address": 18.5,
@@ -923,7 +937,13 @@
    "station": 16,
    "hospital": 17,
    "clinic": 17,
-   "pharmacy": 17
+   "pharmacy": 17,
+   "shelter": 17,
+   "fuel": 17,
+   "police": 17,
+   "fire_station": 17,
+   "drinking_water": 18,
+   "water_point": 18
   },
   "search_priority": {
    "city": -0.8,
@@ -938,9 +958,19 @@
    "quarter": -0.1,
    "neighbourhood": -0.1,
    "farm": 0.3,
-   "locality": 0.3
+   "locality": 0.3,
+   "shelter": -0.6
   },
   "nearest": [
+   {
+    "label": {
+     "uk": "Укриття",
+     "en": "Shelter"
+    },
+    "types": [
+     "shelter"
+    ]
+   },
    {
     "label": {
      "uk": "Лікарня",
@@ -1004,7 +1034,12 @@
     },
     "types": [
      "supermarket",
-     "convenience"
+     "convenience",
+     "grocery",
+     "greengrocer",
+     "bakery",
+     "butcher",
+     "general"
     ]
    },
    {
@@ -1015,6 +1050,24 @@
     "types": [
      "fuel"
     ]
+   },
+   {
+    "label": {
+     "uk": "Пункт пропуску",
+     "en": "Border crossing"
+    },
+    "types": [
+     "border_crossing"
+    ]
+   }
+  ],
+  "closed_border_areas": [
+   {
+    "name": "Transnistria",
+    "region": "moldova",
+    "relation": "ISO3166-2=MD-SN",
+    "near_km": 3,
+    "why": "Ukraine closed its crossings on the Transnistrian stretch in February 2022"
    }
   ]
  },

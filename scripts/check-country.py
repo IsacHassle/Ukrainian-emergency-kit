@@ -240,7 +240,7 @@ def main():
     lab = get("map", m, "labels", dict) or {}
     for k in ("place", "service", "landmark"):
         get("map.labels", lab, k, dict)
-    for k in ("street", "address", "border_crossing"):
+    for k in ("street", "address", "border_crossing", "shelter"):
         get("map.labels", lab, k, str)
     for k in ("base_places", "area_types", "town_types"):
         get("map.labels", lab, k, list)
@@ -249,6 +249,11 @@ def main():
     for i, n in enumerate(get("map", m, "nearest", list) or []):
         texts(f"map.nearest[{i}].label", n.get("label") if isinstance(n, dict) else None, lang)
         get(f"map.nearest[{i}]", n, "types", list)
+    for i, a in enumerate(get("map", m, "closed_border_areas", list) or []):
+        for k in ("name", "region", "relation"):
+            get(f"map.closed_border_areas[{i}]", a, k, str)
+        if not isinstance(a.get("near_km"), (int, float)):
+            bad(f"map.closed_border_areas[{i}].near_km", "must be a number")
 
     for p in problems:
         print(p)

@@ -46,7 +46,7 @@ MAP = kit_country.COUNTRY["map"]
 LABELS = MAP["labels"]
 PLACE = LABELS["place"]                  # place=* value -> kind
 BASE_PLACES = set(LABELS["base_places"])  # kinds in places.json (always loaded)
-STREET, CROSSING = LABELS["street"], LABELS["border_crossing"]
+STREET, CROSSING, SHELTER = LABELS["street"], LABELS["border_crossing"], LABELS["shelter"]
 pair = lambda table: {tuple(k.split("=", 1)): v for k, v in table.items()}
 SERVICE = pair(LABELS["service"])        # (key, value) -> kind; always loaded
 LANDMARK = pair(LABELS["landmark"])      # named places that help find your way; loaded per letter
@@ -59,7 +59,73 @@ GROUP_KM = 2.0        # border control objects closer than this are one crossing
 NEAR_BORDER_KM = 5.0  # a crossing must be this close to the border between Ukraine/Moldova and a neighbour
 TAGS = sorted(set(NAME_TAGS) | {"name", "name:uk", "name:en"}) + [
     "place", "highway", "amenity", "shop", "railway", "public_transport", "leisure", "natural", "tourism",
-    "aeroway", "barrier", "addr:street", "addr:place", "addr:housenumber", "addr:city"]
+    "aeroway", "barrier", "addr:street", "addr:place", "addr:housenumber", "addr:city",
+    "healthcare", "emergency", "man_made", "drinking_water", "access", "military", "landuse", "building", "office",
+    "operator", "operator:type", "bunker_type", "shelter_type"]
+
+# ---------- nearest help: what counts, and what must never be indexed ----------
+# Shelters: the OpenStreetMap tags for a civil shelter. The first four are the spec's tags; the rest are what
+# mappers really use in Ukraine (notes/10-nearest-help.md). Picnic and bus stop shelters, dugouts of partisans
+# and every other bunker kind are not in the list, so they are never found.
+SHELTER_TAGS = {
+    "shelter_type": {"bomb_shelter", "bomb", "air_raid", "civil_defence", "nuclear", "radioactive_shelter"},
+    "bunker_type": {"bomb_shelter", "air_raid_shelter", "\u0430ir-raid shelter", "civil_shelter"},   # one has a Cyrillic a
+    "amenity": {"air_raid_shelter", "bomb_shelter"},
+    "emergency": {"air_raid_shelter"},
+    "building": {"air_raid_shelter", "bomb_shelters"},
+}
+MILITARY_KEYS = ("military",)
+MILITARY_VALUE = {("landuse", "military"), ("building", "military"), ("office", "military"), ("access", "military"),
+                  ("operator:type", "military")}
+# Words that mark a name or an operator as military (Ukrainian, Russian, English). Short ones must be whole words.
+MILITARY_WORDS = re.compile(
+    r"військ|воен|збройн|міністерств[оа] оборони|нацгварді|нацiональна гвардi|казарм|armed forces|military|\barmy\b"
+    r"|\b(зсу|тцк|вч)\b", re.I)
+NAME_AND_OPERATOR = ("name", "name:uk", "name:en", "name:ru", "operator", "official_name", "short_name")
+
+
+def shelter_group(tags):
+    """'bunker_type=civil_shelter' and so on: the shelter tag an object carries, or None."""
+    for key, values in SHELTER_TAGS.items():
+        if tags.get(key) in values:
+            return key + "=" + tags[key]
+    return None
+
+
+def is_military(tags, civil_shelter=False):
+    """Anything military is left out of the index. The one exception: a civil shelter tag wins over
+    military=bunker, because that is how most civil shelters were tagged under the old bunker scheme."""
+    for key in MILITARY_KEYS:
+        if tags.get(key) and not (civil_shelter and tags[key] == "bunker"):
+            return True
+    if any(tags.get(k) == v for k, v in MILITARY_VALUE):
+        return True
+    return any(MILITARY_WORDS.search(tags.get(k) or "") for k in NAME_AND_OPERATOR)
+
+
+def service_kind(tags):
+    """The nearest-help (or service) kind of an object, or None when it is not one or must not be indexed."""
+    shelter = shelter_group(tags)
+    if is_military(tags, civil_shelter=bool(shelter)):
+        return None
+    if shelter:
+        return SHELTER
+    if tags.get("drinking_water") == "no":
+        return None
+    kind = None
+    for key in ("amenity", "shop", "healthcare", "emergency", "man_made", "natural"):
+        kind = SERVICE.get((key, tags.get(key)))
+        if kind:
+            break
+    if not kind:
+        return None
+    # springs and wells count only where the mapper says the water is drinkable; private fuel is not for anyone
+    if tags.get("natural") == "spring" or tags.get("man_made") == "water_well":
+        if tags.get("drinking_water") != "yes" and not tags.get("amenity"):
+            return None
+    if kind == "fuel" and tags.get("access") in ("private", "no", "customers"):
+        return None
+    return kind
 
 # What marks a name as Russian: letters Ukrainian does not have, street types spelled the Russian way, and
 # Russian adjective endings (Ukrainian has -а, -ий, -ська, -ське).
@@ -291,10 +357,43 @@ def at_land_border(lon, lat, outlines, full):
     return any(near[f["slug"]] and any(v for s, v in near.items() if s != f["slug"]) for f in full)
 
 
+def crossing_object(tags):
+    """A border control object that may become a crossing: nothing military (a post inside a military area is not one)."""
+    return None if is_military(tags) else tags
+
+
+def near_closed_border(lon, lat, closed, limit_km):
+    """True when a crossing lies in, or within limit_km of, an area whose border Ukraine keeps closed. The post on
+    the Ukrainian side stands a little outside the area's edge, so nearness counts."""
+    return any(o.near(lon, lat, limit_km) for o in closed)
+
+
+def load_closed_areas(osm_dir, work):
+    """The outlines named in map.closed_border_areas, cut from the region's extract (a relation by its tag)."""
+    out = []
+    for area in MAP.get("closed_border_areas", []):
+        files = find_extracts(osm_dir, area["region"])
+        if not files:
+            sys.exit("Missing the %s extract for the closed area %s" % (area["region"], area["name"]))
+        sub, gj = os.path.join(work, "closed.osm.pbf"), os.path.join(work, "closed.geojson")
+        subprocess.run(["osmium", "tags-filter", files[0], "r/" + area["relation"], "-o", sub, "--overwrite"], check=True)
+        subprocess.run(["osmium", "export", sub, "-f", "geojson", "-o", gj, "--overwrite"], check=True)
+        with open(gj, encoding="utf-8") as f:
+            data = json.load(f)
+        data["features"] = [x for x in data["features"] if x["geometry"]["type"] in ("Polygon", "MultiPolygon")]
+        if not data["features"]:
+            sys.exit("No outline for the closed area %s (%s) in %s" % (area["name"], area["relation"], files[0]))
+        with open(gj, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+        out.append((area["near_km"], Outline.from_geojson(gj)))
+    return out
+
+
 def build(osm_dir, poly_dir, work):
     t0 = time.time()
     regions = MAP["regions"]
     shape = Outline.from_geojson(os.path.join(KIT, MAP["shape"]))
+    closed = load_closed_areas(osm_dir, work)
     full = [r for r in regions if r["detail"] == "full"]
     outlines = {}
     for r in regions:
@@ -305,6 +404,7 @@ def build(osm_dir, poly_dir, work):
     def log(msg):
         print("%s (%ds)" % (msg, time.time() - t0), flush=True)
     stats = Counter()
+    shelters = Counter()                        # shelters found, by the tag they carry
 
     base, per_letter = [], defaultdict(list)    # entries: [name, kind, lon, lat, keys, en]
     place_nodes = []                            # (lon, lat, name, kind) for area names
@@ -342,19 +442,28 @@ def build(osm_dir, poly_dir, work):
             # 2. Border control objects (grouped below).
             for tags, (lon, lat) in export(work, pbf, ["nwr/barrier=border_control", "nwr/amenity=border_control"],
                                            ["point", "polygon"]):
+                if crossing_object(tags) is None:
+                    stats["border object left out as military"] += 1
+                    continue
                 crossings.append((lon, lat, dict(tags, _full=is_full)))
             if not is_full:
                 continue
             # 3. Services and landmarks.
-            filters = sorted({"nwr/%s=%s" % kv for kv in list(SERVICE) + list(LANDMARK)})
+            filters = sorted({"nwr/%s=%s" % kv for kv in list(SERVICE) + list(LANDMARK)}
+                             | {"nwr/%s=%s" % (k, v) for k, vs in SHELTER_TAGS.items() for v in vs})
             for tags, (lon, lat) in export(work, pbf, filters, ["point", "polygon"]):
                 if not shape.contains(lon, lat):
                     continue
-                kind = next((SERVICE[(k, tags[k])] for k in ("amenity", "shop") if (k, tags.get(k)) in SERVICE), None)
+                kind = service_kind(tags)
+                if kind is None and is_military(tags, civil_shelter=bool(shelter_group(tags))):
+                    stats["left out as military"] += 1
+                    continue   # nothing military is indexed, not even as a landmark
                 shown = shown_name(tags) or ""
                 en = english_name(tags, shown) if shown else ""
                 keys = other_names(tags, shown, en) if shown else ""
                 if kind:   # a service without a name is shown by its kind
+                    if kind == SHELTER:
+                        shelters[shelter_group(tags)] += 1
                     base.append([shown, kind, round(lon, 5), round(lat, 5), keys, en])
                     continue
                 kind = next((LANDMARK[(k, v)] for k, v in tags.items() if (k, v) in LANDMARK), None)
@@ -407,6 +516,9 @@ def build(osm_dir, poly_dir, work):
     for lon, lat, objs in sites:
         if not shape.contains(lon, lat) or not at_land_border(lon, lat, outlines, full):
             stats["crossing site dropped (not at the border to a neighbour)"] += 1
+            continue
+        if any(near_closed_border(lon, lat, [o], km_) for km_, o in closed):
+            stats["crossing site dropped (on a closed stretch: Transnistria)"] += 1
             continue
         names, ens, others = Counter(), Counter(), Counter()
         # A site on the border has objects on both sides (Shehyni and Medyka, and the Ukraine extract holds both).
@@ -497,6 +609,11 @@ def build(osm_dir, poly_dir, work):
         return {"types": kinds, "areas": areas, "items": rows}
 
     files = {"places.json": pack(base)}
+    kinds = Counter(files["places.json"]["types"][row[1]] for row in files["places.json"]["items"])
+    for kind in sorted(set(SERVICE.values()) | {SHELTER, CROSSING}):
+        print("  nearest help, %s: %d" % (kind, kinds[kind]))
+    for tag, n in sorted(shelters.items()):
+        print("  shelter objects by tag, %s: %d" % (tag, n))
     for ch in sorted(set(per_letter) | set(addresses)):
         obj = pack(per_letter.get(ch, []))
         cities = sorted({a[3] for st in addresses[ch].values() for a in st.values()})
