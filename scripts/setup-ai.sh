@@ -6,6 +6,8 @@
 #      that answers from the books
 #   3. Loads every document in documents/ into that workspace (scripts/embed-documents.sh)
 # Safe to re-run: finished steps are skipped.
+# With EK_OFFLINE=1 (the install from a Kit Drive) nothing is downloaded: the models are already in Ollama's store,
+# and the base models, which the drive does not carry, are neither needed nor asked for.
 set -eu
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROMPT="$KIT/config/AI-PROMPT.txt"
@@ -28,11 +30,20 @@ wait_for() {   # url, seconds, what
 # 1. Ollama and the models.
 open -g -a Ollama
 wait_for "http://$OLLAMA_ADDR/api/version" 60 "Ollama"
-for m in "$BASE_MAIN" "$BASE_SMALL" bge-m3; do
-  "$OLLAMA" show "$m" >/dev/null 2>&1 || { echo "Завантажую модель ШІ $m / Downloading the AI model $m"; "$OLLAMA" pull "$m"; }
-done
+if [ -n "${EK_OFFLINE:-}" ]; then
+  for m in "$MODEL_MAIN" "$MODEL_SMALL" bge-m3; do
+    "$OLLAMA" show "$m" >/dev/null 2>&1 || { say "Моделі $m немає в Ollama, а інтернету немає" "The model $m is not in Ollama and there is no internet"; exit 1; }
+  done
+  BASE_MAIN=$MODEL_MAIN   # AnythingLLM's own chat settings below name a model that is here
+  pairs=""
+else
+  for m in "$BASE_MAIN" "$BASE_SMALL" bge-m3; do
+    "$OLLAMA" show "$m" >/dev/null 2>&1 || { echo "Завантажую модель ШІ $m / Downloading the AI model $m"; "$OLLAMA" pull "$m"; }
+  done
+  pairs="$MODEL_MAIN|$BASE_MAIN $MODEL_SMALL|$BASE_SMALL"
+fi
 tmp=$(mktemp -d)
-for pair in "$MODEL_MAIN|$BASE_MAIN" "$MODEL_SMALL|$BASE_SMALL"; do
+for pair in $pairs; do
   name=${pair%%|*}; base=${pair#*|}
   printf 'FROM %s\nSYSTEM """\n%s\n"""\nPARAMETER temperature 0.3\n' "$base" "$(cat "$PROMPT")" > "$tmp/Modelfile"
   "$OLLAMA" create "$name" -f "$tmp/Modelfile" >/dev/null 2>&1 && echo "Модель $name готова / The model $name is ready"

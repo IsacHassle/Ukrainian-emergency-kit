@@ -26,6 +26,11 @@ if [[ "$KIT" == "$HOME/Downloads/"* ]] && [ ! -e "$KIT_HOME" ]; then
   exec bash "$KIT_HOME/install.sh" "$@"
 fi
 cd "$KIT"
+# A Kit Drive: this install.sh is in the kit/ folder of one (../kit-drive.json is its marker, see
+# scripts/make-kit-drive.sh). Then nothing is downloaded: every file is checked against the checksum list, the kit
+# is copied to its home and the install carries on from there, with the apps and the AI models taken from the drive.
+DRIVE=""
+if [ -z "${EK_DRIVE:-}" ] && [ -f "$KIT/../kit-drive.json" ]; then DRIVE="$(cd "$KIT/.." && pwd)"; fi
 # shellcheck source=scripts/country.sh
 . "$KIT/scripts/country.sh"   # the country's facts (config/country.json)
 
@@ -33,8 +38,21 @@ cd "$KIT"
 if [ "${EK_UNAME_S:-$(uname -s)}" != Darwin ] || [ "${EK_UNAME_M:-$(uname -m)}" != arm64 ]; then
   say "Потрібен Mac з чипом Apple (M1 або новіший)" "The kit needs a Mac with an Apple chip (M1 or newer)"; exit 1
 fi
-free_gb=${EK_FREE_GB:-$(df -k "$KIT" | awk 'NR==2 {print int($4 / 1048576)}')}
 need=$([ $AI = 1 ] && echo 55 || echo 22)
+if [ -n "$DRIVE" ]; then
+  mkdir -p "$HOME"
+  free_gb=${EK_FREE_GB:-$(df -k "$HOME" | awk 'NR==2 {print int($4 / 1048576)}')}   # the space is needed on this Mac, not on the drive
+  if [ "$free_gb" -lt "$need" ] && [ ! -d "$KIT_HOME" ]; then
+    say "Тут вільно лише $free_gb ГБ, а валізі потрібно $need ГБ. Звільніть місце й запустіть знову" \
+        "Only $free_gb GB free here, the kit needs $need GB. Free up some space and run it again"; exit 1
+  fi
+  step "Диск із валізою: перевіряю кожен файл" "Kit Drive: checking every file"
+  bash "$KIT/scripts/install-from-drive.sh" verify "$DRIVE"
+  step "Копіюю валізу на цей Mac" "Copying the kit to this Mac"
+  bash "$KIT/scripts/install-from-drive.sh" copy "$DRIVE" "$KIT_HOME"
+  EK_DRIVE="$DRIVE" exec bash "$KIT_HOME/install.sh" "$@"
+fi
+free_gb=${EK_FREE_GB:-$(df -k "$KIT" | awk 'NR==2 {print int($4 / 1048576)}')}
 # Once the map is in place the install is a resume, and the space it still needs is smaller.
 if [ ! -f "$KIT/maps/$(country map.pmtiles).pmtiles" ] && [ "$free_gb" -lt "$need" ]; then
   say "Тут вільно лише $free_gb ГБ, а валізі потрібно $need ГБ. Звільніть місце й запустіть знову" \
@@ -63,27 +81,37 @@ install_app() {   # name, address of the dmg file
   rm -rf "$tmp"
 }
 
-step "1/5 Інструменти" "1/5 Tools"
-bash scripts/get-tools.sh
+if [ -n "${EK_DRIVE:-}" ]; then
+  step "1-4/5 Інструменти, бібліотеки, мапа й книги вже з диска" "1-4/5 Tools, Libraries, map and Books came from the drive"
+else
+  step "1/5 Інструменти" "1/5 Tools"
+  bash scripts/get-tools.sh
 
-step "2/5 Бібліотеки для читання без інтернету (близько 13 ГБ)" "2/5 Libraries for reading offline (about 13 GB)"
-bash scripts/download-library.sh
-if tail -n 60 logs/download.log | grep -q "^FAIL"; then
-  say "Деякі бібліотеки не вдалося завантажити. Запустіть встановлення ще раз: воно спробує знову" \
-      "Some libraries could not be downloaded. Run the installation again and it will try again"
+  step "2/5 Бібліотеки для читання без інтернету (близько 13 ГБ)" "2/5 Libraries for reading offline (about 13 GB)"
+  bash scripts/download-library.sh
+  if tail -n 60 logs/download.log | grep -q "^FAIL"; then
+    say "Деякі бібліотеки не вдалося завантажити. Запустіть встановлення ще раз: воно спробує знову" \
+        "Some libraries could not be downloaded. Run the installation again and it will try again"
+  fi
+
+  step "3/5 Мапа: $(country map.overview_label.uk) та світ (близько 3 ГБ)" "3/5 Map: $(country map.overview_label.en) and the world (about 3 GB)"
+  bash scripts/get-maps.sh
+
+  step "4/5 Офіційні посібники та книги" "4/5 Official Guides and Books"
+  bash scripts/get-documents.sh
 fi
-
-step "3/5 Мапа: $(country map.overview_label.uk) та світ (близько 3 ГБ)" "3/5 Map: $(country map.overview_label.en) and the world (about 3 GB)"
-bash scripts/get-maps.sh
-
-step "4/5 Офіційні посібники та книги" "4/5 Official Guides and Books"
-bash scripts/get-documents.sh
 
 if [ $AI = 1 ]; then
   step "5/5 ШІ на вашому Mac (близько 27 ГБ моделей, потім книги додаються до індексу)" "5/5 The AI on your Mac (about 27 GB of models, then the Books are indexed)"
   install_app Ollama "https://ollama.com/download/Ollama.dmg"
   install_app AnythingLLM "https://cdn.anythingllm.com/latest/AnythingLLMDesktop-Silicon.dmg"
-  bash scripts/setup-ai.sh
+  if [ -n "${EK_DRIVE:-}" ]; then
+    # The models come from the drive, and the setup must not ask the internet for anything (EK_OFFLINE).
+    bash scripts/install-from-drive.sh models "$EK_DRIVE"
+    EK_OFFLINE=1 bash scripts/setup-ai.sh
+  else
+    bash scripts/setup-ai.sh
+  fi
 else
   step "5/5 ШІ пропущено (--no-ai)" "5/5 The AI is skipped (--no-ai)"
 fi

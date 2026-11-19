@@ -27,6 +27,9 @@ if host.split(":")[0] in ("127.0.0.1", "localhost"):   # the stand-ins of the te
     os.execv("/usr/bin/curl", ["curl"] + args)
 with open(os.environ.get("EK_FAKE_LOG", os.devnull), "a") as log:
     log.write("curl %s\n" % url)
+if os.environ.get("EK_NO_INTERNET"):   # a test of an install with no internet: any download attempt is loud
+    sys.stderr.write("NO INTERNET IN THIS TEST: curl was asked for %s\n" % url)
+    sys.exit(7)
 path = os.path.join(os.environ["EK_FAKE_DOWNLOADS"], hashlib.sha256((url or "").encode()).hexdigest())
 if not os.path.exists(path):
     sys.exit(22 if fail else 0)

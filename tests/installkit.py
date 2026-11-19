@@ -249,6 +249,20 @@ class InstallKit:
         env.update(extra or {})
         return self.run("scripts/make-kit-drive.sh", drive, extra=env)
 
+    def install_from_drive(self, drive, *args, models=None, extra=None):
+        """A second Mac with no internet: run install.sh from the Kit Drive folder `drive` (the test folder
+        standing in for the USB drive) with this kit's own HOME, apps folder, stand-in AI and Ollama model folder
+        `models`. The kit folder of this Mac is removed first (a Mac that has no kit yet). Any download attempt
+        fails loudly (EK_NO_INTERNET in the stand-in curl) and is written to the log, so the test can check that
+        nothing was fetched."""
+        shutil.rmtree(self.kit)
+        env = {"EK_NO_INTERNET": "1", "EK_FAKE_DOWNLOADS": os.path.join(self.root, "nothing-here")}
+        if models:
+            env["OLLAMA_MODELS"] = models
+        env.update(extra or {})
+        return subprocess.run(["bash", os.path.join(drive, "kit", "install.sh"), *args], cwd=self.root, env=self.env(env),
+                              capture_output=True, text=True, timeout=300)
+
     def stop(self):
         if self.ai:
             self.ai.stop()

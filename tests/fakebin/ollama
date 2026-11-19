@@ -1,7 +1,19 @@
 #!/bin/bash
-# Stand-in for the ollama command: records what the kit asks, and knows only the models the test set in EK_FAKE_MODELS.
+# Stand-in for the ollama command: records what the kit asks. Where the test sets OLLAMA_MODELS (a model folder in
+# Ollama's own layout) it knows exactly the models whose manifests are there, as the real one does; otherwise it
+# knows the models the test set in EK_FAKE_MODELS.
 echo "ollama $*" >> "${EK_FAKE_LOG:-/dev/null}"
+lib="${OLLAMA_MODELS:-}/manifests/registry.ollama.ai/library"
 case "$1" in
-  show) case " ${EK_FAKE_MODELS:-gemma4:26b gemma4:e4b bge-m3 emergency emergency-small} " in *" $2 "*) exit 0 ;; *) exit 1 ;; esac ;;
+  show)
+    if [ -n "${OLLAMA_MODELS:-}" ]; then
+      name=${2%%:*}; tag=${2#*:}; [ "$tag" = "$2" ] && tag=latest
+      [ -f "$lib/$name/$tag" ] && exit 0 || exit 1
+    fi
+    case " ${EK_FAKE_MODELS:-gemma4:26b gemma4:e4b bge-m3 emergency emergency-small} " in *" $2 "*) exit 0 ;; *) exit 1 ;; esac ;;
+  list)
+    echo "NAME	ID	SIZE	MODIFIED"
+    for f in "$lib"/*/*; do [ -f "$f" ] && printf '%s:%s\tabc123\t1 KB\t now\n' "$(basename "$(dirname "$f")")" "$(basename "$f")"; done
+    exit 0 ;;
 esac
 exit 0
