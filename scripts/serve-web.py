@@ -250,6 +250,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 if isinstance(imgs, list) and all(isinstance(i, str) for i in imgs):
                     item["images"] = imgs[:4]
                 clean.append(item)
+            if clean[-1]["role"] == "user":   # the language of the answer, said again on the question (never stored)
+                language = kit_search.language_of(clean[-1]["content"])
+                if language:
+                    clean[-1] = dict(clean[-1], content=clean[-1]["content"] + f"\n\n(Answer in {language}.)")
             return self.stream(OLLAMA, "/api/chat", {
                 "model": model, "messages": clean, "stream": True,
                 "think": bool(body.get("think")), "keep_alive": "30m",

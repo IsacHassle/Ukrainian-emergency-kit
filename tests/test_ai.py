@@ -162,6 +162,15 @@ class NamingTheLanguageTest(unittest.TestCase):
         self.assertIn("Answer in %s" % language, messages[-1]["content"])
         self.assertTrue(messages[-1]["content"].startswith(question))   # the question itself is untouched
 
+    def test_quick_answer_and_save_battery_name_it_too(self):
+        for model in ("emergency", "emergency-small"):
+            before = len(self.kit.ai.chat_requests)
+            post_lines(self.kit, "/ai-api/chat", {"model": model, "messages": [
+                {"role": "user", "content": "Можно ли запустить генератор в квартире?"}]})
+            sent = self.kit.ai.chat_requests[before]["messages"][-1]["content"]
+            self.assertTrue(sent.startswith("Можно ли запустить генератор в квартире?"))
+            self.assertIn("Answer in Russian", sent)
+
     def test_ukrainian(self):
         self.check("Я побачив у полі предмет, схожий на міну. Що робити?", "Ukrainian")
 
