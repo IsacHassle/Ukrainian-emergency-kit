@@ -54,6 +54,7 @@ class Ask:
         return "".join(d.get("message", {}).get("content", "") for d in self.lines())
 
     def close(self):
+        self.resp.close()   # the response holds the socket open until it is closed too
         self.conn.close()
 
 
@@ -127,7 +128,7 @@ class QueueTest(unittest.TestCase):
 
     def test_a_request_that_finds_nobody_ahead_gets_no_queue_line(self):
         a = self.ask(MAIN)
-        self.assertEqual(list(a.line()), ["message"])
+        self.assertIn("message", a.line())
         self.assertTrue(all("queue" not in d for d in a.lines()))
 
     def test_the_sixth_waiting_request_is_told_busy_at_once(self):

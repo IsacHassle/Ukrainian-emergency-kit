@@ -28,6 +28,8 @@ import ipaddress
 import json
 import os
 import re
+import select
+import socket
 import ssl
 import subprocess
 import sys
@@ -58,9 +60,123 @@ MAX_BODY = 30 * 1024 * 1024  # a few photos
 KEEPER_ONLY = ("poster",)   # first folder names under web/ that only the Kit Mac itself may open
 
 
+# ---------- the AI queue ----------
+# One AI answer runs at a time, whatever the mode (the 16 GB Kit Mac holds one model at work), and the
+# "From sources" search step is part of the answer. Up to MAX_WAITING more people wait in first come, first
+# served order; anyone after that is told "busy". The queue holds places only: nothing about a question
+# (ADR 0001).
+MAX_WAITING = 5
+
+
+class AiQueue:
+    def __init__(self, max_waiting=MAX_WAITING):
+        self.max_waiting = max_waiting
+        self.cond = threading.Condition()
+        self.running = None   # the ticket whose answer is being made
+        self.waiting = []     # tickets, first in line first
+
+    def join(self):
+        """A ticket, or None when the queue is full."""
+        with self.cond:
+            ticket = object()
+            if self.running is None and not self.waiting:
+                self.running = ticket
+            elif len(self.waiting) >= self.max_waiting:
+                return None
+            else:
+                self.waiting.append(ticket)
+            return ticket
+
+    def place(self, ticket):
+        """0 when it is the ticket's turn, else its place in the line (1 is next)."""
+        return 0 if self.running is ticket else self.waiting.index(ticket) + 1
+
+    def leave(self, ticket):
+        """Finished, or the page was closed: the place is free, and the next in line starts."""
+        with self.cond:
+            if self.running is ticket:
+                self.running = self.waiting.pop(0) if self.waiting else None
+            elif ticket in self.waiting:
+                self.waiting.remove(ticket)
+            self.cond.notify_all()
+
+    def poke(self):
+        with self.cond:
+            self.cond.notify_all()
+
+    def wait_for_change(self, ticket, last, gone):
+        """Sleeps until the ticket's place is not `last` or the page is gone. Returns the place."""
+        with self.cond:
+            while not gone.is_set() and self.place(ticket) == last:
+                self.cond.wait()
+            return self.place(ticket)
+
+
+QUEUE = AiQueue()
+
+
+class Watch:
+    """Notices that the visitor's page closed its connection, while the server has nothing to write to it
+    (waiting in the queue, searching, or the AI thinking). A request that has been read in full leaves nothing
+    more to arrive on its connection, so a readable socket that gives no data means the other end is gone.
+    Checked ten times a second; `gone` is set, the queue woken, and the AI connection (if any) cut so the AI
+    stops too."""
+
+    def __init__(self, sock):
+        self.sock = sock
+        self.gone = threading.Event()
+        self.upstream = None
+        self._stop = threading.Event()
+        self._lock = threading.Lock()
+        threading.Thread(target=self._run, daemon=True).start()
+
+    def attach(self, conn):
+        with self._lock:
+            self.upstream = conn
+        if self.gone.is_set():
+            self._cut()
+
+    def detach(self):
+        with self._lock:
+            self.upstream = None
+
+    def stop(self):
+        self._stop.set()
+
+    def _closed(self):
+        try:
+            if not select.select([self.sock], [], [], 0.1)[0]:
+                return False
+            if isinstance(self.sock, ssl.SSLSocket):
+                return self.sock.recv(1) == b""   # a TLS socket cannot peek
+            return self.sock.recv(1, socket.MSG_PEEK) == b""
+        except (ssl.SSLWantReadError, BlockingIOError):
+            return False
+        except (OSError, ValueError):
+            return True
+
+    def _cut(self):
+        with self._lock:
+            conn = self.upstream
+        if conn is not None and getattr(conn, "live_sock", None) is not None:
+            try:
+                conn.live_sock.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+
+    def _run(self):
+        while not self._stop.is_set():
+            if self._closed():
+                self.gone.set()
+                QUEUE.poke()
+                self._cut()
+                return
+
+
 def upstream(host, method, path, body=None, timeout=900):
     conn = http.client.HTTPConnection(*host, timeout=timeout)
     conn.request(method, path, body=body, headers={"Content-Type": "application/json"})
+    conn.live_sock = conn.sock   # conn.sock is dropped once the response is read to its end; Watch needs it to cut the AI off
     return conn, conn.getresponse()
 
 
@@ -181,29 +297,83 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             raise ValueError("empty or too large")
         return json.loads(self.rfile.read(n))
 
-    def stream(self, host, path, payload, first=b""):
+    def ndjson_started(self):
+        """Headers of a stream that begins with queue lines, sent once, before the first line."""
+        if not getattr(self, "_started", False):
+            self._started = True
+            self.send_response(200)
+            self.send_header("Content-Type", "application/x-ndjson")
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+
+    def write_line(self, obj):
+        self.wfile.write(json.dumps(obj, ensure_ascii=False).encode() + b"\n")
+        self.wfile.flush()
+
+    def queued(self, work):
+        """Runs `work(watch)`, the AI answer, when it is this request's turn. While waiting, the visitor gets
+        {"queue": n} (and again when n changes); when the queue is full, {"busy": true} and nothing else."""
+        ticket = QUEUE.join()
+        if ticket is None:
+            self.ndjson_started()
+            try:
+                self.write_line({"busy": True})
+            except (BrokenPipeError, ConnectionResetError):
+                pass
+            return
+        watch = Watch(self.connection)
+        try:
+            last = None
+            while True:
+                place = QUEUE.wait_for_change(ticket, last, watch.gone)
+                if watch.gone.is_set():
+                    return
+                if place == 0:
+                    break
+                self.ndjson_started()
+                self.write_line({"queue": place})
+                last = place
+            work(watch)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+        finally:
+            watch.stop()
+            QUEUE.leave(ticket)
+
+    def stream(self, watch, host, path, payload, first=b""):
         """Pass a streaming answer through to the browser as it is written (after `first`, if given)."""
+        if watch.gone.is_set():
+            return
+        started = getattr(self, "_started", False)   # queue lines went out: the status line is already sent
         try:
             conn, resp = upstream(host, "POST", path, json.dumps(payload).encode())
         except OSError:
+            if started:
+                return self.write_line({"error": "not running"})
             return self.send_json({"error": "not running"}, 503)
+        watch.attach(conn)
         try:
-            self.send_response(resp.status)
-            self.send_header("Content-Type", resp.getheader("Content-Type", "application/octet-stream"))
-            self.send_header("Cache-Control", "no-store")
-            self.end_headers()
+            if started:
+                if resp.status != 200:
+                    return self.write_line({"error": "not running"})
+            else:
+                self.send_response(resp.status)
+                self.send_header("Content-Type", resp.getheader("Content-Type", "application/octet-stream"))
+                self.send_header("Cache-Control", "no-store")
+                self.end_headers()
             if first and resp.status == 200:
                 self.wfile.write(first)
                 self.wfile.flush()
-            while True:
+            while not watch.gone.is_set():
                 chunk = resp.read1(65536)
                 if not chunk:
                     break
                 self.wfile.write(chunk)
                 self.wfile.flush()
-        except (BrokenPipeError, ConnectionResetError):
+        except (BrokenPipeError, ConnectionResetError, OSError, http.client.HTTPException):
             pass  # the person pressed Stop or closed the page; closing stops the AI too
         finally:
+            watch.detach()
             conn.close()
 
     def ai_status(self):
@@ -230,6 +400,26 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             pass
         self.send_json(status)
 
+    def books_answer(self, watch, clean, asked):
+        """From sources: the search step and then the answer, both inside the visitor's turn in the queue."""
+        passages, articles = kit_search.gather(asked[-1], asked[-2] if len(asked) > 1 else "", cancelled=watch.gone.is_set)
+        if watch.gone.is_set():
+            return
+        language = kit_search.language_of(asked[-1])
+        if language:   # said again on the question itself, where a model listens best (never stored)
+            clean[-1] = {"role": "user", "content": clean[-1]["content"] + f"\n\n(Answer in {language}.)"}
+        try:
+            base = open(PROMPT, encoding="utf-8").read()
+        except OSError:
+            base = ""
+        sources = [{"title": p["title"]} for p in passages] + \
+                  [{"title": a["title"], "library": a["library"], "href": a["href"]} for a in articles]
+        self.stream(watch, OLLAMA, "/api/chat", {
+            "model": kit_search.MODEL, "stream": True, "think": False, "keep_alive": "30m",
+            "options": kit_search.OPTIONS,
+            "messages": [{"role": "system", "content": kit_search.system_prompt(base, passages, articles, language)}] + clean,
+        }, first=json.dumps({"sources": sources}, ensure_ascii=False).encode() + b"\n")
+
     def ai_post(self, action):
         try:
             body = self.read_body()
@@ -254,12 +444,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 language = kit_search.language_of(clean[-1]["content"])
                 if language:
                     clean[-1] = dict(clean[-1], content=clean[-1]["content"] + f"\n\n(Answer in {language}.)")
-            return self.stream(OLLAMA, "/api/chat", {
+            return self.queued(lambda watch: self.stream(watch, OLLAMA, "/api/chat", {
                 "model": model, "messages": clean, "stream": True,
                 "think": bool(body.get("think")), "keep_alive": "30m",
                 # the same context size as "From sources", so switching mode does not reload the model
                 **({"options": kit_search.OPTIONS} if model == kit_search.MODEL else {}),
-            })
+            }))
 
         if action == "books-chat":  # answer from the kit's books and the big medical libraries, with sources
             msgs = body.get("messages")
@@ -273,21 +463,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             asked = [m["content"] for m in clean if m["role"] == "user"]
             if clean[-1]["role"] != "user" or not asked[-1].strip():
                 return self.send_json({"error": "bad request"}, 400)
-            passages, articles = kit_search.gather(asked[-1], asked[-2] if len(asked) > 1 else "")
-            language = kit_search.language_of(asked[-1])
-            if language:   # said again on the question itself, where a model listens best (never stored)
-                clean[-1] = {"role": "user", "content": clean[-1]["content"] + f"\n\n(Answer in {language}.)"}
-            try:
-                base = open(PROMPT, encoding="utf-8").read()
-            except OSError:
-                base = ""
-            sources = [{"title": p["title"]} for p in passages] + \
-                      [{"title": a["title"], "library": a["library"], "href": a["href"]} for a in articles]
-            return self.stream(OLLAMA, "/api/chat", {
-                "model": kit_search.MODEL, "stream": True, "think": False, "keep_alive": "30m",
-                "options": kit_search.OPTIONS,
-                "messages": [{"role": "system", "content": kit_search.system_prompt(base, passages, articles, language)}] + clean,
-            }, first=json.dumps({"sources": sources}, ensure_ascii=False).encode() + b"\n")
+            return self.queued(lambda watch: self.books_answer(watch, clean, asked))
 
         if action == "lending":  # the switch for Lent positions: only the Kit Mac itself may turn it
             if not self.from_this_mac():
