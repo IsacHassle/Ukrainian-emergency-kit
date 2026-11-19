@@ -1,9 +1,13 @@
 """Nearest help (ticket 10): which OpenStreetMap objects become a shelter, hospital, clinic and so on, and that
 nothing military is ever indexed. These are the build's decisions, checked on tag sets like the ones in the real
 data (counts and tags: notes/10-nearest-help.md). The page side is in tests/test_nearest_help_browser.py."""
+import os
+import subprocess
 import unittest
 
+from servedkit import REPO, ServedKit
 from test_map_search import load_builder
+from test_served_kit_browser import REQUIRED, find_chrome, why_skip
 
 
 class WhatIsIndexedTest(unittest.TestCase):
@@ -146,6 +150,21 @@ class BorderCrossingsTest(unittest.TestCase):
         self.assertIsNone(self.b.crossing_object({"barrier": "border_control", "name": "Військовий пост"}))
         tags = {"barrier": "border_control", "name": "Шегині"}
         self.assertEqual(self.b.crossing_object(tags), tags)
+
+
+@unittest.skipIf(why_skip() and not REQUIRED, why_skip())
+class NearestHelpInTheBrowserTest(unittest.TestCase):
+    def test_every_category_and_the_shelter_note(self):
+        kit = ServedKit(tiles=True)
+        try:
+            kit.start()
+            env = dict(os.environ, EK_TEST_URL=kit.url, EK_CHROME=find_chrome())
+            run = subprocess.run(["node", os.path.join(REPO, "tests", "browser", "nearest.js")], env=env, cwd=REPO,
+                                 capture_output=True, text=True, timeout=240)
+            self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
+            self.assertGreaterEqual(run.stdout.count("ok - "), 5, run.stdout)
+        finally:
+            kit.stop()
 
 
 if __name__ == "__main__":

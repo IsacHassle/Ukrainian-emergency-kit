@@ -67,7 +67,7 @@ def for_pages():
     m = COUNTRY["map"]
     out["map"] = {k: m[k] for k in ("pmtiles", "center", "zoom", "overview_label", "shortcuts", "zoom_by_type",
                                     "search_priority", "nearest") if k in m}
-    out["map"]["labels"] = {k: m["labels"][k] for k in ("street", "address", "area_types")}
+    out["map"]["labels"] = {k: m["labels"][k] for k in ("street", "address", "area_types", "shelter")}
     return out
 
 
