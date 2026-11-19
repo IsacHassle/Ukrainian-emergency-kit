@@ -1,8 +1,8 @@
 {
-  "name": "Krislåda",
-  "short_name": "Krislåda",
-  "description": "Sjukvård, AI på svenska och karta över Sverige, utan internet.",
-  "lang": "sv",
+  "name": "{kit}",
+  "short_name": "{kit}",
+  "description": "{description}",
+  "lang": "{lang}",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

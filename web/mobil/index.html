@@ -2,8 +2,9 @@
 <html lang="sv">
 <head>
 <meta charset="utf-8">
+<script src="/lib/country.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GPS på mobilen · Krislåda</title>
+<title>GPS på mobilen · {kit}</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icon-180.png">
 <meta name="theme-color" content="#0b5cad">
@@ -26,7 +27,7 @@
 </head>
 <body>
 <main class="page">
-  <a class="back" href="/">← Krislåda</a>
+  <a class="back" href="/">← <span data-kit></span></a>
   <h1>Mobilens GPS</h1>
   <p class="meta">Mobilen visar bara din position på kartan när sidan öppnas säkert (https). Ställ in det en gång per mobil. Sedan fungerar det utan internet, med mobilens egen GPS.</p>
 
@@ -45,16 +46,16 @@
   <div id="setup">
     <details class="more"><summary>Ställ in en iPhone</summary><div class="inner">
       <ol>
-        <li><a class="button" href="/krislada-ca.crt">Hämta Krislådans certifikat</a><br>Safari frågar om den ska hämta en profil: tryck <b>Tillåt</b>.</li>
+        <li><a class="button" href="/ca.crt">Hämta certifikatet</a><br>Safari frågar om den ska hämta en profil: tryck <b>Tillåt</b>.</li>
         <li>Öppna <b>Inställningar</b>. Överst står <b>Profil hämtad</b>: tryck på den, sedan <b>Installera</b> och ange mobilens kod.</li>
-        <li>Gå till <b>Inställningar → Allmänt → Om</b> och längst ner <b>Certifikatinställningar</b>. Slå på <b id="caname">Krislåda</b>.</li>
+        <li>Gå till <b>Inställningar → Allmänt → Om</b> och längst ner <b>Certifikatinställningar</b>. Slå på <b id="caname" data-kit></b>.</li>
         <li>Öppna <a class="https" href="#"><code class="https-text"></code></a>. Lägg gärna till den på hemskärmen (Dela → Lägg till på hemskärmen).</li>
       </ol>
     </div></details>
     <details class="more"><summary>Ställ in en Android-mobil</summary><div class="inner">
       <ol>
-        <li><a class="button" href="/krislada-ca.crt">Hämta Krislådans certifikat</a></li>
-        <li>Öppna <b>Inställningar</b> och sök efter <b>certifikat</b>. Välj <b>Installera ett certifikat → CA-certifikat</b> (namnet varierar mellan mobiler) och välj filen <b>Krislada.crt</b>.</li>
+        <li><a class="button" href="/ca.crt">Hämta certifikatet</a></li>
+        <li>Öppna <b>Inställningar</b> och sök efter <b>certifikat</b>. Välj <b>Installera ett certifikat → CA-certifikat</b> (namnet varierar mellan mobiler) och välj filen <b><span data-country="slug"></span>.crt</b>.</li>
         <li>Öppna <a class="https-ip" href="#"><code class="https-ip-text"></code></a>. (Android hittar oftast inte .local-namnet, därför siffrorna.)</li>
       </ol>
     </div></details>
@@ -85,7 +86,7 @@
     watch = navigator.geolocation.watchPosition(p => {
       fetch('/ai-api/gps-share', { method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ lat: p.coords.latitude, lon: p.coords.longitude, accuracy: p.coords.accuracy }) })
-        .then(r => { if (!r.ok) throw 0; msg.textContent = `Delar din position med Macen (±${Math.round(p.coords.accuracy)} m, ${new Date().toLocaleTimeString('sv-SE')}). Låt sidan vara öppen.`; })
+        .then(r => { if (!r.ok) throw 0; msg.textContent = `Delar din position med Macen (±${Math.round(p.coords.accuracy)} m, ${new Date().toLocaleTimeString(COUNTRY.locale)}). Låt sidan vara öppen.`; })
         .catch(() => { msg.textContent = 'Når inte Macen. Är mobilen på samma wifi och Krislådan igång?'; });
     }, err => {
       msg.textContent = err.code === 1 ? 'Platsåtkomst nekades. Tillåt plats för den här sidan i mobilens inställningar.'
@@ -102,7 +103,7 @@
     document.querySelectorAll('.https-text').forEach(c => c.textContent = byName);
     document.querySelectorAll('a.https-ip').forEach(a => a.href = byIp);
     document.querySelectorAll('.https-ip-text').forEach(c => c.textContent = byIp);
-    if (s.name) document.getElementById('caname').textContent = 'Krislåda på ' + s.name.replace(/\.local$/, '');
+    if (s.name) document.getElementById('caname').textContent = COUNTRY.kit() + ' på ' + s.name.replace(/\.local$/, '');
     if (!s.https_port) document.getElementById('setup').insertAdjacentHTML('afterbegin',
       '<p class="box">Krislådan har inget https-certifikat än. Starta om den med <b>Starta Krislåda.command</b> på Macen.</p>');
   }).catch(() => {});

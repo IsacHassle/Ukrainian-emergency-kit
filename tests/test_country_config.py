@@ -48,7 +48,11 @@ def testland(c):
         {"number": "7000", "label": {"sv": "testråd"}, "print_label": {"sv": "testrådgivning"}},
     ]
     c["radio"] = {"label": {"sv": "Radio Test"}, "print_label": {"sv": "Testradion"}}
-    c["emergency_topics"] = [{"article": "Bleeding", "label": {"sv": "Testblödning", "en": "Test bleeding"}, "first": 1}]
+    c["official_guides"]["folder"] = "Testguides"
+    c["official_guides"]["print_pages"] = ["TL1 - Stop bleeding"]
+    c["official_guides"]["sources"] = [{"id": "TL1", "label": {"sv": "TL1 · Testråd"}}]
+    c["emergency_topics"] = [{"article": "Bleeding", "label": {"sv": "Testblödning", "en": "Test bleeding"},
+                              "official_guide": {"sv": "TL1 - Stop bleeding"}, "first": 1}]
     c["checklist"]["additions"] = [{"sv": "Ett testföremål"}]
     c["map"]["shortcuts"] = [{"label": {"sv": "Testby"}, "center": [1.5, 2.5], "zoom": 9}]
     c["map"]["overview_label"] = {"sv": "Testland"}
@@ -125,12 +129,15 @@ class OtherCountryTest(unittest.TestCase):
         self.assertIn("7000 testråd", page)
         self.assertIn("Radio Test", page)
         self.assertIn("Testblödning", page)
+        self.assertIn("TL1 · Testråd", page)   # the Official Guides, grouped by the config's sources
+        self.assertIn("las/?f=docs/Testguides/TL1%20-%20Stop%20bleeding.md", page)   # the topic opens its guide
         for swedish in ("<title>Krislåda", "Ring 112", "1177 sjukvårdsråd", "Radio P4", "Tryckförband"):
             self.assertNotIn(swedish, page)
 
     def test_pages_get_the_config_from_the_web_server(self):
         script = get(self.kit, "/lib/country.js")
-        facts = json.loads(script[script.index("{"):script.rindex("}") + 1])
+        first = script.splitlines()[0]   # window.COUNTRY = {...};
+        facts = json.loads(first[first.index("{"):first.rindex("}") + 1])
         self.assertEqual(facts["kit_name"]["sv"], "Testlådan")
         self.assertEqual(facts["ai"]["models"], {"main": "alpha", "small": "alpha-small"})
         self.assertEqual(facts["emergency_numbers"][0]["number"], "999")

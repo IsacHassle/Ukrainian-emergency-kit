@@ -37,12 +37,14 @@ def free_port():
 class ServedKit:
     def __init__(self, ai_delay=0.0, country=None):
         self.country = None
+        with open(os.path.join(REPO, "config", "country.json"), encoding="utf-8") as f:
+            facts = json.load(f)
         models = workspaces = None
         if country:
-            with open(os.path.join(REPO, "config", "country.json"), encoding="utf-8") as f:
-                self.country = country(json.load(f))
+            self.country = facts = country(facts)
             models = list(self.country["ai"]["models"].values())
             workspaces = [self.country["ai"]["workspace"]]
+        self.facts = facts   # the country config the kit runs with
         self.ai = StandInAI(delay=ai_delay, models=models, workspaces=workspaces)
         self.library = StandInLibrary()
         self.library_port = self.library.port
@@ -73,6 +75,13 @@ class ServedKit:
                 json.dump(self.country, f, ensure_ascii=False)
         shutil.copytree(os.path.join(TESTS, "kit", "documents"), os.path.join(self.kit_dir, "documents"))
         shutil.copytree(os.path.join(TESTS, "kit", "tools"), os.path.join(self.kit_dir, "tools"))
+        # One saved Official Guide, the first the country config prints, so the guide pages have something to show.
+        guides = self.facts["official_guides"]
+        folder = os.path.join(self.kit_dir, "documents", guides["folder"])
+        os.makedirs(folder, exist_ok=True)
+        name = guides["print_pages"][0]
+        with open(os.path.join(folder, name + ".md"), "w", encoding="utf-8") as f:
+            f.write("# %s\n\nPress hard on the wound.\n" % name.split(" - ", 1)[1])
         shutil.copytree(os.path.join(REPO, "web"), self.web_dir, symlinks=True)
         data = os.path.join(self.web_dir, "map", "data")
         os.makedirs(data, exist_ok=True)

@@ -2,11 +2,12 @@
 <html lang="sv">
 <head>
 <meta charset="utf-8">
+<script src="/lib/country.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Karta · Krislåda</title>
+<title>Karta · {kit}</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icon-180.png">
-<meta name="apple-mobile-web-app-title" content="Krislåda">
+<meta name="apple-mobile-web-app-title" content="" data-kit-attr="content={kit}">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0b5cad">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%97%BA%3C/text%3E%3C/svg%3E">
@@ -56,31 +57,21 @@
 <body>
 <div id="map"></div>
 <div id="panel">
-  <div class="head"><a href="../">← Krislåda</a><b>Karta</b><span class="grow"></span><span id="zoom"></span></div>
+  <div class="head"><a href="../">← <span data-kit></span></a><b>Karta</b><span class="grow"></span><span id="zoom"></span></div>
   <form id="find" autocomplete="off">
     <input id="q" placeholder="Sök ort, gata eller adress" aria-label="Sök på kartan">
     <button type="submit">Sök</button>
   </form>
   <div class="hide-min">
     <details class="near"><summary>+ Närmaste sjukhus, apotek, vatten …</summary>
-      <div class="cats" id="cats" aria-label="Närmaste">
-        <button type="button" class="plain" data-t="Sjukhus">Sjukhus</button>
-        <button type="button" class="plain" data-t="Vårdcentral,Läkare">Vårdcentral</button>
-        <button type="button" class="plain" data-t="Apotek">Apotek</button>
-        <button type="button" class="plain" data-t="Polis">Polis</button>
-        <button type="button" class="plain" data-t="Brandstation">Brand</button>
-        <button type="button" class="plain" data-t="Dricksvatten,Vattenpost">Vatten</button>
-        <button type="button" class="plain" data-t="Livsmedel,Närbutik">Mat</button>
-        <button type="button" class="plain" data-t="Bensinstation">Bensin</button>
-      </div>
+      <div class="cats" id="cats" aria-label="Närmaste"></div>
     </details>
     <ul id="results"></ul>
     <div id="note"></div>
     <div id="coords">Tryck på kartan för att se koordinater.</div>
   </div>
   <div class="bar">
-    <button type="button" class="plain" id="sthlm">Stockholm</button>
-    <button type="button" class="plain" id="swe">Sverige</button>
+    <span id="shortcuts" style="display: contents"></span>
     <span class="grow"></span>
     <button type="button" class="plain" id="toggle" aria-label="Visa eller dölj panelen">▾</button>
   </div>
@@ -103,11 +94,12 @@
     .then(r => r.ok ? r.text() : '').then(t => t === 'PMTiles').catch(() => false);
 
   // Zoom to use when jumping to a result of each type.
-  const ZOOM = { 'Adress': 18.5, 'Stad': 12, 'Tätort': 13.5, 'Stadsdel': 14.5, 'Område': 15, 'By': 15, 'Småort': 15, 'Ort': 15.5, 'Gård': 16, 'Gata': 17 };
-  const zoomFor = t => ZOOM[t] || (t && t.startsWith('Ungefär') ? 18.5 : 18);
+  const MAP = COUNTRY.map, LABELS = MAP.labels;   // the country's place types, labels and start view (country config)
+  const ZOOM = MAP.zoom_by_type;
+  const zoomFor = t => ZOOM[t] || (t && t.startsWith(LABELS.approximate_prefix) ? ZOOM[LABELS.address] : 18);
 
   // ---------- place search (offline files made by scripts/build-map-index.py) ----------
-  // data/places.json: towns, villages and services for all of Sweden, always loaded.
+  // data/places.json: towns, villages and services for the whole country, always loaded.
   // data/letters/<a-z0-9>.json: streets, addresses, farms and landmarks, by first letter,
   // so a phone only loads the one small file it needs.
   const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
@@ -170,7 +162,7 @@
   // Which neighbourhood a point is in, for addresses that do not name their town.
   let areaPlaces = null;
   function areaNear(items, pt) {
-    areaPlaces = areaPlaces || items.filter(e => ['Stadsdel', 'Område', 'Tätort', 'By', 'Småort'].includes(e.t));
+    areaPlaces = areaPlaces || items.filter(e => LABELS.area_types.includes(e.t));
     let best = '', bd = 3;
     for (const e of areaPlaces) { const d = km(pt, [e[2], e[3]]); if (d < bd) { bd = d; best = e[0]; } }
     return best;
@@ -195,12 +187,12 @@
         const near = got !== want && /^\d+$/.test(want) && parseInt(got, 10) === n && /^\d+[A-Z]/.test(got);
         if (got !== want && !near) continue;
         const e = [`${street} ${a[0]}`, 0, a[1], a[2]];
-        e.t = 'Adress'; e.a = A.cities[a[3]] || ''; e.miss = miss([a[1], a[2]], e.a);
+        e.t = LABELS.address; e.a = A.cities[a[3]] || ''; e.miss = miss([a[1], a[2]], e.a);
         exact.push(e);
         out.push([score([a[1], a[2]], e.a, exactName + (near ? 0.3 : 0)), e]);
       }
       // A number missing from the data: place it between its neighbours on the same side
-      // of the street (in Sweden odd numbers are on one side, even on the other).
+      // of the street (in most countries odd numbers are on one side, even on the other).
       if (!n || exactName) continue;
       const side = nums.map(a => [parseInt(a[0], 10), a]).filter(([k]) => k && k % 2 === n % 2);
       for (const [lo, la] of side) {
@@ -210,7 +202,7 @@
           const f = (n - lo) / (hi - lo), pt = [la[1] + f * (ha[1] - la[1]), la[2] + f * (ha[2] - la[2])];
           if (exact.some(x => km(pt, [x[2], x[3]]) < 1)) continue;   // the real address is right there
           const e = [`${street} ${want}`, 0, pt[0], pt[1]];
-          e.t = `Ungefärligt läge, mellan nr ${la[0]} och ${ha[0]}`; e.a = A.cities[la[3]] || ''; e.miss = miss(pt, e.a);
+          e.t = `${LABELS.approximate}, mellan nr ${la[0]} och ${ha[0]}`; e.a = A.cities[la[3]] || ''; e.miss = miss(pt, e.a);
           out.push([score(pt, e.a, 0.5 + (hi - lo) / 24), e]);
         }
       }
@@ -224,8 +216,7 @@
   }
 
   // Search ranking: emergency places and towns first, bus stops last.
-  const PRIO = { 'Stad': -0.8, 'Sjukhus': -0.6, 'Tätort': -0.5, 'Vårdcentral': -0.4, 'Apotek': -0.4, 'Polis': -0.4,
-                 'Brandstation': -0.4, 'Stadsdel': -0.2, 'Område': -0.1, 'Gård': 0.3, 'Ort': 0.3 };
+  const PRIO = MAP.search_priority;
 
   async function search(map, text) {
     note('');
@@ -247,7 +238,7 @@
         show(found, map, true);
         jump(map, found[0], `${found[0][0]}${found[0].a ? ', ' + found[0].a : ''}`);
         if (found[0].miss) note(`Hittade inget ${found[0][0]} i ${hm[3]}. Visar det närmaste. Se listan.`);
-        else if (found[0].t.startsWith('Ungefär')) note(`${found[0][0]} finns inte i kartdatan. Nålen visar ungefärligt läge, mellan grannhusen.`);
+        else if (found[0].t.startsWith(LABELS.approximate_prefix)) note(`${found[0][0]} finns inte i kartdatan. Nålen visar ungefärligt läge, mellan grannhusen.`);
         return;
       }
       words = (hm[1] + ' ' + hm[3]).trim();
@@ -267,14 +258,14 @@
       else if (qw.every(w => e.h.startsWith(w) || e.h.includes(' ' + w))) s = 3;
       else if (e.h.includes(q)) s = 4;
       else continue;
-      if (house && e.t !== 'Gata') s += 2;
+      if (house && e.t !== LABELS.street) s += 2;
       hits.push([s + (PRIO[e.t] || 0) + Math.min(km([e[2], e[3]], here), 400) / 400, e]);
     }
     hits.sort((a, b) => a[0] - b[0]);
     const list = hits.slice(0, 30).map(h => h[1]);
     if (!list.length) { $('#results').innerHTML = ''; note('Inget hittades. Prova en del av namnet, eller zooma in på kartan.'); return; }
     show(list, map, true);
-    if (house && list[0].t === 'Gata') { jump(map, list[0]); note(`Husnummer ${house} hittades inte. Visar gatan.`); }
+    if (house && list[0].t === LABELS.street) { jump(map, list[0]); note(`Husnummer ${house} hittades inte. Visar gatan.`); }
   }
 
   async function nearest(map, types) {
@@ -396,11 +387,28 @@
       el.textContent = 'Kartfil saknas: ' + missing.join(', ');
     }
 
+    // Buttons for the country config's nearest categories and shortcuts (a town, the whole country).
+    // Made before the map, so they are there even on a device that cannot draw it.
+    for (const n of MAP.nearest) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'plain'; b.dataset.t = n.types.join(','); b.textContent = COUNTRY.text(n.label);
+      b.onclick = () => nearest(window.kitMap, b.dataset.t);
+      $('#cats').appendChild(b);
+    }
+    const shortcut = (label, center, zoom) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'plain'; b.textContent = COUNTRY.text(label);
+      b.onclick = () => window.kitMap.flyTo({ center, zoom });
+      $('#shortcuts').appendChild(b);
+    };
+    MAP.shortcuts.forEach(s => shortcut(s.label, s.center, s.zoom));
+    shortcut(MAP.overview_label, MAP.center, MAP.zoom);
+
     const map = new maplibregl.Map({
       container: 'map',
       style,
-      center: [16.5, 62.5],
-      zoom: 4.3,
+      center: MAP.center,
+      zoom: MAP.zoom,
       maxZoom: 20,       // the map data has full detail at 15; beyond that it is enlarged, down to single houses
       hash: true,
     });
@@ -419,9 +427,6 @@
     $('#find').addEventListener('submit', e => { e.preventDefault(); const t = $('#q').value.trim(); if (t) search(map, t); });
     $('#q').addEventListener('focus', () => { loadIndex(); $('#panel').classList.remove('min'); });
     $('#q').addEventListener('input', () => { if ($('#q').value.trim()) loadLetter($('#q').value); });   // fetch while typing
-    document.querySelectorAll('#cats button').forEach(b => b.onclick = () => nearest(map, b.dataset.t));
-    $('#sthlm').onclick = () => map.flyTo({ center: [18.0686, 59.3293], zoom: 12 });
-    $('#swe').onclick = () => map.flyTo({ center: [16.5, 62.5], zoom: 4.3 });
     $('#toggle').onclick = () => $('#panel').classList.toggle('min');
     if (matchMedia('(max-width: 520px)').matches) $('#panel').classList.add('min');   // phones: more map, less panel
 

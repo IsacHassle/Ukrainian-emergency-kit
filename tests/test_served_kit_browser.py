@@ -53,5 +53,26 @@ class BrowserTest(unittest.TestCase):
             kit.stop()
 
 
+    def test_pages_follow_another_countrys_config_in_chrome(self):
+        import json
+        from test_country_config import testland
+        self.assertIsNone(why_skip())
+        kit = ServedKit(country=testland)
+        try:
+            kit.start()
+            expect = {"kit": "Testlådan", "models": ["alpha", "alpha-small"], "number": "999",
+                      "checklist": "Ett testföremål", "shortcut": "Testby"}
+            env = dict(os.environ, EK_TEST_URL=kit.url, EK_CHROME=find_chrome(), EK_TEST_ANSWER=ANSWER,
+                       EK_TEST_EXPECT=json.dumps(expect))
+            run = subprocess.run(["node", os.path.join(REPO, "tests", "browser", "run.js")], env=env, cwd=REPO,
+                                 capture_output=True, text=True, timeout=120)
+            self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
+            self.assertEqual(run.stdout.count("ok - "), 8, run.stdout)
+            # the AI page's quick mode asked the stand-in for the config's model, nothing else
+            self.assertEqual({r["model"] for r in kit.ai.chat_requests}, {"alpha"})
+        finally:
+            kit.stop()
+
+
 if __name__ == "__main__":
     unittest.main()

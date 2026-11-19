@@ -2,11 +2,12 @@
 <html lang="sv">
 <head>
 <meta charset="utf-8">
+<script src="/lib/country.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fråga AI · Krislåda</title>
+<title>Fråga AI · {kit}</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icon-180.png">
-<meta name="apple-mobile-web-app-title" content="Krislåda">
+<meta name="apple-mobile-web-app-title" content="" data-kit-attr="content={kit}">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0b5cad">
 <link rel="icon" href="/icon-180.png">
@@ -65,17 +66,17 @@
 </head>
 <body>
 <main class="page">
-  <a class="back" href="../">← Krislåda</a>
+  <a class="back" href="../">← <span data-kit></span></a>
   <h1>Fråga AI</h1>
-  <p class="meta">Körs på den här datorn, utan internet. Livsfara? Ring 112 först, och använd Akut på startsidan.</p>
+  <p class="meta">Körs på den här datorn, utan internet. Livsfara? Ring <span data-number></span> först, och använd Akut på startsidan.</p>
 
   <div id="status" class="lamps">Kontrollerar AI:n…</div>
   <div id="fix"></div>
 
   <div class="modes" role="radiogroup" aria-label="Välj läge">
     <label class="mode" data-hint="Läser krislådans böcker och de medicinska biblioteken (WikiMed, MedlinePlus) och visar källorna. 10 till 40 sekunder."><input type="radio" name="mode" value="books">Ur böckerna</label>
-    <label class="mode" data-hint="Samma AI utan böckerna. Snabbare, och kan titta på foton."><input type="radio" name="mode" value="crisis">Snabbt svar</label>
-    <label class="mode" data-hint="Mindre AI som drar mindre ström. Enklare svar."><input type="radio" name="mode" value="crisis-small">Spara batteri</label>
+    <label class="mode" data-hint="Samma AI utan böckerna. Snabbare, och kan titta på foton."><input type="radio" name="mode" data-model="main" value="">Snabbt svar</label>
+    <label class="mode" data-hint="Mindre AI som drar mindre ström. Enklare svar."><input type="radio" name="mode" data-model="small" value="">Spara batteri</label>
   </div>
   <p id="modehint"></p>
 
@@ -119,9 +120,9 @@
       </ol>
       <h3>Andra sätt på datorn</h3>
       <table>
-        <tr><td>AnythingLLM, arbetsytan Crisis</td><td>Svarar ur böckerna, men inte ur WikiMed och MedlinePlus. Du kan dra in egna filer där.</td></tr>
-        <tr><td>Ollama, modellen crisis</td><td>Samma som Snabbt svar. Dra in ett foto för att fråga om det.</td></tr>
-        <tr><td>Terminal</td><td><code>ollama run crisis</code>, avsluta med <code>/bye</code>.</td></tr>
+        <tr><td>AnythingLLM, arbetsytan <span data-country="ai.workspace_name"></span></td><td>Svarar ur böckerna, men inte ur WikiMed och MedlinePlus. Du kan dra in egna filer där.</td></tr>
+        <tr><td>Ollama, modellen <span data-country="ai.models.main"></span></td><td>Samma som Snabbt svar. Dra in ett foto för att fråga om det.</td></tr>
+        <tr><td>Terminal</td><td><code>ollama run <span data-country="ai.models.main"></span></code>, avsluta med <code>/bye</code>.</td></tr>
       </table>
     </div></details>
   </section>
@@ -133,7 +134,10 @@
 (() => {
   const $ = s => document.querySelector(s);
   const log = $('#log'), q = $('#q'), sendBtn = $('#send'), thumbs = $('#thumbs');
-  const LABEL = { 'books': 'Ur böckerna', 'crisis': 'Snabbt svar', 'crisis-small': 'Spara batteri' };
+  // The two AI models are named in the country config; a mode is 'books' or the name of its model.
+  const MAIN = COUNTRY.ai.models.main, SMALL = COUNTRY.ai.models.small;
+  document.querySelectorAll('input[name=mode][data-model]').forEach(i => { i.value = COUNTRY.ai.models[i.dataset.model]; });
+  const LABEL = { 'books': 'Ur böckerna', [MAIN]: 'Snabbt svar', [SMALL]: 'Spara batteri' };
   let KIWIX = `http://${location.hostname}:8090`;   // the libraries (always http); status gives the port in use
   let status = null, mode = null, history = [], photos = [], busy = null;
 
@@ -142,7 +146,7 @@
     try { status = await (await fetch('/ai-api/status', { cache: 'no-store' })).json(); }
     catch { status = { ollama: false, models: [], books: false, libraries: false }; }
     if (status.library_port) KIWIX = `http://${location.hostname}:${status.library_port}`;
-    const avail = { 'books': status.models.includes('crisis') && (status.books || status.libraries), 'crisis': status.models.includes('crisis'), 'crisis-small': status.models.includes('crisis-small') };
+    const avail = { 'books': status.models.includes(MAIN) && (status.books || status.libraries), [MAIN]: status.models.includes(MAIN), [SMALL]: status.models.includes(SMALL) };
     document.querySelectorAll('input[name=mode]').forEach(i => { i.disabled = !avail[i.value]; });
     const s = [], fix = [];
     s.push(status.ollama ? '<span class="lamp">AI-motor: igång</span>' : '<span class="lamp off">AI-motor: av</span>');
@@ -154,13 +158,13 @@
     const b = status.battery;
     if (b && b.on_battery) {
       s.push(`<span class="lamp warn">Batteri: ${b.percent} %</span>`);
-      if (b.percent < 40 && mode !== 'crisis-small') fix.push('Lite batteri: välj Spara batteri, så räcker strömmen längre.');
+      if (b.percent < 40 && mode !== SMALL) fix.push('Lite batteri: välj Spara batteri, så räcker strömmen längre.');
     }
     $('#status').innerHTML = s.join('');
     $('#fix').textContent = fix.join(' ');
     if (status.name || status.lan) $('#lanurl').textContent = [status.name, status.lan].filter(Boolean).map(h => `http://${h}:${status.port}/ai/`).join(' eller ');
     if (!mode || !avail[mode]) {
-      const first = ['books', 'crisis', 'crisis-small'].find(m => avail[m]);
+      const first = ['books', MAIN, SMALL].find(m => avail[m]);
       if (first) setMode(first, true);
     }
   }
@@ -244,7 +248,7 @@
     }
     e.target.value = '';
     if (photos.length && mode === 'books') {
-      if (setMode('crisis', true) || setMode('crisis-small', true)) add('div', 'sep', 'Foton fungerar i ' + LABEL[mode] + ', så jag bytte läge.');
+      if (setMode(MAIN, true) || setMode(SMALL, true)) add('div', 'sep', 'Foton fungerar i ' + LABEL[mode] + ', så jag bytte läge.');
     }
     drawThumbs();
   });
@@ -358,7 +362,7 @@
     history = []; photos = []; drawThumbs(); log.innerHTML = ''; q.value = ''; q.focus();
   });
   document.querySelectorAll('#examples button').forEach(b => b.addEventListener('click', () => {
-    if (b.dataset.photo) { setMode(status && status.models.includes('crisis') ? 'crisis' : 'crisis-small'); $('#photo').click(); return; }
+    if (b.dataset.photo) { setMode(status && status.models.includes(MAIN) ? MAIN : SMALL); $('#photo').click(); return; }
     q.value = b.textContent; $('#ask').requestSubmit();
   }));
 

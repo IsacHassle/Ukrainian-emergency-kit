@@ -2,8 +2,9 @@
 <html lang="sv">
 <head>
 <meta charset="utf-8">
+<script src="/lib/country.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Checklista · Krislåda</title>
+<title>Checklista · {kit}</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icon-180.png">
 <meta name="theme-color" content="#0b5cad">
@@ -25,13 +26,13 @@
 </head>
 <body>
 <main class="page">
-  <a class="back" href="/">← Krislåda</a>
+  <a class="back" href="/">← <span data-kit></span></a>
   <h1>Checklista för hemberedskap</h1>
   <p class="meta">Bocka av det du har hemma. Målet är att klara dig själv i minst en vecka. Bockarna sparas i den här webbläsaren.</p>
   <div class="progress"><div id="bar"></div></div>
   <p id="count"></p>
 
-  <h2>Hemma (MCF)</h2>
+  <h2 id="mcfhead"></h2>
   <ul id="mcf"><li><label>Laddar…</label></li></ul>
   <p class="src" id="mcfsrc"></p>
 
@@ -43,19 +44,11 @@
 <script src="../lib/md.js"></script>
 <script>
 (() => {
-  const KEY = 'krislada-checklista';
+  const KEY = COUNTRY.slug.toLowerCase() + '-checklista';
   let state = {};
   try { state = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch {}
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
-  const KIT = [
-    'Krislådan installerad, och kontrollerad med Kontrollera Krislåda.command',
-    'Guiden och första hjälpen-utskriften i en pärm hos hemberedskapen',
-    'Organic Maps med Sverige, och Kiwix med de medicinska biblioteken, på mobilen',
-    'Batteri- eller vevradio, inställd på Sveriges Radio P4',
-    'Laddad powerbank eller batteripaket som räcker till Macen',
-    'USB GPS-mottagare till datorn (och en USB-C-adapter om datorn bara har USB-C), testad med Var är jag? på kartan',
-    'Familjen vet hur man öppnar Krislådan från mobilen (samma wifi)',
-  ];
+  const KIT = COUNTRY.checklist.additions.map(a => COUNTRY.text(a));   // the country's own items (country config)
   function list(el, items) {
     el.innerHTML = '';
     for (const text of items) {
@@ -74,15 +67,17 @@
     document.getElementById('count').textContent = `${done} av ${boxes.length} klart`;
     document.getElementById('bar').style.width = (boxes.length ? 100 * done / boxes.length : 0) + '%';
   }
+  const OFFICIAL = COUNTRY.checklist.official_list;
+  document.getElementById('mcfhead').textContent = COUNTRY.text(OFFICIAL.heading);
   list(document.getElementById('kit'), KIT);
   // MCF's own list, from the saved page "Grunder i hemberedskap".
-  const doc = 'docs/library/Svenska myndigheter/MCF - Grunder i hemberedskap.md';
+  const doc = 'docs/' + COUNTRY.official_guides.folder + '/' + OFFICIAL.guide + '.md';
   fetchDoc(doc).then(t => {
-    const part = (t.split(/\n(?=## )/).find(p => /^## Checklista/.test(p)) || '');
+    const part = (t.split(/\n(?=## )/).find(p => p.startsWith('## ' + OFFICIAL.section)) || '');
     const items = part.split('\n').filter(l => /^\s*[-*•]\s+/.test(l)).map(l => l.replace(/^\s*[-*•]\s+/, '').trim());
     if (!items.length) throw new Error('empty');
     list(document.getElementById('mcf'), items);
-    const src = (t.match(/^Källa: .*$/m) || [''])[0];
+    const src = (t.match(new RegExp('^' + OFFICIAL.source_prefix + '.*$', 'm')) || [''])[0];
     document.getElementById('mcfsrc').textContent = src + ' Mer om vatten, mat och värme: se Svenska myndigheters råd på startsidan.';
     count();
   }).catch(() => {

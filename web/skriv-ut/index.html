@@ -2,11 +2,12 @@
 <html lang="sv">
 <head>
 <meta charset="utf-8">
+<script src="/lib/country.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Skriv ut · Krislåda</title>
+<title>Skriv ut · {kit}</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icon-180.png">
-<meta name="apple-mobile-web-app-title" content="Krislåda">
+<meta name="apple-mobile-web-app-title" content="" data-kit-attr="content={kit}">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0b5cad">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%96%A8%3C/text%3E%3C/svg%3E">
@@ -45,7 +46,7 @@
 </style>
 </head>
 <main class="page">
-  <a class="back" href="/">← Krislåda</a>
+  <a class="back" href="/">← <span data-kit></span></a>
   <h1>Skriv ut</h1>
   <div class="bar" style="margin-top:14px"><button onclick="print()">Skriv ut nu</button></div>
   <p class="sub noprint">Det viktigaste från 1177, MCF och Livsmedelsverket, på papper. Skriv ut nu, medan det finns ström, och lägg papperen hos din hemberedskap. Tryck <b>Skriv ut</b> (eller Cmd + P).</p>
@@ -54,23 +55,19 @@
 <script src="../lib/md.js"></script>
 <script>
 (() => {
-  const DIR = 'docs/library/Svenska myndigheter/';
-  const PAGES = [
-    '1177 - Hjärt-lungräddning', '1177 - Hjärt-lungräddning på barn', '1177 - Stabilt sidoläge',
-    '1177 - Om någon sätter i halsen', '1177 - Stoppa en blödning', '1177 - Chock', '1177 - Brännskador',
-    '1177 - Förgiftning', '1177 - Inandning av skadlig gas', '1177 - Köldskador – förfrysning',
-    'MCF - Vad är VMA och hur går en varning till-', 'MCF - Utomhusvarning – Hesa Fredrik',
-    'MCF - Grunder i hemberedskap', 'MCF - Tillgång till vatten i kris', 'MCF - Tillgång till värme i kris',
-    'Livsmedelsverket - Dricksvatten i dunk', 'Livsmedelsverket - Laga mat under ett elavbrott',
-  ];
+  const DIR = 'docs/' + COUNTRY.official_guides.folder + '/';
+  const PAGES = COUNTRY.official_guides.print_pages;   // the Official Guides that go on paper (country config)
   // On paper, keep what to do; leave out background, hospital care, history and page furniture.
   const SKIP = /^(På den här sidan|Vad händer i kroppen|På akutmottagningen|Behandling|Komplikationer|Påverka och delta|Mer information|Hur kan jag (minska risken|förebygga)|Orsaker|Vad är en |Varför|Relaterad|Dela sidan|Frågor och svar|Om du känner dig orolig|Film:|Kurser|Ansvar för|Byte till|Här finns|Ombyggnation|Jag hör inte|Falsklarm|Test av|VMA i reklamradion|Starkare befolkningsskydd|Utmana dig|Undersökning|Vård och behandling|Vad beror|Hur länge|Läs mer|Hitta|Vad kan jag göra själv för att lindra klåda)/i;
   const trim = md => md.split(/\n(?=## )/).filter((part, i) => i === 0 || !SKIP.test(part.slice(3).trim())).join('\n');
-  const today = new Date().toLocaleDateString('sv-SE');
+  // The emergency numbers, two to a line: "<b>112</b> nödsituation · <b>1177</b> sjukvårdsrådgivning<br>...".
+  const numbers = () => COUNTRY.emergency_numbers.map(n => `<b>${n.number}</b> ${COUNTRY.text(n.print_label)}`)
+    .map((t, i, all) => i % 2 ? t + (i < all.length - 1 ? '<br>' : '') : t + (i < all.length - 1 ? ' · ' : '')).join('');
+  const today = new Date().toLocaleDateString(COUNTRY.locale);
   Promise.all(PAGES.map(p => fetchDoc(DIR + p + '.md').then(t => renderMarkdown(trim(t))).catch(() => null))).then(docs => {
     const ok = docs.map((d, i) => d && { ...d, name: PAGES[i] }).filter(Boolean);
-    let html = `<section class="cover"><h1>Krislåda: att ha på papper</h1>
-      <p class="nums"><b>112</b> nödsituation · <b>1177</b> sjukvårdsrådgivning<br><b>113 13</b> information vid kris · <b>114 14</b> polisen, ej akut<br>Radio: <b>Sveriges Radio P4</b> (batteri- eller vevradio)</p>
+    let html = `<section class="cover"><h1>${COUNTRY.kit()}: att ha på papper</h1>
+      <p class="nums">${numbers()}<br>Radio: <b>${COUNTRY.text(COUNTRY.radio.print_label)}</b> (batteri- eller vevradio)</p>
       <p>Utskrivet ${today}. Råden är sparade från myndigheternas webbplatser. Kontrollera de senaste råden på 1177.se, mcf.se och krisinformation.se när det går.</p>
       <h4>Innehåll</h4><ol class="toc">${ok.map(d => `<li>${d.title || d.name.split(' - ')[1]} <span class="src">(${d.name.split(' - ')[0]})</span></li>`).join('')}</ol></section>`;
     html += ok.map(d => `<section>${d.html}</section>`).join('');

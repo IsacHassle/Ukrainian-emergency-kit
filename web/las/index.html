@@ -2,11 +2,12 @@
 <html lang="sv">
 <head>
 <meta charset="utf-8">
+<script src="/lib/country.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Läs · Krislåda</title>
+<title>Läs · {kit}</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icon-180.png">
-<meta name="apple-mobile-web-app-title" content="Krislåda">
+<meta name="apple-mobile-web-app-title" content="" data-kit-attr="content={kit}">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0b5cad">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%E2%9B%91%3C/text%3E%3C/svg%3E">
@@ -28,7 +29,7 @@
 </head>
 <body>
 <main class="page">
-  <div class="tools"><a class="back" style="margin:0" href="/">← Krislåda</a><span class="grow"></span><a class="button plain" href="../ai/">Fråga AI</a><a class="button plain" href="#" onclick="print(); return false">Skriv ut</a></div>
+  <div class="tools"><a class="back" style="margin:0" href="/">← <span data-kit></span></a><span class="grow"></span><a class="button plain" href="../ai/">Fråga AI</a><a class="button plain" href="#" onclick="print(); return false">Skriv ut</a></div>
   <article id="doc"><p>Laddar…</p></article>
 </main>
 <script src="../lib/md.js"></script>
@@ -39,7 +40,7 @@
   const box = document.getElementById('doc');
   if (!/^docs\/[^?#]+\.(md|txt)$/.test(f) || f.includes('..')) { box.innerHTML = '<p class="err">Okänt dokument.</p>'; return; }
   fetchDoc(f)
-    .then(t => { const d = renderMarkdown(t); box.innerHTML = d.html; if (d.title) document.title = d.title + ' · Krislåda'; })
+    .then(t => { const d = renderMarkdown(t); box.innerHTML = d.html; if (d.title) document.title = d.title + ' · ' + COUNTRY.kit(); })
     .catch(() => { box.innerHTML = '<p class="err">Dokumentet hittades inte. Kör installationen igen för att hämta det.</p>'; });
 })();
 </script>

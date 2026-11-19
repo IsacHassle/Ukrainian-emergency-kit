@@ -268,13 +268,24 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(data)
             return
-        if url.path == "/krislada-ca.crt":   # the kit's certificate authority, for phones to trust once
+        if url.path == "/manifest.webmanifest":   # the web app manifest, with the kit's name filled in
+            try:
+                data = kit_country.manifest(open(os.path.join(ROOT, "manifest.webmanifest"), encoding="utf-8").read()).encode()
+            except OSError:
+                return self.send_json({"error": "not found"}, 404)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/manifest+json; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            return
+        if url.path == "/ca.crt":   # the kit's certificate authority, for phones to trust once
             data = open(os.path.join(CERTS, "ca.crt"), "rb").read() if os.path.exists(os.path.join(CERTS, "ca.crt")) else b""
             if not data:
                 return self.send_json({"error": "no certificate"}, 404)
             self.send_response(200)
             self.send_header("Content-Type", "application/x-x509-ca-cert")
-            self.send_header("Content-Disposition", 'attachment; filename="Krislada.crt"')
+            self.send_header("Content-Disposition", 'attachment; filename="%s.crt"' % kit_country.slug())
             self.send_header("Content-Length", str(len(data)))
             self.end_headers()
             self.wfile.write(data)

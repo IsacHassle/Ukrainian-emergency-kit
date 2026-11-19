@@ -60,6 +60,7 @@ def main():
     elif not re.fullmatch(r"[a-z]{2,3}", lang):
         bad("default_language", "must be a language code like uk")
     get("", c, "locale", str)
+    texts("kit_description", get("", c, "kit_description", dict), lang)
     texts("kit_name", get("", c, "kit_name", dict), lang)
 
     # The AI.
@@ -185,7 +186,7 @@ def main():
     lab = get("map", m, "labels", dict) or {}
     for k in ("place", "service", "landmark"):
         get("map.labels", lab, k, dict)
-    for k in ("street", "address", "approximate_prefix"):
+    for k in ("street", "address", "approximate_prefix", "approximate"):
         get("map.labels", lab, k, str)
     for k in ("base_places", "area_types", "town_types"):
         get("map.labels", lab, k, list)

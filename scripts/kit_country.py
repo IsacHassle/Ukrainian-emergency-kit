@@ -9,6 +9,7 @@ Uses only Python's standard library (serve-web.py imports this), and works on th
 """
 import json
 import os
+import unicodedata
 
 CODE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # where the code and its config are
 PATH = os.environ.get("EK_COUNTRY") or os.path.join(CODE, "config", "country.json")
@@ -35,6 +36,19 @@ def kit_name(lang=None):
     return text(COUNTRY["kit_name"], lang)
 
 
+def slug():
+    """The kit's name in plain letters, for file names ("Krislåda" -> "Krislada")."""
+    plain = unicodedata.normalize("NFKD", kit_name()).encode("ascii", "ignore").decode()
+    return "".join(ch for ch in plain if ch.isalnum()) or "kit"
+
+
+def manifest(template):
+    """The web app manifest (the static file is a template with {kit}, {description} and {lang})."""
+    return (template.replace("{kit}", json.dumps(kit_name())[1:-1])
+            .replace("{description}", json.dumps(text(COUNTRY["kit_description"]))[1:-1])
+            .replace("{lang}", LANG))
+
+
 def models():
     """{"main": name, "small": name}: the AI models, as Ollama knows them."""
     return COUNTRY["ai"]["models"]
@@ -47,12 +61,13 @@ def workspace():
 def for_pages():
     """The part of the config that the pages need, as one dict."""
     out = {k: COUNTRY[k] for k in PAGE_KEYS if k in COUNTRY}
-    out["ai"] = {"models": COUNTRY["ai"]["models"]}
+    out["slug"] = slug()
+    out["ai"] = {"models": COUNTRY["ai"]["models"], "workspace_name": COUNTRY["ai"]["workspace_name"]}
     out["official_guides"] = {k: COUNTRY["official_guides"][k] for k in ("folder", "print_pages")}
     m = COUNTRY["map"]
     out["map"] = {k: m[k] for k in ("center", "zoom", "overview_label", "shortcuts", "zoom_by_type",
                                     "search_priority", "nearest") if k in m}
-    out["map"]["labels"] = {k: m["labels"][k] for k in ("street", "address", "approximate_prefix", "area_types")}
+    out["map"]["labels"] = {k: m["labels"][k] for k in ("street", "address", "approximate_prefix", "approximate", "area_types")}
     return out
 
 
@@ -61,7 +76,8 @@ def pages_script():
     return "window.COUNTRY = " + json.dumps(for_pages(), ensure_ascii=False) + ";\n" + PAGE_HELPERS
 
 
-# Loaded first by every page: text(), the kit name in the title, and elements marked data-kit.
+# Loaded first by every page: text(), the kit name in the title, and elements marked data-kit, data-number
+# and data-country.
 PAGE_HELPERS = r"""(() => {
   const C = window.COUNTRY;
   const lang = () => (document.documentElement.lang || C.default_language);
@@ -75,6 +91,10 @@ PAGE_HELPERS = r"""(() => {
     document.querySelectorAll('[data-kit-attr]').forEach(el => {
       const [a, v] = el.dataset.kitAttr.split('=');
       el.setAttribute(a, v.split('{kit}').join(C.kit()));
+    });
+    // Any other fact by its path in the config: <span data-country="ai.models.main"></span>.
+    document.querySelectorAll('[data-country]').forEach(el => {
+      el.textContent = C.text(el.dataset.country.split('.').reduce((o, k) => (o == null ? o : o[k]), C));
     });
     document.querySelectorAll('[data-number]').forEach(el => { el.textContent = C.primaryNumber(); });
   });

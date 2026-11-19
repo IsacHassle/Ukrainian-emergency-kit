@@ -6,6 +6,9 @@
   "sv": "Krislåda",
   "en": "Crisis kit"
  },
+ "kit_description": {
+  "sv": "Sjukvård, AI på svenska och karta över Sverige, utan internet."
+ },
  "ai": {
   "models": {
    "main": "crisis",
@@ -812,6 +815,7 @@
    "street": "Gata",
    "address": "Adress",
    "approximate_prefix": "Ungefär",
+   "approximate": "Ungefärligt läge",
    "area_types": [
     "Stadsdel",
     "Område",
