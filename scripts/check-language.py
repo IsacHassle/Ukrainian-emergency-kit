@@ -50,6 +50,12 @@ def main():
             bad(path, "must be one flat object of key: text")
             continue
         texts[code] = data
+        # Sorted keys give each page's texts their own place in the file, so work on different pages
+        # merges without touching the same lines.
+        if list(data) != sorted(data):
+            bad(path, "keys must be in alphabetical order (sort them with: python3 -c \"import json,sys; "
+                      "p=sys.argv[1]; d=json.load(open(p)); json.dump(dict(sorted(d.items())), open(p,'w'), "
+                      "ensure_ascii=False, indent=1)\" <file>)")
     if len(texts) < 2:
         bad("web/lang", "needs at least two language files")
 

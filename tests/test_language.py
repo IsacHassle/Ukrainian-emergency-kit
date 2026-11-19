@@ -55,6 +55,16 @@ class KeyCheckTest(unittest.TestCase):
         self.assertNotEqual(code, 0)
         self.assertIn("home.ai.title", out)
 
+    def test_keys_out_of_alphabetical_order_fail(self):
+        # Sorted keys put each page's new texts in their own place in the file, so tickets built side
+        # by side merge without touching the same lines.
+        path, en = self.texts("en")
+        keys = sorted(en)
+        self.save(path, {k: en[k] for k in [keys[-1]] + keys[:-1]})
+        code, out = run_check(self.tmp)
+        self.assertNotEqual(code, 0)
+        self.assertIn("alphabetical", out)
+
     def test_a_page_using_a_key_that_exists_in_neither_fails(self):
         with open(os.path.join(self.tmp, "web", "page", "index.html"), "w", encoding="utf-8") as f:
             f.write('<p data-t="nowhere.at.all"></p><script>KIT.t("also.missing")</script>')
