@@ -282,14 +282,19 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     # ---------- AI ----------
 
-    def send_json(self, obj, status=200):
-        data = json.dumps(obj, ensure_ascii=False).encode()
+    def send_bytes(self, data, content_type, status=200, headers=()):
+        """The one way a whole answer is sent: its type, its length and any extra headers (a list of pairs)."""
         self.send_response(status)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(data)))
-        self.send_header("Cache-Control", "no-store")
+        for name, value in headers:
+            self.send_header(name, value)
         self.end_headers()
         self.wfile.write(data)
+
+    def send_json(self, obj, status=200):
+        data = json.dumps(obj, ensure_ascii=False).encode()
+        self.send_bytes(data, "application/json; charset=utf-8", status, [("Cache-Control", "no-store")])
 
     def read_body(self):
         n = int(self.headers.get("Content-Length") or 0)
@@ -501,44 +506,27 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         url = urllib.parse.urlsplit(self.path)
         if url.path in ("/lib/country.js", "/lib/lang.js"):   # the country config and the texts, for the pages
             data = (kit_country.pages_script() if url.path == "/lib/country.js" else kit_lang.pages_script(ROOT)).encode()
-            self.send_response(200)
-            self.send_header("Content-Type", "text/javascript; charset=utf-8")
-            self.send_header("Cache-Control", "no-store")
-            self.send_header("Content-Length", str(len(data)))
-            self.end_headers()
-            self.wfile.write(data)
-            return
+            return self.send_bytes(data, "text/javascript; charset=utf-8", headers=[("Cache-Control", "no-store")])
         if url.path == "/review/data.json":   # every text in both languages, for the review page (web/review/)
             data = json.dumps(kit_lang.review_data(ROOT), ensure_ascii=False).encode()
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Cache-Control", "no-store")
-            self.send_header("Content-Length", str(len(data)))
-            self.end_headers()
-            self.wfile.write(data)
-            return
+            return self.send_bytes(data, "application/json; charset=utf-8", headers=[("Cache-Control", "no-store")])
         if url.path == "/manifest.webmanifest":   # the web app manifest, with the kit's name filled in
             try:
-                data = kit_country.manifest(open(os.path.join(ROOT, "manifest.webmanifest"), encoding="utf-8").read()).encode()
+                with open(os.path.join(ROOT, "manifest.webmanifest"), encoding="utf-8") as f:
+                    data = kit_country.manifest(f.read()).encode()
             except OSError:
                 return self.send_json({"error": "not found"}, 404)
-            self.send_response(200)
-            self.send_header("Content-Type", "application/manifest+json; charset=utf-8")
-            self.send_header("Content-Length", str(len(data)))
-            self.end_headers()
-            self.wfile.write(data)
-            return
+            return self.send_bytes(data, "application/manifest+json; charset=utf-8")
         if url.path == "/ca.crt":   # the kit's certificate authority, for phones to trust once
-            data = open(os.path.join(CERTS, "ca.crt"), "rb").read() if os.path.exists(os.path.join(CERTS, "ca.crt")) else b""
+            try:
+                with open(os.path.join(CERTS, "ca.crt"), "rb") as f:
+                    data = f.read()
+            except OSError:
+                data = b""
             if not data:
                 return self.send_json({"error": "no certificate"}, 404)
-            self.send_response(200)
-            self.send_header("Content-Type", "application/x-x509-ca-cert")
-            self.send_header("Content-Disposition", 'attachment; filename="%s.crt"' % kit_country.slug())
-            self.send_header("Content-Length", str(len(data)))
-            self.end_headers()
-            self.wfile.write(data)
-            return
+            return self.send_bytes(data, "application/x-x509-ca-cert",
+                                   headers=[("Content-Disposition", 'attachment; filename="%s.crt"' % kit_country.slug())])
         if url.path == "/ai-api/gps":   # where the Mac is, from a USB GPS receiver or a Lent position
             return self.send_json(kit_gps.status())
         if url.path == "/ai-api/lending":   # whether lending is on, and whether this device may turn it
@@ -553,14 +541,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         rng = self.headers.get("Range")
         path = self.translate_path(self.path)
         if path.endswith(".json") and os.path.isfile(path + ".gz") and "gzip" in self.headers.get("Accept-Encoding", ""):
-            data = open(path + ".gz", "rb").read()  # the map's place search, sent compressed
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Encoding", "gzip")
-            self.send_header("Content-Length", str(len(data)))
-            self.end_headers()
-            self.wfile.write(data)
-            return
+            with open(path + ".gz", "rb") as f:
+                data = f.read()   # the map's place search, sent compressed
+            return self.send_bytes(data, "application/json", headers=[("Content-Encoding", "gzip")])
         if not rng or not os.path.isfile(path):
             return super().do_GET()
         m = re.match(r"bytes=(\d*)-(\d*)$", rng.strip())
