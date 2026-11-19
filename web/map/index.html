@@ -455,6 +455,7 @@
     };
     MAP.shortcuts.forEach(s => shortcut(s.label, s.center, s.zoom));
     shortcut(MAP.overview_label, MAP.center, MAP.zoom);
+    redraw.forEach(fn => fn());   // the buttons' texts now, before the map is made (a device that cannot draw it still gets them)
 
     const map = new maplibregl.Map({
       container: 'map',
