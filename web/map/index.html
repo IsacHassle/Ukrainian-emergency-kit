@@ -5,7 +5,7 @@
 <script src="/lib/country.js"></script>
 <script src="/lib/lang.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Karta · {kit}</title>
+<title>Мапа · {kit}</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icon-180.png">
 <meta name="apple-mobile-web-app-title" content="" data-kit-attr="content={kit}">
@@ -58,23 +58,23 @@
 <body data-switch="bottom">
 <div id="map"></div>
 <div id="panel">
-  <div class="head"><a href="../">← <span data-kit></span></a><b>Karta</b><span class="grow"></span><span id="zoom"></span></div>
+  <div class="head"><a href="../">← <span data-kit></span></a><b data-t="map.title"></b><span class="grow"></span><span id="zoom"></span></div>
   <form id="find" autocomplete="off">
-    <input id="q" placeholder="Sök ort, gata eller adress" aria-label="Sök på kartan">
-    <button type="submit">Sök</button>
+    <input id="q" data-t-attr="placeholder:map.search.placeholder;aria-label:map.search.label">
+    <button type="submit" data-t="map.search.button"></button>
   </form>
   <div class="hide-min">
-    <details class="near"><summary>+ Närmaste sjukhus, apotek, vatten …</summary>
-      <div class="cats" id="cats" aria-label="Närmaste"></div>
+    <details class="near"><summary data-t="map.nearest.summary"></summary>
+      <div class="cats" id="cats" data-t-attr="aria-label:map.nearest.label"></div>
     </details>
     <ul id="results"></ul>
     <div id="note"></div>
-    <div id="coords">Tryck på kartan för att se koordinater.</div>
+    <div id="coords"></div>
   </div>
   <div class="bar">
     <span id="shortcuts" style="display: contents"></span>
     <span class="grow"></span>
-    <button type="button" class="plain" id="toggle" aria-label="Visa eller dölj panelen">▾</button>
+    <button type="button" class="plain" id="toggle" data-t-attr="aria-label:map.panel.toggle">▾</button>
   </div>
   <div id="err"></div>
 </div>
@@ -85,10 +85,33 @@
   maplibregl.addProtocol('pmtiles', protocol.tile);
 
   const base = new URL('.', location.href).href;
+  // The title is "Map · Kit name" in the page language (set after country.js has written its own).
+  const setTitle = () => { document.title = KIT.t('map.title') + ' · ' + COUNTRY.kit(); };
+  addEventListener('DOMContentLoaded', () => { setTitle(); redraw.forEach(fn => fn()); });
+  addEventListener('kitlang', setTitle);
+  KIT.onChange(() => {
+    redraw.forEach(fn => fn());
+    if (resultsSrc && window.kitMap) show(resultsSrc.list, window.kitMap, resultsSrc.withDistance, resultsSrc.from);
+  });
   const root = new URL('../tiles/', location.href).href;   // where the .pmtiles live
   const $ = s => document.querySelector(s);
-  const note = t => { $('#note').textContent = t || ''; };
-  const noteHtml = h => { $('#note').innerHTML = h; };   // only for the kit's own messages with a link
+  // Texts the script writes itself must follow the page language, so each is kept as a function and written
+  // again when the language changes: the note under the search, the coordinates line, the result list, the
+  // zoom, the error line and the nearest and shortcut buttons.
+  let noteSrc = null, coordsSrc = null, errSrc = null, resultsSrc = null;
+  const redraw = [];
+  const renderNote = () => {
+    const v = noteSrc ? noteSrc() : '';
+    $('#note').replaceChildren(typeof v === 'string' ? document.createTextNode(v) : v);
+  };
+  const note = src => { noteSrc = typeof src === 'string' ? () => src : src; renderNote(); };   // a text, or a function giving text (or nodes)
+  redraw.push(renderNote);
+  const showError = src => { errSrc = src; renderError(); };
+  const renderError = () => {
+    const el = $('#err');
+    if (errSrc) { el.style.display = 'block'; el.textContent = errSrc(); }
+  };
+  redraw.push(renderError);
 
   // A map file is usable only if it starts with the PMTiles magic bytes.
   const isReady = url => fetch(url, { headers: { Range: 'bytes=0-6' } })
@@ -128,20 +151,21 @@
     const dx = (a[0] - b[0]) * 111.32 * Math.cos(a[1] * Math.PI / 180), dy = (a[1] - b[1]) * 110.57;
     return Math.hypot(dx, dy);
   };
-  const fmtKm = d => d < 1 ? Math.round(d * 100) * 10 + ' m' : (d < 10 ? d.toFixed(1) : Math.round(d)) + ' km';
+  const fmtKm = d => d < 1 ? Math.round(d * 100) * 10 + ' ' + KIT.t('map.unit.m') : (d < 10 ? d.toFixed(1) : Math.round(d)) + ' ' + KIT.t('map.unit.km');
 
   function show(list, map, withDistance, from) {
+    resultsSrc = { list, withDistance, from };   // kept to write the list again when the language changes
     const ul = $('#results');
     ul.innerHTML = '';
     const c = map.getCenter(), shown = [];
-    const origin = from || [c.lng, c.lat], fromText = from && gps.here && from === gps.here ? ' från dig' : ' från kartans mitt';
+    const origin = from || [c.lng, c.lat], fromKey = from && gps.here && from === gps.here ? 'map.distance.fromyou' : 'map.distance.fromcentre';
     for (const e of list) {
       // the same place is often mapped twice (a point and a building): show it once
       if (shown.some(o => o[0] === e[0] && o.t === e.t && km([o[2], o[3]], [e[2], e[3]]) < 0.4)) continue;
       shown.push(e);
       const li = document.createElement('li');
       li.tabIndex = 0;
-      const where = [e.t, e.a, withDistance ? fmtKm(km([e[2], e[3]], origin)) + fromText : ''].filter(Boolean).join(' · ');
+      const where = [e.t, e.a, withDistance ? KIT.t(fromKey, { distance: fmtKm(km([e[2], e[3]], origin)) }) : ''].filter(Boolean).join(' · ');
       li.innerHTML = '<b></b><small></small>';
       li.querySelector('b').textContent = e[0];
       li.querySelector('small').textContent = where;
@@ -203,7 +227,7 @@
           const f = (n - lo) / (hi - lo), pt = [la[1] + f * (ha[1] - la[1]), la[2] + f * (ha[2] - la[2])];
           if (exact.some(x => km(pt, [x[2], x[3]]) < 1)) continue;   // the real address is right there
           const e = [`${street} ${want}`, 0, pt[0], pt[1]];
-          e.t = `${LABELS.approximate}, mellan nr ${la[0]} och ${ha[0]}`; e.a = A.cities[la[3]] || ''; e.miss = miss(pt, e.a);
+          e.t = KIT.t('map.search.between', { approximate: LABELS.approximate, low: la[0], high: ha[0] }); e.a = A.cities[la[3]] || ''; e.miss = miss(pt, e.a);
           out.push([score(pt, e.a, 0.5 + (hi - lo) / 24), e]);
         }
       }
@@ -227,7 +251,7 @@
       pin.setLngLat([lng, lat]).addTo(map);
       map.flyTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), 15) });
       setCoords(lng, lat);
-      $('#results').innerHTML = '';
+      $('#results').innerHTML = ''; resultsSrc = null;
       return;
     }
     let words = text, house = null;
@@ -238,15 +262,16 @@
       if (found.length) {
         show(found, map, true);
         jump(map, found[0], `${found[0][0]}${found[0].a ? ', ' + found[0].a : ''}`);
-        if (found[0].miss) note(`Hittade inget ${found[0][0]} i ${hm[3]}. Visar det närmaste. Se listan.`);
-        else if (found[0].t.startsWith(LABELS.approximate_prefix)) note(`${found[0][0]} finns inte i kartdatan. Nålen visar ungefärligt läge, mellan grannhusen.`);
+        const name = found[0][0];
+        if (found[0].miss) note(() => KIT.t('map.search.areamiss', { name, area: hm[3] }));
+        else if (found[0].t.startsWith(LABELS.approximate_prefix)) note(() => KIT.t('map.search.approximate', { name }));
         return;
       }
       words = (hm[1] + ' ' + hm[3]).trim();
     }
     const [base, extra] = await Promise.all([loadIndex(), loadLetter(words)]);
     const items = base.concat(extra.items);
-    if (!items.length) { note('Sökningen saknas. Kör scripts/build-map-index.py.'); return; }
+    if (!items.length) { note(() => KIT.t('map.search.missing')); return; }
     const q = norm(words);
     if (!q) return;
     const qw = q.split(' ');
@@ -264,9 +289,9 @@
     }
     hits.sort((a, b) => a[0] - b[0]);
     const list = hits.slice(0, 30).map(h => h[1]);
-    if (!list.length) { $('#results').innerHTML = ''; note('Inget hittades. Prova en del av namnet, eller zooma in på kartan.'); return; }
+    if (!list.length) { $('#results').innerHTML = ''; resultsSrc = null; note(() => KIT.t('map.search.nothing')); return; }
     show(list, map, true);
-    if (house && list[0].t === LABELS.street) { jump(map, list[0]); note(`Husnummer ${house} hittades inte. Visar gatan.`); }
+    if (house && list[0].t === LABELS.street) { jump(map, list[0]); note(() => KIT.t('map.search.nonumber', { number: house })); }
   }
 
   async function nearest(map, types) {
@@ -276,13 +301,18 @@
     const c = map.getCenter(), here = gps.on && gps.here ? gps.here : [c.lng, c.lat];
     const list = items.filter(e => want.has(e.t)).map(e => [km([e[2], e[3]], here), e]).sort((a, b) => a[0] - b[0]).slice(0, 20).map(x => x[1]);
     show(list, map, true, here);
-    if (!list.length) note('Inga hittades.');
+    if (!list.length) note(() => KIT.t('map.nearest.none'));
   }
 
-  function setCoords(lng, lat, label) {
-    $('#coords').textContent = (label ? label + ': ' : '') +
-      `${lat.toFixed(5)}, ${lng.toFixed(5)}  (${Math.abs(lat).toFixed(4)}°${lat >= 0 ? 'N' : 'S'} ${Math.abs(lng).toFixed(4)}°${lng >= 0 ? 'E' : 'W'})`;
+  // label: a place name, or a function giving a text in the page language
+  function setCoords(lng, lat, label) { coordsSrc = { lng, lat, label }; renderCoords(); }
+  function renderCoords() {
+    if (!coordsSrc) { $('#coords').textContent = KIT.t('map.coords.hint'); return; }
+    const { lng, lat, label } = coordsSrc, name = typeof label === 'function' ? label() : label;
+    $('#coords').textContent = (name ? name + ': ' : '') +
+      `${lat.toFixed(5)}, ${lng.toFixed(5)}  (${Math.abs(lat).toFixed(4)}° ${KIT.t(lat >= 0 ? 'map.coords.north' : 'map.coords.south')} ${Math.abs(lng).toFixed(4)}° ${KIT.t(lng >= 0 ? 'map.coords.east' : 'map.coords.west')})`;
   }
+  redraw.push(renderCoords);
 
   // ---------- where am I (GPS) ----------
   // First choice: a USB GPS receiver in the Mac, read by the kit's web server (/ai-api/gps).
@@ -292,7 +322,7 @@
     start(map) {
       this.on = true; this.centre = true; this.btn && this.btn.classList.add('on');
       $('#panel').classList.remove('min');
-      note('Söker din position…');
+      note(() => KIT.t('map.gps.searching'));
       this.poll(map); this.timer = setInterval(() => this.poll(map), 2000);
     },
     stop() {
@@ -311,21 +341,21 @@
       if (!this.on) return;
       this.usb = !!g.device;
       if (g.device && g.fix) {
-        const acc = g.accuracy_m ? `, ±${Math.round(g.accuracy_m)} m` : '';
-        const what = g.source === 'phone' ? 'mobilens GPS' : `GPS, ${g.sats || '?'} satelliter`;
-        return this.show(map, g.lon, g.lat, g.accuracy_m, `Du är här (${what}${acc})`);
+        const acc = () => g.accuracy_m ? KIT.t('map.gps.accuracy', { metres: Math.round(g.accuracy_m) }) : '';
+        const what = () => g.source === 'phone' ? KIT.t('map.gps.phone') : KIT.t('map.gps.receiver', { sats: g.sats || '?' });
+        return this.show(map, g.lon, g.lat, g.accuracy_m, () => KIT.t('map.gps.here', { detail: what() + acc() }));
       }
       if (g.device) {
-        return note(`GPS-mottagaren söker satelliter${g.sats_in_view ? ` (${g.sats_in_view} syns)` : ''}. Ställ datorn vid ett fönster eller gå ut. Första gången kan det ta några minuter.`);
+        return note(() => KIT.t('map.gps.searchingsats', { visible: g.sats_in_view ? KIT.t('map.gps.visible', { count: g.sats_in_view }) : '' }));
       }
       if (navigator.geolocation && window.isSecureContext) {
         if (this.watch === null) this.watch = navigator.geolocation.watchPosition(
-          p => { if (!this.usb) this.show(map, p.coords.longitude, p.coords.latitude, p.coords.accuracy, `Du är här (±${Math.round(p.coords.accuracy)} m)`); },
-          () => { if (!this.usb && !this.here) noteHtml(NO_GPS); },
+          p => { if (!this.usb) this.show(map, p.coords.longitude, p.coords.latitude, p.coords.accuracy, () => KIT.t('map.gps.here', { detail: KIT.t('map.gps.accuracyonly', { metres: Math.round(p.coords.accuracy) }) })); },
+          () => { if (!this.usb && !this.here) note(() => noGps(false)); },
           { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 });
         return;
       }
-      if (!this.here) noteHtml(NO_GPS + (('ontouchend' in document) ? ' På mobilen: <a href="/mobil/">ställ in GPS</a>.' : ''));
+      if (!this.here) note(() => noGps('ontouchend' in document));
     },
     show(map, lon, lat, acc, label) {
       this.here = [lon, lat];
@@ -344,7 +374,17 @@
       note('');
     },
   };
-  const NO_GPS = 'Ingen GPS hittades. Macen har ingen egen GPS: koppla in en USB GPS-mottagare, eller låt mobilen vara GPS: öppna <b>/mobil/</b> på mobilen och tryck <b>Dela min position med Macen</b>. Utan GPS: sök på en gata, adress eller plats du ser omkring dig.';
+  // The "no GPS" message, with a link to the phone setup page on a touch device.
+  const noGps = (withLink = true) => {
+    const box = document.createDocumentFragment();
+    box.append(KIT.t('map.gps.none'));
+    if (withLink) {
+      const a = document.createElement('a');
+      a.href = '/mobil/'; a.textContent = KIT.t('map.gps.setup');
+      box.append(' ', a);
+    }
+    return box;
+  };
   const circle = (lon, lat, m) => {
     const pts = [];
     for (let i = 0; i <= 48; i++) {
@@ -358,8 +398,10 @@
     onAdd() {
       const el = document.createElement('div');
       el.className = 'maplibregl-ctrl maplibregl-ctrl-group';
-      el.innerHTML = '<button type="button" class="gps-btn" title="Var är jag? (GPS)" aria-label="Var är jag?">⌖</button>';
+      el.innerHTML = '<button type="button" class="gps-btn">⌖</button>';
       gps.btn = el.querySelector('button');
+      const words = () => { gps.btn.title = KIT.t('map.gps.title'); gps.btn.setAttribute('aria-label', KIT.t('map.gps.label')); };
+      words(); redraw.push(words);
       gps.btn.onclick = () => gps.click(this.map);
       this.map.on('dragstart', () => { gps.centre = false; });
       return el;
@@ -368,12 +410,23 @@
   }
 
   // ---------- map ----------
+  // Place names follow the page language: that language's name, else the place's own (local) name. One
+  // language per label (the style as shipped has the same expression for the default language). A page
+  // language without a name tag in the tiles simply falls back to the local name.
+  const nameExpr = lang => ['coalesce', ['get', 'name:' + lang], ['get', 'name']];
+  const labelField = (id, lang) => id.startsWith('places_region')   // regions show their short code at low zoom
+    ? ['step', ['zoom'], ['coalesce', ['get', 'ref:en'], ['get', 'ref']], 6, nameExpr(lang)]
+    : nameExpr(lang);
+  const labelLayers = style => style.layers.filter(l => l.layout && JSON.stringify(l.layout['text-field'] || '').includes('"name"')).map(l => l.id);
+
   fetch('style.json').then(r => r.json()).then(async style => {
+    const labels = labelLayers(style);
+    style.layers.forEach(l => { if (labels.includes(l.id)) l.layout['text-field'] = labelField(l.id, KIT.lang); });
     style.sprite = base + 'assets/sprites/v4/light';
     style.glyphs = base + 'assets/fonts/{fontstack}/{range}.pbf';
     const missing = [];
     for (const [name, src] of Object.entries(style.sources)) {
-      const url = root + name + '.pmtiles';
+      const url = root + (name === 'area' ? MAP.pmtiles : name) + '.pmtiles';   // 'area' is the country's detailed map file
       if (await isReady(url)) {
         src.url = 'pmtiles://' + url;
       } else {
@@ -382,24 +435,22 @@
         style.layers = style.layers.filter(l => l.source !== name);
       }
     }
-    if (missing.length) {
-      const el = $('#err');
-      el.style.display = 'block';
-      el.textContent = 'Kartfil saknas: ' + missing.join(', ');
-    }
+    if (missing.length) showError(() => KIT.t('map.error.missing', { files: missing.map(n => (n === 'area' ? MAP.pmtiles : n) + '.pmtiles').join(', ') }));
 
     // Buttons for the country config's nearest categories and shortcuts (a town, the whole country).
     // Made before the map, so they are there even on a device that cannot draw it.
     for (const n of MAP.nearest) {
       const b = document.createElement('button');
-      b.type = 'button'; b.className = 'plain'; b.dataset.t = n.types.join(','); b.textContent = COUNTRY.text(n.label);
+      b.type = 'button'; b.className = 'plain'; b.dataset.t = n.types.join(',');
       b.onclick = () => nearest(window.kitMap, b.dataset.t);
+      redraw.push(() => { b.textContent = COUNTRY.text(n.label); });
       $('#cats').appendChild(b);
     }
     const shortcut = (label, center, zoom) => {
       const b = document.createElement('button');
-      b.type = 'button'; b.className = 'plain'; b.textContent = COUNTRY.text(label);
+      b.type = 'button'; b.className = 'plain';
       b.onclick = () => window.kitMap.flyTo({ center, zoom });
+      redraw.push(() => { b.textContent = COUNTRY.text(label); });
       $('#shortcuts').appendChild(b);
     };
     MAP.shortcuts.forEach(s => shortcut(s.label, s.center, s.zoom));
@@ -420,8 +471,8 @@
     map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-left');
     pin = new maplibregl.Marker({ color: '#d32f2f' });
 
-    const zoomText = () => { $('#zoom').textContent = 'Zoom ' + map.getZoom().toFixed(1); };
-    map.on('zoom', zoomText); zoomText();
+    const zoomText = () => { $('#zoom').textContent = KIT.t('map.zoom', { zoom: map.getZoom().toFixed(1) }); };
+    map.on('zoom', zoomText); redraw.push(zoomText);
 
     map.on('click', e => { pin.setLngLat(e.lngLat).addTo(map); setCoords(e.lngLat.lng, e.lngLat.lat); });
 
@@ -432,10 +483,14 @@
     if (matchMedia('(max-width: 520px)').matches) $('#panel').classList.add('min');   // phones: more map, less panel
 
     map.on('error', e => {
-      const el = $('#err');
-      el.style.display = 'block';
-      el.textContent = 'Kartfel: ' + (e.error && e.error.message || e.error || 'okänt');
+      const why = e.error && e.error.message || e.error;
+      showError(() => KIT.t('map.error.map', { message: why || KIT.t('map.error.unknown') }));
     });
+
+    // The language switch: labels on the map, then every text this page wrote itself.
+    const setLabels = () => labels.forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'text-field', labelField(id, KIT.lang)); });
+    KIT.onChange(setLabels);
+    redraw.forEach(fn => fn());
   });
 </script>
 </body>

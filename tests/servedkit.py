@@ -35,7 +35,8 @@ def free_port():
 
 
 class ServedKit:
-    def __init__(self, ai_delay=0.0, country=None):
+    def __init__(self, ai_delay=0.0, country=None, tiles=False):
+        self.tiles = tiles   # put a tiny map (tests/kit/maps) in the kit, as the world and the country's map file
         self.country = None
         with open(os.path.join(REPO, "config", "country.json"), encoding="utf-8") as f:
             facts = json.load(f)
@@ -82,6 +83,10 @@ class ServedKit:
         name = guides["print_pages"][0]
         with open(os.path.join(folder, name + ".md"), "w", encoding="utf-8") as f:
             f.write("# %s\n\nPress hard on the wound.\n" % name.split(" - ", 1)[1])
+        if self.tiles:
+            os.makedirs(os.path.join(self.kit_dir, "maps"))
+            for name in ("world", self.facts["map"]["pmtiles"]):
+                shutil.copy(os.path.join(TESTS, "kit", "maps", "tiny.pmtiles"), os.path.join(self.kit_dir, "maps", name + ".pmtiles"))
         shutil.copytree(os.path.join(REPO, "web"), self.web_dir, symlinks=True)
         data = os.path.join(self.web_dir, "map", "data")
         os.makedirs(data, exist_ok=True)
