@@ -282,10 +282,23 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 "messages": [{"role": "system", "content": kit_search.system_prompt(base, passages, articles)}] + clean,
             }, first=json.dumps({"sources": sources}, ensure_ascii=False).encode() + b"\n")
 
-        if action == "gps-share":  # a phone lends the Mac its GPS (web/mobil/)
+        if action == "lending":  # the switch for Lent positions: only the Kit Mac itself may turn it
+            if not self.from_this_mac():
+                return self.send_json({"error": "lending is turned on or off only on the Kit Mac itself"}, 403)
+            if not isinstance(body, dict) or not isinstance(body.get("on"), bool):
+                return self.send_json({"error": "bad request"}, 400)
+            try:
+                kit_gps.set_lending(body["on"])
+            except OSError:
+                return self.send_json({"error": "could not save"}, 500)
+            return self.send_json({"on": kit_gps.lending_on(), "kit_mac": True})
+
+        if action == "gps-share":  # a phone lends the Mac its GPS (web/mobil/), only while lending is on
             try:
                 kit_gps.share(body.get("lat"), body.get("lon"), body.get("accuracy"))
-            except (TypeError, ValueError):
+            except kit_gps.LendingOff:
+                return self.send_json({"error": "lending_off"}, 403)
+            except (TypeError, ValueError, AttributeError):
                 return self.send_json({"error": "bad request"}, 400)
             return self.send_json({"ok": True})
 
@@ -343,8 +356,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(data)
             return
-        if url.path == "/ai-api/gps":   # where the Mac is, from a USB GPS receiver
+        if url.path == "/ai-api/gps":   # where the Mac is, from a USB GPS receiver or a Lent position
             return self.send_json(kit_gps.status())
+        if url.path == "/ai-api/lending":   # whether lending is on, and whether this device may turn it
+            return self.send_json({"on": kit_gps.lending_on(), "kit_mac": self.from_this_mac()})
         if url.path == "/ai-api/status":
             return self.ai_status()
         if url.path == "/ai-api/doc":
