@@ -351,11 +351,11 @@
       if (navigator.geolocation && window.isSecureContext) {
         if (this.watch === null) this.watch = navigator.geolocation.watchPosition(
           p => { if (!this.usb) this.show(map, p.coords.longitude, p.coords.latitude, p.coords.accuracy, () => KIT.t('map.gps.here', { detail: KIT.t('map.gps.accuracyonly', { metres: Math.round(p.coords.accuracy) }) })); },
-          () => { if (!this.usb && !this.here) note(() => noGps(false)); },
+          () => { if (!this.usb && !this.here) note(() => noGps()); },
           { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 });
         return;
       }
-      if (!this.here) note(() => noGps('ontouchend' in document));
+      if (!this.here) note(() => noGps());
     },
     show(map, lon, lat, acc, label) {
       this.here = [lon, lat];
@@ -374,15 +374,13 @@
       note('');
     },
   };
-  // The "no GPS" message, with a link to the phone setup page on a touch device.
-  const noGps = (withLink = true) => {
+  // The "no GPS" message, with a link to the phone page (set up a phone's own GPS, and the Kit Mac's lending switch).
+  const noGps = () => {
     const box = document.createDocumentFragment();
     box.append(KIT.t('map.gps.none'));
-    if (withLink) {
-      const a = document.createElement('a');
-      a.href = '/mobil/'; a.textContent = KIT.t('map.gps.setup');
-      box.append(' ', a);
-    }
+    const a = document.createElement('a');
+    a.href = '/mobil/'; a.textContent = KIT.t('map.gps.setup');
+    box.append(' ', a);
     return box;
   };
   const circle = (lon, lat, m) => {

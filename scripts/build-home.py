@@ -308,7 +308,6 @@ TEMPLATE = r"""<!doctype html>
       <div class="inner"><ul class="list rows">
         <li><a href="skriv-ut/" data-t="home.prepare.print.title"></a><small data-t="home.prepare.print.text"></small></li>
         <li><a href="checklista/" data-t="home.prepare.checklist.title"></a><small data-t="home.prepare.checklist.text"></small></li>
-        <li><a href="mobil/" data-t="home.prepare.gps.title"></a><small data-t="home.prepare.gps.text"></small></li>
       </ul></div></details>
   </div>
 
