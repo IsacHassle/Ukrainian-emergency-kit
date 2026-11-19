@@ -20,6 +20,7 @@ Uses only Python's standard library (the system python3 3.9 is enough):
 import datetime
 import json
 import os
+import re
 import sys
 
 import kit_country
@@ -52,6 +53,19 @@ def save(path, data):
     os.replace(path + ".part", path)
 
 
+def unchanged(path, data):
+    """True when the saved copy says the same as the fetched one. A text carries the day it was saved, which differs
+    on every fetch, so the day is left out: a refresh must not turn every guide into a changed one (and the Book
+    index would take every guide in again)."""
+    try:
+        with open(path, "rb") as f:
+            old = f.read()
+    except OSError:
+        return False
+    day = rb"(\xd0\x97\xd0\xb1\xd0\xb5\xd1\x80\xd0\xb5\xd0\xb6\xd0\xb5\xd0\xbd\xd0\xbe|Saved) \d{4}-\d{2}-\d{2}"
+    return re.sub(day, rb"\1 DAY", old) == re.sub(day, rb"\1 DAY", data)
+
+
 def text_guide(guide, result, today):
     """The Markdown of a fetched page, or None with a reason."""
     source = kit_guides.source_of(guide.url) or {}
@@ -73,7 +87,7 @@ def text_guide(guide, result, today):
 def main():
     guides = kit_guides.read_list()
     today = datetime.date.today().isoformat()
-    counts = {"saved": 0, "there": 0, "skipped": 0, "failed": 0}
+    counts = {"saved": 0, "same": 0, "there": 0, "skipped": 0, "failed": 0}
     saved = []
     for guide in guides:
         sub = kit_guides.language_folder(guide.language)
@@ -106,12 +120,25 @@ def main():
             if os.path.exists(path):   # a refresh that fails keeps the copy already saved
                 saved.append(entry)
             continue
-        save(path, data)
-        counts["saved"] += 1
+        if unchanged(path, data):
+            counts["same"] += 1   # keeps the file (and the day it says) as it was
+        else:
+            save(path, data)
+            counts["saved"] += 1
         saved.append(entry)
-    save(os.path.join(OUT, "saved.json"), json.dumps({"saved": today, "guides": saved}, ensure_ascii=False, indent=1).encode("utf-8"))
-    say("Офіційні посібники: збережено {saved}, уже були {there}, пропущено {skipped}, не вдалося {failed}".format(**counts),
-        "Official Guides: saved {saved}, already there {there}, skipped {skipped}, failed {failed}".format(**counts))
+    # The date says when the guides were last confirmed from their sources, which Check reads for its age warning.
+    # A run that fetched nothing (no internet, every source refused) must not make old guides look new.
+    date = today
+    old_json = os.path.join(OUT, "saved.json")
+    if counts["saved"] + counts["same"] == 0 and os.path.exists(old_json):
+        try:
+            with open(old_json, encoding="utf-8") as f:
+                date = json.load(f).get("saved") or today
+        except (OSError, ValueError):
+            pass
+    save(old_json, json.dumps({"saved": date, "guides": saved}, ensure_ascii=False, indent=1).encode("utf-8"))
+    say("Офіційні посібники: збережено {saved}, без змін {same}, уже були {there}, пропущено {skipped}, не вдалося {failed}".format(**counts),
+        "Official Guides: saved {saved}, unchanged {same}, already there {there}, skipped {skipped}, failed {failed}".format(**counts))
     return 1 if counts["failed"] else 0
 
 

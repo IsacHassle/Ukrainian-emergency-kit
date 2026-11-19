@@ -5,7 +5,9 @@
 # documents/ (any subfolder) and run this again.
 # AnythingLLM keeps every uploaded file in one store shared by all its workspaces (another kit's, on a Mac that has
 # two). So this script remembers where AnythingLLM put each file it uploaded (logs/embed-uploaded.txt, one
-# "file<TAB>location" line each) and embeds only those, never whatever else is in the store.
+# "file<TAB>location<TAB>checksum" line each) and embeds only those, never whatever else is in the store.
+# The checksum is how a Book that changed is found (Update): it is uploaded again, and the old copy is taken out of
+# this kit's workspace (only the locations this script itself recorded, never another kit's documents).
 #
 # Needs AnythingLLM and Ollama running.
 # Run:   bash scripts/embed-documents.sh
@@ -37,7 +39,21 @@ GUIDES="$DOCS/$(country official_guides.folder)"
 STORE=$(curl -s "$A/setup-complete" | python3 -c 'import json,sys; print(json.load(sys.stdin)["results"]["StorageDir"])')/documents/custom-documents
 awk '!seen[$0]++' /tmp/embed-order.$$ | while IFS= read -r f; do
   case "$f" in "$GUIDES"/?*/*) continue ;; esac   # a guide in a language subfolder (en/): for reading only
-  grep -qF "$f	" "$DONE" && continue
+  hash=$(shasum -a 256 "$f" | awk '{print $1}')
+  oldloc=$(EK_F=$f awk -F'\t' '$1 == ENVIRON["EK_F"] {print $2; exit}' "$DONE")
+  oldhash=$(EK_F=$f awk -F'\t' '$1 == ENVIRON["EK_F"] {print $3; exit}' "$DONE")
+  replaced=""
+  if [ -n "$oldloc" ]; then
+    if [ -z "$oldhash" ]; then   # a line from before checksums: take the file as it is now to be the uploaded one
+      EK_F=$f EK_H=$hash awk -F'\t' -v OFS='\t' '$1 == ENVIRON["EK_F"] {$3 = ENVIRON["EK_H"]} {print}' "$DONE" > "$DONE.new" && mv "$DONE.new" "$DONE"
+      continue
+    fi
+    [ "$oldhash" = "$hash" ] && continue
+    # The Book changed: forget the old upload (its location is taken out of the workspace below) and upload it again.
+    EK_F=$f awk -F'\t' '$1 != ENVIRON["EK_F"]' "$DONE" > "$DONE.new" && mv "$DONE.new" "$DONE"
+    echo "$oldloc" >> /tmp/embed-deletes.$$
+    replaced=1
+  fi
   # Quote the name: curl treats commas and semicolons in a bare file name as separators.
   q=${f//\\/\\\\}; q=${q//\"/\\\"}
   # The reply says only "success", so find the file in the store: the one just written there.
@@ -52,17 +68,18 @@ print("custom-documents/" + max(new)[1] if new else "")
 PY
 )
   if [ -n "$loc" ]; then
-    printf '%s\t%s\n' "$f" "$loc" >> "$DONE"; echo "UPLOADED $(basename "$f")"
+    printf '%s\t%s\t%s\n' "$f" "$loc" "$hash" >> "$DONE"; echo "$([ -n "$replaced" ] && echo REPLACED || echo UPLOADED) $(basename "$f")"
   else
     echo "UPLOAD FAILED $(basename "$f")"
   fi
 done
 rm -f /tmp/embed-order.$$
+touch /tmp/embed-deletes.$$
 
 # 2. Embed every uploaded document that is not yet in the workspace, in small batches.
-python3 - "$A" "$WORKSPACE" "$DONE" <<'PY'
+python3 - "$A" "$WORKSPACE" "$DONE" /tmp/embed-deletes.$$ <<'PY'
 import json, sys, time, urllib.request
-A, WS, DONE = sys.argv[1], sys.argv[2], sys.argv[3]
+A, WS, DONE, DELETES = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
 def get(p): return json.load(urllib.request.urlopen(A + p, timeout=120))
 def post(p, body):
     req = urllib.request.Request(A + p, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
@@ -72,6 +89,19 @@ def all_docs():
     with open(DONE, encoding="utf-8") as f:
         return sorted({l.rstrip("\n").split("\t")[1] for l in f if "\t" in l})
 in_ws = {d["docpath"] for d in get("/workspace/" + WS)["workspace"].get("documents", [])}
+# Old copies of Books that changed: taken out of this kit's workspace first, only those this script uploaded.
+with open(DELETES, encoding="utf-8") as f:
+    old = sorted({l.strip() for l in f if l.strip()} & in_ws)
+if old:
+    try:
+        post("/workspace/" + WS + "/update-embeddings", {"adds": [], "deletes": old})
+    except Exception as e:
+        print("delete error:", e, flush=True)
+    for _ in range(120):
+        in_ws = {d["docpath"] for d in get("/workspace/" + WS)["workspace"].get("documents", [])}
+        if not set(old) & in_ws: break
+        time.sleep(5)
+    print(f"taken out (changed Books): {len(old)}", flush=True)
 todo = [d for d in all_docs() if d not in in_ws]
 print(f"to embed: {len(todo)} (already embedded: {len(in_ws)})", flush=True)
 for i in range(0, len(todo), 20):
@@ -86,4 +116,5 @@ for i in range(0, len(todo), 20):
         time.sleep(5)
     print(f"embedded {min(i + 20, len(todo))}/{len(todo)} (workspace now {n})", flush=True)
 PY
+rm -f /tmp/embed-deletes.$$
 echo "=== DONE $(date)"

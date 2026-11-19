@@ -237,5 +237,138 @@ class Check(unittest.TestCase):
         self.assertIn("A USB GPS receiver is connected", r.stdout)
 
 
+GUIDE_URL = "http://dovidka.info/advices/shho-robyty-koly-pochuly-syreny/"
+CODE_URL = "https://github.com/IsacHassle/Ukrainian-emergency-kit/archive/refs/heads/main.tar.gz"
+WATER_OLD = "https://download.kiwix.org/zim/other/zimgit-water_en_2024-08.zim"
+WATER_NEW = "https://download.kiwix.org/zim/other/zimgit-water_en_2025-01.zim"
+
+
+def tree(root):
+    """Every file under a folder with its content, to prove that a run changed nothing."""
+    out = {}
+    for base, _, names in os.walk(root):
+        for n in names:
+            path = os.path.join(base, n)
+            if os.path.islink(path):
+                continue
+            with open(path, "rb") as f:
+                out[os.path.relpath(path, root)] = f.read()
+    return out
+
+
+class Update(unittest.TestCase):
+    """Update (scripts/update.sh) on an installed test kit whose Official Guides are old and whose Water Library
+    has a newer version. Only what changed may be indexed again."""
+
+    def setUp(self):
+        import datetime, json
+        self.kit = kit = InstallKit()
+        kit.serve_library(WATER_OLD, {"files/A.pdf": b"%PDF A1", "files/B.pdf": b"%PDF B1"})
+        self.assertEqual(kit.install().returncode, 0)
+        self.first_uploads = list(kit.ai.uploads)
+        # The Official Guides were saved 40 days ago.
+        path = kit.path("documents", "Official Guides", "saved.json")
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        data["saved"] = (datetime.date.today() - datetime.timedelta(days=40)).isoformat()
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+        # Another kit shares AnythingLLM's store: its file and its workspace must stay as they are.
+        kit.ai.store_add("swedish-kit-file.json")
+        kit.ai.embedded["crisis"] = ["custom-documents/swedish-kit-file.json"]
+        # The internet now: a newer Water Library (A changed, B the same, C new), and a changed guide.
+        kit.serve_library(WATER_NEW, {"files/A.pdf": b"%PDF A2", "files/B.pdf": b"%PDF B1", "files/C.pdf": b"%PDF C1"})
+        folders = {}
+        with open(kit.path("config", "libraries.txt"), encoding="utf-8") as f:
+            for line in f:
+                line = line.split("#")[0].strip()
+                if line:
+                    folders.setdefault(line.rsplit("/", 1)[0], []).append(line.rsplit("/", 1)[1])
+        folders["https://download.kiwix.org/zim/other"].append(os.path.basename(WATER_NEW))
+        for folder, names in folders.items():
+            kit.serve_listing(folder, names)
+        kit.serve("https://download.kiwix.org/zim/", b"ok")
+        with open(os.path.join(os.path.dirname(__file__), "internet", "dovidka-advice.html"), "rb") as f:
+            page = f.read()
+        self.assertIn("лунає".encode(), page)
+        kit.net.add(GUIDE_URL, 200, page.replace("лунає".encode(), "звучить".encode()))
+
+    def tearDown(self):
+        self.kit.stop()
+
+    def update(self, **extra):
+        return self.kit.run("scripts/update.sh", extra=extra)
+
+    def test_old_guides_and_an_older_library_become_current(self):
+        kit = self.kit
+        r = self.update()
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        bilingual(self, r.stdout)
+        self.assertEqual(sorted(os.listdir(kit.path("library")))[-1:], [os.path.basename(WATER_NEW)])
+        self.assertNotIn(os.path.basename(WATER_OLD), os.listdir(kit.path("library")))
+        books = kit.path("documents", "library", "Water Treatment")
+        self.assertEqual(sorted(os.listdir(books)), ["A.pdf", "B.pdf", "C.pdf"])
+        with open(os.path.join(books, "A.pdf"), "rb") as f:
+            self.assertEqual(f.read(), b"%PDF A2")
+        with open(kit.path("documents", "Official Guides", "Що робити, коли почули сирени.md".replace("Що робити, коли почули сирени", "dovidka.info - Що робити, коли почули сирени")), encoding="utf-8") as f:
+            self.assertIn("звучить", f.read())
+        check = kit.run("scripts/check.sh", extra={"EK_DEV": os.path.join(kit.root, "nodev")})
+        self.assertNotIn("збережено 40 днів тому", check.stdout)
+        self.assertIn("Official Guides are up to date", check.stdout)
+
+    def test_only_what_changed_is_indexed_again_and_other_kits_files_are_left_alone(self):
+        kit = self.kit
+        self.assertEqual(self.update().returncode, 0)
+        new = kit.ai.uploads[len(self.first_uploads):]
+        self.assertEqual(sorted(new), ["A.pdf", "C.pdf", "dovidka.info - Що робити, коли почули сирени.md"])
+        gone = [d for ws, d in kit.ai.deleted]
+        self.assertEqual({ws for ws, _ in kit.ai.deleted}, {"emergency-kit"})
+        self.assertEqual(len(gone), 2)   # the old A and the old guide text
+        self.assertTrue(all("A-pdf" in d or "sirenu" in d or "dovidka" in d for d in gone), gone)
+        self.assertEqual(kit.ai.embedded["crisis"], ["custom-documents/swedish-kit-file.json"])
+        self.assertEqual(list(kit.ai.embedded), ["emergency-kit", "crisis"])
+        self.assertNotIn("swedish", repr(kit.ai.deleted))
+
+    def test_a_second_update_with_nothing_new_indexes_nothing(self):
+        kit = self.kit
+        self.assertEqual(self.update().returncode, 0)
+        before = len(kit.ai.uploads)
+        deleted = len(kit.ai.deleted)
+        r = self.update()
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertEqual(len(kit.ai.uploads), before)
+        self.assertEqual(len(kit.ai.deleted), deleted)
+
+    def test_the_kits_code_is_replaced_by_the_newest_and_the_data_stays(self):
+        import io, tarfile
+        kit = self.kit
+        buf = io.BytesIO()
+        with tarfile.open(fileobj=buf, mode="w:gz") as t:
+            data = b"# New README\n"
+            info = tarfile.TarInfo("Ukrainian-emergency-kit-main/README.en.md")
+            info.size = len(data)
+            t.addfile(info, io.BytesIO(data))
+        kit.serve(CODE_URL, buf.getvalue())
+        books = tree(kit.path("documents", "library"))
+        self.assertEqual(self.update().returncode, 0)
+        with open(kit.path("README.en.md"), "rb") as f:
+            self.assertEqual(f.read(), b"# New README\n")
+        after = tree(kit.path("documents", "library"))
+        for name, data in books.items():   # every Book is still there, only A changed with its Library
+            self.assertEqual(after[name], b"%PDF A2" if name.endswith("A.pdf") else data)
+        self.assertIn(os.path.join("Water Treatment", "C.pdf"), after)
+
+    def test_without_internet_it_says_so_and_changes_nothing(self):
+        kit = self.kit
+        kit.serve("https://download.kiwix.org/zim/", b"")
+        os.remove(os.path.join(kit.downloads, __import__("hashlib").sha256(b"https://download.kiwix.org/zim/").hexdigest()))
+        before, uploads = tree(kit.kit), list(kit.ai.uploads)
+        r = self.update()
+        self.assertNotEqual(r.returncode, 0)
+        self.assertRegex(r.stdout, r"Немає інтернету.* / There is no internet")
+        self.assertEqual(tree(kit.kit), before)
+        self.assertEqual(kit.ai.uploads, uploads)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -33,6 +33,31 @@ uk | http://dovidka.info/advices/shho-robyty-koly-pochuly-syreny/ | dovidka.info
 """
 
 
+# A libzim that reads the test Libraries made by InstallKit.serve_library ("ZIMBOOKS" and a JSON list of files);
+# any other file is an empty Library.
+LIBZIM_STUB = """import base64, json
+class Item:
+    def __init__(self, d):
+        self.mimetype = d["mimetype"]
+        self.content = base64.b64decode(d["content"])
+class Entry:
+    is_redirect = False
+    def __init__(self, d):
+        self.d = d
+        self.path = d["path"]
+        self.title = d["path"]
+    def get_item(self):
+        return Item(self.d)
+class Archive:
+    def __init__(self, path):
+        raw = open(path, "rb").read()
+        self.files = json.loads(raw[len(b"ZIMBOOKS\\n"):]) if raw.startswith(b"ZIMBOOKS\\n") else []
+        self.all_entry_count = len(self.files)
+    def get_entry_by_id(self, i):
+        return Entry(self.files[i])
+"""
+
+
 def repo_files():
     out = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"], cwd=REPO,
                          capture_output=True, check=True).stdout
@@ -73,6 +98,18 @@ class InstallKit:
         name = hashlib.sha256(url.encode()).hexdigest()
         with open(os.path.join(self.downloads, name), "wb") as f:
             f.write(data)
+
+    def serve_library(self, url, books):
+        """A Library with PDF Books ({"files/name.pdf": bytes}) at `url`, with its checksum."""
+        import base64
+        files = [{"path": p, "mimetype": "application/pdf", "content": base64.b64encode(b).decode()} for p, b in books.items()]
+        body = b"ZIMBOOKS\n" + json.dumps(files).encode()
+        self.serve(url, body)
+        self.serve(url + ".sha256", (hashlib.sha256(body).hexdigest() + "  x.zim\n").encode())
+
+    def serve_listing(self, folder, names):
+        """The folder page of download.kiwix.org, as Update reads it to find the newest version."""
+        self.serve(folder + "/", "".join('<a href="%s">%s</a>\n' % (n, n) for n in names).encode())
 
     def write_downloads(self):
         with open(os.path.join(self.kit, "config", "libraries.txt"), encoding="utf-8") as f:
@@ -118,7 +155,7 @@ class InstallKit:
         folder = os.path.join(self.root, "wheels")
         os.makedirs(folder)
         modules = {
-            "libzim": {"libzim/__init__.py": "", "libzim/reader.py": "class Archive:\n    all_entry_count = 0\n    def __init__(self, path):\n        pass\n"},
+            "libzim": {"libzim/__init__.py": "", "libzim/reader.py": LIBZIM_STUB},
             "beautifulsoup4": {"bs4/__init__.py": "class BeautifulSoup:\n    pass\n"},
             "markdownify": {"markdownify/__init__.py": ""},
             "markdown": {"markdown/__init__.py": ""},

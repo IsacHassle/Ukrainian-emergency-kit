@@ -96,6 +96,7 @@ class StandInAI:
         os.makedirs(os.path.join(self.storage, "documents", "custom-documents"))
         self.uploads = []
         self.embedded = {}
+        self.deleted = []   # (workspace, docpath) of every document taken out of a workspace
         # What the planning call answers: the stand-alone question, Ukrainian titles, English titles.
         self.plan_reply = "SEARCH: how to stop bleeding\nUKRAINIAN: Зупинка кровотечі\nENGLISH: " + SOURCE
         self.passages = read_json(os.path.join(HERE, "kit", "book-passages.json"))
@@ -171,8 +172,14 @@ class StandInAI:
                     return self.send_body(b'{"success":true,"error":null}', "application/json")   # compact, as the real app writes it
                 m = re.fullmatch(r"/api/workspace/([\w-]+)/update-embeddings", self.path)
                 if m:
+                    body = self.body_json()
                     with lock:
-                        ai.embedded.setdefault(m.group(1), []).extend(self.body_json().get("adds", []))
+                        docs = ai.embedded.setdefault(m.group(1), [])
+                        for gone in body.get("deletes", []):
+                            ai.deleted.append((m.group(1), gone))
+                            if gone in docs:
+                                docs.remove(gone)
+                        docs.extend(body.get("adds", []))
                     return self.send_json({"workspace": {}})
                 body = self.body_json()
                 if self.path in ("/api/system/update-env", "/api/workspace/new") or re.fullmatch(r"/api/workspace/([\w-]+)/update", self.path):
