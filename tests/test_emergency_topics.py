@@ -20,10 +20,18 @@ def viewer(book, path):
     return "/viewer#%s/%s" % (book, urllib.parse.quote(path))
 
 
-def item(page, label):
-    """The <li> of the topic whose Ukrainian label is `label`, or None."""
-    m = re.search(r'<li><a [^>]*>(?:<span data-l="uk">%s</span>.*?)</li>' % re.escape(label), page)
-    return m.group(0) if m else None
+def item(page, label, lang="uk"):
+    """The <li> of the topic whose Ukrainian label is `label`, as written for a page language, or None.
+    Every topic is written once per language (<li data-l="uk"> and <li data-l="en">); a language that has
+    neither a guide nor an article for it has none."""
+    for m in re.finditer(r'<li data-l="%s">.*?</li>' % lang, page):
+        if label in m.group(0) or (lang == "en" and label in LABEL_EN and LABEL_EN[label] in m.group(0)):
+            return m.group(0)
+    return None
+
+
+LABEL_EN = {"Сильна кровотеча, джгут": "Severe bleeding, tourniquet", "Серцево-легенева реанімація": "CPR",
+            "Вибухова травма": "Blast injury", "Переохолодження": "Hypothermia", "Опіки": "Burns"}
 
 
 class TopicConfigTest(unittest.TestCase):
@@ -54,21 +62,23 @@ class StartPageTopicsTest(unittest.TestCase):
     def tearDownClass(cls):
         cls.kit.stop()
 
-    def test_a_topic_opens_the_article_in_each_page_language(self):
-        li = item(self.page, "Сильна кровотеча, джгут")
-        self.assertIsNotNone(li)
-        self.assertIn('data-k-uk="%s"' % viewer(UK, "Зупинка_кровотечі"), li)
-        self.assertIn('data-k-en="%s"' % viewer(EN, "Bleeding"), li)
-        self.assertNotIn("data-t=", li)   # nothing to explain: both articles exist
+    def test_a_topic_without_a_saved_guide_opens_the_article_in_each_page_language(self):
+        li = item(self.page, "Серцево-легенева реанімація")
+        self.assertIn('data-k="%s"' % viewer(UK, "Серцево-легенева_реанімація"), li)
+        self.assertNotIn("las/?f=", li)
+        self.assertNotIn("data-t=", li)   # nothing to explain: the article exists in this language
 
     def test_a_topic_with_one_language_only_opens_that_article_in_both_and_says_so(self):
         li = item(self.page, "Вибухова травма")
-        self.assertIn('data-k-uk="%s"' % viewer(EN, "Blast_injury"), li)
-        self.assertIn('data-k-en="%s"' % viewer(EN, "Blast_injury"), li)
-        self.assertIn('data-l="uk" data-t="home.urgent.english"', li)
+        self.assertIn('data-k="%s"' % viewer(EN, "Blast_injury"), li)
+        self.assertIn('data-t="home.urgent.english"', li)
+        en = item(self.page, "Вибухова травма", "en")
+        self.assertIn('data-k="%s"' % viewer(EN, "Blast_injury"), en)
+        self.assertNotIn("home.urgent.english", en)
 
-    def test_a_topic_whose_articles_are_in_no_library_is_left_out(self):
+    def test_a_topic_whose_articles_and_guides_are_in_none_is_left_out_of_both_pages(self):
         self.assertIsNone(item(self.page, "Радіація"))
+        self.assertIsNone(item(self.page, "Радіація", "en"))
 
     def test_all_shown_topics_are_in_one_list_with_no_more_section(self):
         self.assertNotIn('class="inline"', self.page)

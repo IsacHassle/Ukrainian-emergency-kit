@@ -17,7 +17,7 @@ jobs:
         run: |
           python3 -c "import json; json.load(open('config/document-names.json'))"
           grep -q '^https://download.kiwix.org/zim/' config/libraries.txt
-          grep -q '^https://' config/swedish-pages.txt
+          grep -q '^uk | https://' config/pages.txt
       - name: Country config
         run: python3 scripts/check-country.py
       - name: Language files (same keys in every language, every key a page uses exists)

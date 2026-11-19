@@ -27,7 +27,7 @@ window.renderMarkdown = function (src, opts) {
       first = false; continue;
     }
     first = false;
-    if (/^(Källa|Source): /.test(line)) { flushP(); out += '<p class="src">' + inline(line) + '</p>'; continue; }
+    if (/^(Källa|Source|Джерело): /.test(line)) { flushP(); out += '<p class="src">' + inline(line) + '</p>'; continue; }
     if ((m = line.match(/^\s*[-*•+]\s+(.*)/))) { flushP(); if (list !== 'ul') { closeL(); out += '<ul>'; list = 'ul'; } out += '<li>' + inline(m[1]) + '</li>'; continue; }
     if ((m = line.match(/^\s*(\d+)[.)]\s+(.*)/))) { flushP(); if (list !== 'ol') { closeL(); out += `<ol start="${m[1]}">`; list = 'ol'; } out += '<li>' + inline(m[2]) + '</li>'; continue; }
     if (/^\s*(-{3,}|\*{3,})\s*$/.test(line)) { flushP(); closeL(); out += '<hr>'; continue; }

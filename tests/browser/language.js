@@ -86,19 +86,39 @@ const check = (cond, msg) => { if (!cond) throw new Error(msg); };
     check(pressed.join() === 'true,false', 'aria-pressed ' + pressed);
     ok('the switch marks the language in use');
 
-    // 7. An Emergency Topic opens WikiMed in the page language: Ukrainian on УКР, English on ENG.
+    // 7. An Emergency Topic opens its Official Guide in the page language when it has one (in the reader), else
+    // WikiMed in the page language: Ukrainian on УКР and English on ENG.
     page = await fresh();
     await page.goto(url + '/', { waitUntil: 'load' });
-    const bleeding = () => page.$$eval('.list a[data-k-uk]', els => {
-      const a = els.find(e => e.textContent.includes('Сильна кровотеча') || e.textContent.includes('Severe bleeding'));
-      return decodeURIComponent(a.getAttribute('href'));
-    });
-    check((await bleeding()).endsWith('/viewer#wikipedia_uk_medicine_test_2026-01/Зупинка_кровотечі'), 'uk topic link ' + await bleeding());
+    const topic = text => page.$$eval('li[data-l]', (els, text) => {
+      const li = els.find(e => getComputedStyle(e).display !== 'none' && e.textContent.includes(text));
+      return li ? decodeURIComponent(li.querySelector('a').getAttribute('href')) : null;
+    }, text);
+    const cpr = async () => await topic(await lang(page) === 'en' ? 'CPR' : 'Серцево-легенева');
+    const bleeding = async () => await topic(await lang(page) === 'en' ? 'Severe bleeding' : 'Сильна кровотеча');
+    check((await cpr()).endsWith('/viewer#wikipedia_uk_medicine_test_2026-01/Серцево-легенева_реанімація'), 'uk topic link ' + await cpr());
+    check((await bleeding()).includes('las/?f=docs/Official Guides/dovidka.info - Тактична медицина'), 'uk guide link ' + await bleeding());
     await page.click('.langswitch [data-lang=en]');
-    check((await bleeding()).endsWith('/viewer#wikipedia_en_medicine_test_2026-01/Bleeding'), 'en topic link ' + await bleeding());
+    check((await cpr()).includes('las/?f=docs/Official Guides/en/dovidka.info - Rescue is in our hands'), 'en topic opens the English guide ' + await cpr());
+    check((await bleeding()).includes('las/?f=docs/Official Guides/en/dovidka.info - Tactical medicine'), 'en guide link ' + await bleeding());
     await page.click('.langswitch [data-lang=uk]');
-    check((await bleeding()).includes('wikipedia_uk_medicine'), 'uk topic link after switching back');
-    ok('Emergency Topics open WikiMed in the page language');
+    check((await cpr()).includes('wikipedia_uk_medicine'), 'uk topic link after switching back');
+    ok('Emergency Topics open their Official Guide, else WikiMed, in the page language');
+
+    // 8. The reader shows a saved guide, and its own texts follow the page language.
+    page = await fresh();
+    await page.goto(url + '/las/?f=' + encodeURIComponent('docs/Official Guides/en/dovidka.info - Tactical medicine, how to stop bleeding.md'), { waitUntil: 'load' });
+    await page.waitForFunction(() => document.querySelector('#doc h1'));
+    check((await page.$eval('#doc', e => e.textContent)).includes('Press on the wound.'), 'the English guide is not shown');
+    check((await page.$eval('.tools', e => e.textContent)).includes('Друкувати'), 'the reader is not in Ukrainian by default');
+    await page.click('.langswitch [data-lang=en]');
+    check((await page.$eval('.tools', e => e.textContent)).includes('Print'), 'the reader did not switch to English');
+    await page.goto(url + '/las/?f=docs/Official%20Guides/missing.md', { waitUntil: 'load' });
+    await page.waitForFunction(() => document.querySelector('#doc .err'));
+    check((await page.$eval('#doc', e => e.textContent)).includes('not found'), 'the error is not in English: ' + await page.$eval('#doc', e => e.textContent));
+    await page.click('.langswitch [data-lang=uk]');
+    check((await page.$eval('#doc', e => e.textContent)).includes('не знайдено'), 'the error did not switch to Ukrainian');
+    ok('the reader shows a saved guide and follows the page language');
 
     check(!errors.length, 'page errors: ' + errors.join('; '));
   } finally {

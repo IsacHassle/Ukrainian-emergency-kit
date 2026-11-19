@@ -34,9 +34,10 @@ C = kit_country.COUNTRY
 text = kit_country.text
 TEXTS = kit_lang.load(WEB)   # the language files: every text the page itself says is a key in them
 TOPICS = C["emergency_topics"]
-# Where an Official Guide on the same thing is saved (scripts/fetch-swedish-pages.py), the button opens
-# that guide in the default language, with the encyclopedia article one tap away.
-OFFICIAL = {t["id"]: text(t["official_guide"]) for t in TOPICS if t.get("official_guide")}
+# A topic's Official Guides ("official_guide": {"uk": [names], "en": [names]}, names as in config/pages.txt) are the
+# ones the guide saver (scripts/fetch-pages.py) saved: the first one that is saved opens first, in the reader, with the
+# encyclopedia article one tap away. Each page language has its own guides: the English page never opens a Ukrainian one.
+OFFICIAL = {t["id"]: {code: ([n] if isinstance(n, str) else n) for code, n in (t.get("official_guide") or {}).items()} for t in TOPICS}
 OFFICIAL_DIR = C["official_guides"]["folder"]
 # The emergency topics shown straight away; the rest (a country may have more) are one tap away under "More".
 FIRST = [t["id"] for t in sorted((t for t in TOPICS if t.get("first")), key=lambda t: t["first"])]
@@ -51,15 +52,30 @@ GROUPS = [(g["heading"], [(l["prefix"], l["description"]) for l in g["libraries"
 
 ADVICE_ORDER = [s["id"] for s in C["official_guides"]["sources"]]
 ADVICE_NAMES = {s["id"]: s["label"] for s in C["official_guides"]["sources"]}
-ADVICE_COUNT = 0
 
 
-def official_page(stem):
-    """(link to the reader page, authority) for a saved Official Guide, or (None, None)."""
-    if not stem or not os.path.exists(os.path.join(DOCS, OFFICIAL_DIR, stem + ".md")):
-        return (None, None)
-    rel = "docs/" + OFFICIAL_DIR + "/" + stem + ".md"
-    return ("las/?f=" + urllib.request.quote(rel), stem.split(" - ", 1)[0])
+def saved(code, stem):
+    """(address, source) of a saved Official Guide in a language, or None. The default language's guides are in the
+    guides folder, another language's in a subfolder named by its code (as scripts/fetch-pages.py saves them).
+    A text opens in the reader, a PDF opens as itself."""
+    sub = "" if code == kit_country.LANG else code + "/"
+    for ext in (".md", ".pdf"):
+        if os.path.exists(os.path.join(DOCS, OFFICIAL_DIR, *(sub + stem + ext).split("/"))):
+            rel = "docs/" + "/".join(urllib.request.quote(p) for p in (OFFICIAL_DIR + "/" + sub + stem + ext).split("/"))
+            return (("las/?f=" + rel) if ext == ".md" else rel, stem.split(" - ", 1)[0])
+    return None
+
+
+def saved_guides(code):
+    """Every saved guide of a language, [(source, title, address)], in file name order."""
+    folder = os.path.join(DOCS, OFFICIAL_DIR, *([] if code == kit_country.LANG else [code]))
+    out = []
+    for name in sorted(os.listdir(folder)) if os.path.isdir(folder) else []:
+        stem, ext = os.path.splitext(name)
+        if ext in (".md", ".pdf") and " - " in stem:
+            source, title = stem.split(" - ", 1)
+            out.append((source, title, saved(code, stem)[0]))
+    return out
 
 
 def both(value):
@@ -127,21 +143,24 @@ def main():
             path = t["wikimed"].get(code)
             if book and path and kiwix_ok(f"/content/{book['name']}/{path}"):
                 found[code] = f"/viewer#{book['name']}/{urllib.parse.quote(path, safe='()')}"
-        if found:
-            emergency.append((t, found, official_page(OFFICIAL.get(t["id"]))))
+        guides = {code: [g for g in map(lambda n: saved(code, n), OFFICIAL[t["id"]].get(code, [])) if g] for code in TEXTS}
+        emergency.append((t, found, guides))
 
-    # The Official Guides, grouped by authority.
-    advice = {}
-    folder = os.path.join(DOCS, OFFICIAL_DIR)
-    for name in sorted(os.listdir(folder)) if os.path.isdir(folder) else []:
-        if name.endswith(".md") and " - " in name:
-            src, title = name[:-3].split(" - ", 1)
-            advice.setdefault(src, []).append((title, official_page(name[:-3])))
-    advice_html = "".join(
-        f'<h3>{both(ADVICE_NAMES[src]) if src in ADVICE_NAMES else html.escape(src)}</h3><ul class="list cols">'
-        + "".join(f'<li><a href="{href}">{html.escape(t)}</a></li>' for t, href in items) + "</ul>"
-        for src, items in sorted(advice.items(), key=lambda kv: ADVICE_ORDER.index(kv[0]) if kv[0] in ADVICE_ORDER else 99))
-    advice_count = sum(len(v) for v in advice.values())
+    # The Official Guides of each language, grouped by authority.
+    advice_html, advice_counts = "", {}
+    for code in TEXTS:
+        advice = {}
+        for src, title, href in saved_guides(code):
+            advice.setdefault(src, []).append((title, href))
+        advice_counts[code] = sum(len(v) for v in advice.values())
+        body = "".join(
+            f'<h3>{both(ADVICE_NAMES[src]) if src in ADVICE_NAMES else html.escape(src)}</h3><ul class="list cols">'
+            + "".join(f'<li><a href="{href}">{html.escape(t)}</a></li>' for t, href in items) + "</ul>"
+            for src, items in sorted(advice.items(), key=lambda kv: ADVICE_ORDER.index(kv[0]) if kv[0] in ADVICE_ORDER else 99))
+        empty = '<p data-t="home.guides.empty"></p>'
+        advice_html += f'<div data-l="{code}">{body or empty}</div>'
+    advice_summary = "".join(f'<span data-l="{code}" data-t="home.guides.summary" data-p=\'{{"count": {n}}}\'></span>'
+                             for code, n in advice_counts.items())
 
     books_html = []
     for label, desc, rel in BOOKS:
@@ -166,36 +185,49 @@ def main():
         rows = "".join(f'<li><a data-k="/viewer#{b["name"]}">{html.escape(b["title"])}</a><small>{html.escape(b["name"])}</small></li>' for b in extra)
         groups_html.append(f'<h3 data-t="home.libraries.other"></h3><ul class="list rows">{rows}</ul>')
 
-    def topic(t, found, official):
-        label = t["label"]
-        href, source = official
-        # The article link of each language; a language without its article opens the other's and says so.
-        links, notes = {}, ""
-        for code in TEXTS:
-            own = found.get(code)
-            links[code] = own or next(iter(found.values()))
-            if not own:
-                other = next(c for c in TEXTS if c in found)
-                notes += f'<small data-l="{code}" data-t="home.urgent.{LANGUAGE_WORD[other]}"></small>'
-        attrs = "".join(f' data-k-{code}="{html.escape(k)}"' for code, k in links.items())
-        if href:   # an Official Guide on the same thing: it opens first, and names its source
-            return (f'<li><a href="{href}">{both(label)}</a><small>{html.escape(source)}</small>'
-                    f'<small><a{attrs}><span data-t="home.urgent.article"></span></a></small></li>')
-        return f'<li><a{attrs}>{both(label)}</a>{notes}</li>'
+    def topic(code, t, found, guides):
+        """The topic as one list item for a page language, or "" when this language has neither a guide nor an article.
+        With a saved guide the item opens it first and names its source; any other saved guide of that language is one
+        tap away, then the encyclopedia article. Without one it opens the article, the other language's if need be."""
+        if not guides and not found:
+            return ""
+        own = found.get(code)
+        article = own or next(iter(found.values()), None)
+        note = ""
+        if article and not own:   # an article in the other language: say so
+            other = next(c for c in TEXTS if c in found)
+            note = f'<small data-t="home.urgent.{LANGUAGE_WORD[other]}"></small>'
+        label = both(t["label"])
+        if guides:
+            (href, source), more = guides[0], guides[1:]
+            # One note under the topic: the guide's source, any other guide, then the article. It may wrap, so a
+            # topic with several guides stays inside its column.
+            parts = [html.escape(source)] + [f'<a href="{h}">{html.escape(s)}</a>' for h, s in more]
+            if article:
+                parts.append(f'<a data-k="{html.escape(article)}"><span data-t="home.urgent.article"></span></a>')
+            return f'<li data-l="{code}"><a href="{href}">{label}</a><small class="links">{" · ".join(parts)}</small>{note}</li>'
+        return f'<li data-l="{code}"><a data-k="{html.escape(article)}">{label}</a>{note}</li>'
+
     first = [e for e in emergency if e[0]["id"] in FIRST]
     first.sort(key=lambda e: FIRST.index(e[0]["id"]))
     rest = [e for e in emergency if e not in first]
-    emergency_html = "".join(topic(*e) for e in first)
-    more_html = "".join(topic(*e) for e in rest)
-    more_section = (f'<details class="inline"><summary data-t="home.urgent.more" data-p=\'{{"count": {len(rest)}}}\'></summary>'
-                    f'<ul class="list cols">{more_html}</ul></details>') if rest else ""
+    emergency_html, more_section = "", ""
+    for code in TEXTS:
+        shown = "".join(topic(code, t, found, guides[code]) for t, found, guides in first)
+        more = [topic(code, t, found, guides[code]) for t, found, guides in rest]
+        more = [m for m in more if m]
+        emergency_html += shown or f'<li data-l="{code}" data-t="home.urgent.empty"></li>'
+        if more:
+            more_section += (f'<details class="inline" data-l="{code}"><summary data-t="home.urgent.more" data-p=\'{{"count": {len(more)}}}\'></summary>'
+                             f'<ul class="list cols">{"".join(more)}</ul></details>')
+    emergency_count = sum(1 for t, found, guides in emergency if found or any(guides.values()))
 
     page = TEMPLATE
     for key, val in {
-        "%EMERGENCY%": emergency_html or '<li data-t="home.urgent.empty"></li>',
+        "%EMERGENCY%": emergency_html,
         "%MORE%": more_section,
-        "%ADVICECOUNT%": str(advice_count),
-        "%ADVICE%": advice_html or '<p data-t="home.guides.empty"></p>',
+        "%ADVICESUMMARY%": advice_summary,
+        "%ADVICE%": advice_html,
         "%BOOKS%": "".join(books_html),
         "%GROUPS%": "".join(groups_html) or '<p data-t="home.libraries.none"></p>',
         "%KITNAME%": html.escape(kit_country.kit_name()),
@@ -213,7 +245,7 @@ def main():
     os.makedirs(WEB, exist_ok=True)
     with open(os.path.join(WEB, "index.html"), "w") as f:
         f.write(page)
-    print(f"Start page built: {len(books)} libraries, {len(emergency)} emergency topics, {len(books_html)} books.")
+    print(f"Start page built: {len(books)} libraries, {emergency_count} emergency topics, {len(books_html)} books.")
 
 
 TEMPLATE = r"""<!doctype html>
@@ -243,6 +275,7 @@ TEMPLATE = r"""<!doctype html>
   .where { margin: 10px 0 0; font-size: 15px; }
   .where a { text-decoration: none; } .where a:hover { text-decoration: underline; }
   .where small { margin-left: 6px; }
+  ul.list small.links { white-space: normal; text-align: right; }
   form.search { display: flex; gap: 8px; }
   form.search input { flex: 1; min-width: 0; }
   details.more { border-top: 1px solid var(--line); }
@@ -298,7 +331,7 @@ TEMPLATE = r"""<!doctype html>
   </section>
 
   <div class="later">
-    <details class="more"><summary><b data-t="home.guides.title"></b><span data-t="home.guides.summary" data-p='{"count": %ADVICECOUNT%}'></span></summary>
+    <details class="more"><summary><b data-t="home.guides.title"></b>%ADVICESUMMARY%</summary>
       <div class="inner">%ADVICE%</div></details>
     <details class="more"><summary><b data-t="home.books.title"></b><span data-t="home.books.summary"></span></summary>
       <div class="inner"><ul class="list rows">%BOOKS%<li><a href="docs/" data-t="home.books.all"></a><small data-t="home.books.allnote"></small></li></ul></div></details>
@@ -308,7 +341,6 @@ TEMPLATE = r"""<!doctype html>
       <div class="inner"><ul class="list rows">
         <li><a href="skriv-ut/" data-t="home.prepare.print.title"></a><small data-t="home.prepare.print.text"></small></li>
         <li><a href="checklista/" data-t="home.prepare.checklist.title"></a><small data-t="home.prepare.checklist.text"></small></li>
-        <li><a href="mobil/" data-t="home.prepare.gps.title"></a><small data-t="home.prepare.gps.text"></small></li>
       </ul></div></details>
   </div>
 
@@ -318,9 +350,6 @@ TEMPLATE = r"""<!doctype html>
   const KIWIX = 'http://' + (location.hostname || 'localhost') + ':%LIBPORT%';   // the libraries are always plain http
   const ENG = %ENG%, LOCAL = %LOCAL%;
   document.querySelectorAll('[data-k]').forEach(a => a.href = KIWIX + a.dataset.k);
-  // An Emergency Topic opens its article in the page language (data-k-uk, data-k-en), also after a switch.
-  const topicLinks = () => document.querySelectorAll('[data-k-' + KIT.lang + ']').forEach(a => a.href = KIWIX + a.dataset['k' + KIT.lang[0].toUpperCase() + KIT.lang.slice(1)]);
-  topicLinks();
   const go = books => {
     const q = document.getElementById('q').value.trim();
     if (!q || !books.length) return;
@@ -341,7 +370,7 @@ TEMPLATE = r"""<!doctype html>
     showBattery();
   }).catch(() => {});
   battery(); setInterval(battery, 60000);
-  KIT.onChange(() => { clock(); showBattery(); topicLinks(); });
+  KIT.onChange(() => { clock(); showBattery(); });
 </script>
 </body>
 </html>

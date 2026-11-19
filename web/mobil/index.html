@@ -5,7 +5,7 @@
 <script src="/lib/country.js"></script>
 <script src="/lib/lang.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GPS på mobilen · {kit}</title>
+<title>GPS телефона · {kit}</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icon-180.png">
 <meta name="theme-color" content="#0b5cad">
@@ -17,6 +17,7 @@
   ol { padding-left: 20px; } li { margin: 8px 0; }
   .note { font-size: 14px; color: var(--muted); }
   code { word-break: break-all; font-size: 14px; }
+  button:disabled { opacity: .55; cursor: not-allowed; }
   details.more { border-top: 1px solid var(--line); }
   details.more:last-of-type { border-bottom: 1px solid var(--line); }
   details.more > summary { list-style: none; cursor: pointer; padding: 14px 0; display: flex; justify-content: space-between; font-weight: 600; }
@@ -28,75 +29,129 @@
 </head>
 <body>
 <main class="page">
-  <a class="back" href="/">← <span data-kit></span></a>
-  <h1>Mobilens GPS</h1>
-  <p class="meta">Mobilen visar bara din position på kartan när sidan öppnas säkert (https). Ställ in det en gång per mobil. Sedan fungerar det utan internet, med mobilens egen GPS.</p>
+  <a class="back" href="/map/">← <span data-t="mobil.back"></span></a>
+  <h1 data-t="mobil.title"></h1>
+  <p class="meta" data-t="mobil.intro"></p>
 
   <div class="box done" id="ready" hidden>
-    <h2>Klart: den här mobilen kan visa din position</h2>
-    <p><a class="button" href="/map/">Öppna kartan</a> och tryck på <b>⌖</b> uppe till höger. Tillåt platsåtkomst när mobilen frågar.</p>
+    <h2 data-t="mobil.ready.title"></h2>
+    <p data-t="mobil.ready.text"></p>
+  </div>
+
+  <div class="box" id="lending">
+    <h2 data-t="mobil.lending.title"></h2>
+    <p id="lendingstate"></p>
+    <button type="button" id="lendingbtn" hidden></button>
+    <p class="note" id="lendingnote"></p>
   </div>
 
   <div class="box" id="share" hidden>
-    <h2>Mobilen som GPS för datorn</h2>
-    <p>Macen har ingen egen GPS. Låt mobilen skicka sin position, så visar Macens karta var du är när du trycker ⌖ där. Håll den här sidan öppen och skärmen tänd så länge du vill dela.</p>
-    <button type="button" id="sharebtn">Dela min position med Macen</button>
+    <h2 data-t="mobil.share.title"></h2>
+    <p data-t="mobil.share.text"></p>
+    <button type="button" id="sharebtn"></button>
     <p class="note" id="sharestatus"></p>
   </div>
 
   <div id="setup">
-    <details class="more"><summary>Ställ in en iPhone</summary><div class="inner">
+    <details class="more"><summary data-t="mobil.ios.title"></summary><div class="inner">
       <ol>
-        <li><a class="button" href="/ca.crt">Hämta certifikatet</a><br>Safari frågar om den ska hämta en profil: tryck <b>Tillåt</b>.</li>
-        <li>Öppna <b>Inställningar</b>. Överst står <b>Profil hämtad</b>: tryck på den, sedan <b>Installera</b> och ange mobilens kod.</li>
-        <li>Gå till <b>Inställningar → Allmänt → Om</b> och längst ner <b>Certifikatinställningar</b>. Slå på <b id="caname" data-kit></b>.</li>
-        <li>Öppna <a class="https" href="#"><code class="https-text"></code></a>. Lägg gärna till den på hemskärmen (Dela → Lägg till på hemskärmen).</li>
+        <li><a class="button" href="/ca.crt" data-t="mobil.cert.get"></a><br><span data-t="mobil.ios.step1"></span></li>
+        <li data-t="mobil.ios.step2"></li>
+        <li id="iosstep3"></li>
+        <li><a class="https" href="#"><code class="https-text"></code></a><br><span data-t="mobil.ios.step4"></span></li>
       </ol>
     </div></details>
-    <details class="more"><summary>Ställ in en Android-mobil</summary><div class="inner">
+    <details class="more"><summary data-t="mobil.android.title"></summary><div class="inner">
       <ol>
-        <li><a class="button" href="/ca.crt">Hämta certifikatet</a></li>
-        <li>Öppna <b>Inställningar</b> och sök efter <b>certifikat</b>. Välj <b>Installera ett certifikat → CA-certifikat</b> (namnet varierar mellan mobiler) och välj filen <b><span data-country="slug"></span>.crt</b>.</li>
-        <li>Öppna <a class="https-ip" href="#"><code class="https-ip-text"></code></a>. (Android hittar oftast inte .local-namnet, därför siffrorna.)</li>
+        <li><a class="button" href="/ca.crt" data-t="mobil.cert.get"></a></li>
+        <li id="andstep2"></li>
+        <li><a class="https-ip" href="#"><code class="https-ip-text"></code></a><br><span data-t="mobil.android.step3"></span></li>
       </ol>
     </div></details>
-    <p class="note">Certifikatet gäller bara adresser i ditt eget hemnätverk (namn som slutar på .local och nätverksnummer som 192.168…). Det kan inte användas för vanliga webbplatser på internet. Du kan ta bort det när som helst: på iPhone under Inställningar → Allmänt → VPN och enhetshantering.</p>
+    <p class="note" data-t="mobil.cert.note"></p>
+    <p class="box" id="nocert" hidden data-t="mobil.nocert"></p>
   </div>
 
-  <h2 style="margin-top:32px">Utan inställning</h2>
-  <p>Öppna mobilens <b>Kompass</b>-app (iPhone) eller en kartapp som visar koordinater, och skriv in dem i kartans sökruta, till exempel <code>59.3293, 18.0686</code>. Organic Maps på mobilen har också GPS och fungerar helt utan Macen.</p>
+  <h2 style="margin-top:32px" data-t="mobil.without.title"></h2>
+  <p data-t="mobil.without.text"></p>
 </main>
 <script>
 (() => {
-  const ready = window.isSecureContext && location.protocol === 'https:';
+  const ready = window.isSecureContext;   // https, or localhost
   document.getElementById('ready').hidden = !ready;
   document.getElementById('share').hidden = !ready;
-  // Lend the phone's GPS to the Mac: send each new position to the kit while this page is open.
-  const btn = document.getElementById('sharebtn'), msg = document.getElementById('sharestatus');
+  const $ = id => document.getElementById(id);
+  const btn = $('sharebtn'), msg = $('sharestatus');
   let watch = null, lock = null;
+  let lending = { on: false, kit_mac: false };   // what the Kit Mac says
+  let lastMsg = null;                            // the status line as a function, so a language change redraws it
+  const say = fn => { lastMsg = fn; msg.textContent = fn ? fn() : ''; };
+  let server = {};                               // /ai-api/status
+
+  // Everything the page writes itself, redrawn when the language changes.
+  const render = () => {
+    const root = document.documentElement;
+    root.dataset.title = KIT.t('mobil.pagetitle');
+    document.title = root.dataset.title.split('{kit}').join(COUNTRY.kit());
+    btn.textContent = watch !== null ? KIT.t('mobil.share.stop') : KIT.t('mobil.share.start');
+    btn.disabled = watch === null && !lending.on;
+    $('lendingstate').textContent = KIT.t(lending.on ? 'mobil.lending.on' : 'mobil.lending.off');
+    const lb = $('lendingbtn');
+    lb.hidden = !lending.kit_mac;
+    lb.textContent = KIT.t(lending.on ? 'mobil.lending.turnoff' : 'mobil.lending.turnon');
+    $('lendingnote').textContent = lending.kit_mac ? KIT.t('mobil.lending.keepernote') : (lending.on ? '' : KIT.t('mobil.lending.visitornote'));
+    const name = server.name ? server.name.replace(/\.local$/, '') : '';
+    $('iosstep3').textContent = KIT.t('mobil.ios.step3', { kit: COUNTRY.kit(), name: name || location.hostname });
+    $('andstep2').textContent = KIT.t('mobil.android.step2', { file: COUNTRY.slug + '.crt' });
+    if (lastMsg) msg.textContent = lastMsg();
+  };
+
+  const readLending = () => fetch('/ai-api/lending', { cache: 'no-store' }).then(r => r.json()).then(s => {
+    lending = s;
+    if (!s.on && watch !== null) stopSharing();
+    render();
+  }).catch(() => {});
+  $('lendingbtn').onclick = () => {
+    fetch('/ai-api/lending', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ on: !lending.on }) })
+      .then(r => r.json()).then(s => { if (s.on !== undefined) { lending = s; if (!s.on && watch !== null) stopSharing(); render(); } })
+      .catch(() => {});
+  };
+
   const keepAwake = async () => { try { lock = await navigator.wakeLock.request('screen'); } catch {} };
   document.addEventListener('visibilitychange', () => { if (watch !== null && document.visibilityState === 'visible') keepAwake(); });
+  function stopSharing() {
+    if (watch !== null) navigator.geolocation.clearWatch(watch);
+    watch = null;
+    if (lock) lock.release().catch(() => {});
+    render();
+  }
   btn.onclick = () => {
-    if (watch !== null) {
-      navigator.geolocation.clearWatch(watch); watch = null;
-      if (lock) lock.release().catch(() => {});
-      btn.textContent = 'Dela min position med Macen'; msg.textContent = 'Delar inte längre.';
-      return;
-    }
-    msg.textContent = 'Söker GPS-signal…';
+    if (watch !== null) { stopSharing(); say(() => KIT.t('mobil.share.stopped')); return; }
+    say(() => KIT.t('mobil.share.searching'));
     watch = navigator.geolocation.watchPosition(p => {
       fetch('/ai-api/gps-share', { method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ lat: p.coords.latitude, lon: p.coords.longitude, accuracy: p.coords.accuracy }) })
-        .then(r => { if (!r.ok) throw 0; msg.textContent = `Delar din position med Macen (±${Math.round(p.coords.accuracy)} m, ${new Date().toLocaleTimeString(COUNTRY.locale)}). Låt sidan vara öppen.`; })
-        .catch(() => { msg.textContent = 'Når inte Macen. Är mobilen på samma wifi och Krislådan igång?'; });
+        .then(async r => {
+          if (r.status === 403) {   // lending is turned off: say why instead of failing quietly
+            stopSharing(); readLending();
+            say(() => KIT.t('mobil.share.refused'));
+            return;
+          }
+          if (!r.ok) throw 0;
+          const at = new Date().toLocaleTimeString(KIT.locale);
+          say(() => KIT.t('mobil.share.sharing', { metres: Math.round(p.coords.accuracy), time: at }));
+        })
+        .catch(() => say(() => KIT.t('mobil.share.unreachable')));
     }, err => {
-      msg.textContent = err.code === 1 ? 'Platsåtkomst nekades. Tillåt plats för den här sidan i mobilens inställningar.'
-                                       : 'Söker GPS-signal… Gå ut eller ställ dig vid ett fönster.';
+      say(() => err.code === 1 ? KIT.t('mobil.share.denied') : KIT.t('mobil.share.searching'));
     }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 60000 });
-    btn.textContent = 'Sluta dela';
+    render();
     keepAwake();
   };
+
   fetch('/ai-api/status').then(r => r.json()).then(s => {
+    server = s;
     const port = s.https_port || 8443;
     const name = s.name || location.hostname;
     const byName = `https://${name}:${port}/map/`, byIp = `https://${s.lan || location.hostname}:${port}/map/`;
@@ -104,10 +159,14 @@
     document.querySelectorAll('.https-text').forEach(c => c.textContent = byName);
     document.querySelectorAll('a.https-ip').forEach(a => a.href = byIp);
     document.querySelectorAll('.https-ip-text').forEach(c => c.textContent = byIp);
-    if (s.name) document.getElementById('caname').textContent = COUNTRY.kit() + ' på ' + s.name.replace(/\.local$/, '');
-    if (!s.https_port) document.getElementById('setup').insertAdjacentHTML('afterbegin',
-      '<p class="box">Krislådan har inget https-certifikat än. Starta om den med <b>Starta Krislåda.command</b> på Macen.</p>');
+    $('nocert').hidden = !!s.https_port;
+    render();
   }).catch(() => {});
+
+  KIT.onChange(render);
+  render();
+  readLending();
+  setInterval(readLending, 5000);   // the Keeper may turn lending on or off while this page is open
 })();
 </script>
 </body>

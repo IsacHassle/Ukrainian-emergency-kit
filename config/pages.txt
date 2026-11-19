@@ -1,0 +1,91 @@
+# The Official Guides the kit saves for reading without internet (and, in Ukrainian, for the AI to read).
+# Saved by scripts/fetch-pages.py, checked every week by scripts/check-links.py. Not redistributed from this repo.
+#
+# One guide per line:  language | address | file name (the source's name, " - ", the title; no extension)
+#   - The language is the language of the page. Guides in the country's own language (uk) are marked for the AI
+#     index; guides in other languages are saved for reading only, in a subfolder named by the language code.
+#   - The file name is what the guide is called on the start page and in the reader, and what the Emergency Topics in
+#     config/country.json refer to. It starts with the source's id (official_guides.sources in that file).
+#   - An address ending in .pdf is saved as the PDF itself, anything else as text.
+#   - Sources marked optional in the country config (the State Emergency Service) are skipped quietly when they refuse.
+# Addresses were checked 2026-11-19 from outside Ukraine, except the State Emergency Service ones, which refuse requests from there.
+
+# dovidka.info (the government's information site, written together with the State Emergency Service): the main source
+uk | https://dovidka.info/advices/shho-robyty-koly-pochuly-syreny/ | dovidka.info - Що робити, коли почули сирени
+uk | https://dovidka.info/ukryttya/ | dovidka.info - Укриття
+en | https://dovidka.info/en/what-is-shelter/ | dovidka.info - Shelter
+uk | https://dovidka.info/advices/pravyla-perebuvannya-v-ukrytti/ | dovidka.info - Правила перебування в укритті
+uk | https://dovidka.info/rosiyany-obstrilyuyut-ukrayinski-mista-yak-oblashtuvaty-ukryttya-ta-vybratysya-z-pid-zavaliv/ | dovidka.info - Росіяни обстрілюють українські міста, як облаштувати укриття та вибратися з-під завалів
+en | https://dovidka.info/en/russians-are-shelling-ukrainian-cities-how-to-equip-a-shelter-and-get-out-of-the-rubble/ | dovidka.info - Russians are shelling Ukrainian cities, how to equip a shelter and get out of the rubble
+uk | https://dovidka.info/u-zoni-bojovyh-dij/ | dovidka.info - У зоні бойових дій
+en | https://dovidka.info/en/in-the-combat-area/ | dovidka.info - In the combat area
+uk | https://dovidka.info/yak-povodytys-v-umovah-zagrozy-zaminuvannya/ | dovidka.info - Мінна безпека
+en | https://dovidka.info/en/a-guide-to-handling-the-threat-of-mining/ | dovidka.info - A guide to handling the threat of mining
+uk | https://dovidka.info/poryatunok-u-nashih-rukah-pravila-nadannya-domedichnoyi-dopomogi/ | dovidka.info - Порятунок у наших руках, правила надання домедичної допомоги
+en | https://dovidka.info/en/rescue-is-in-our-hands-the-rules-of-first-aid/ | dovidka.info - Rescue is in our hands, the rules of first aid
+uk | https://dovidka.info/yak-nadaty-dopomogu-poranenomu/ | dovidka.info - Як надати допомогу пораненому
+en | https://dovidka.info/en/how-to-help-a-wounded-person/ | dovidka.info - How to help a wounded person
+uk | https://dovidka.info/articles/yak-zupynytu-krovotechu/ | dovidka.info - Тактична медицина, як зупинити кровотечу
+en | https://dovidka.info/en/articles/tactical-medicine-how-to-stop-bleeding/ | dovidka.info - Tactical medicine, how to stop bleeding
+uk | https://dovidka.info/yak-ochistiti-vodu-za-bud-yakih-umov/ | dovidka.info - Як очистити воду за будь-яких умов
+en | https://dovidka.info/en/how-to-purify-water-in-any-conditions/ | dovidka.info - How to purify water in any conditions
+uk | https://dovidka.info/pidgotovka-do-zymy-v-umovah-vijny/ | dovidka.info - Блекаут, поради для населення
+en | https://dovidka.info/en/blackout-in-winter/ | dovidka.info - Blackout
+uk | https://dovidka.info/povnyj-apokalipsys-yak-perezhyty-vazhku-zymu-yakshho-ne-bude-svitla-gazu-ta-vody/ | dovidka.info - Повний апокаліпсис, як пережити важку зиму, якщо не буде світла, газу та води
+en | https://dovidka.info/en/complete-apocalypse-how-to-survive-a-difficult-winter-without-electricity-gas-and-water/ | dovidka.info - Complete apocalypse, how to survive a difficult winter without electricity, gas and water
+uk | https://dovidka.info/yak-diyaty-v-razi-zastosuvannya-brudnoyi-bomby-yadernoyi-ataky-chy-avariyi-na-aes/ | dovidka.info - Як врятуватись від брудної бомби, ядерної зброї чи аварії на АЕС
+en | https://dovidka.info/en/yak-diyaty-v-razi-zastosuvannya-brudnoyi-bomby-yadernoyi-ataky-chy-avariyi-na-aes/ | dovidka.info - How to protect yourself from a dirty bomb, a nuclear attack or an accident at a nuclear power plant
+uk | https://dovidka.info/yak-diyaty-pid-chas-ataky-iz-zastosuvannyam-himichnoyi-zbroyi/ | dovidka.info - Як діяти під час атаки із застосуванням хімічної зброї
+en | https://dovidka.info/en/kak-dejstvovat-pri-atake-s-primeneniem-himicheskogo-oruzhiya/ | dovidka.info - What to do during a chemical weapon attack
+uk | https://dovidka.info/yak-pidgotuvatysya-do-nadzvychajnoyi-sytuatsiyi/ | dovidka.info - Як підготуватися до надзвичайної ситуації
+en | https://dovidka.info/en/how-to-prepare-for-an-emergency/ | dovidka.info - How to prepare for an emergency
+
+# The handbook "In case of emergency or war" (54 pages, Ukrainian, edition 2022, from dovidka.info) and dovidka.info's
+# own English brochure "Life in times of war" (26 pages; the handbook has no English file on dovidka.info).
+uk | https://dovidka.info/wp-content/uploads/2024/11/todolist_war_ua_extended_web.pdf | dovidka.info - У разі надзвичайної ситуації або війни
+en | https://dovidka.info/wp-content/uploads/2024/09/war-during-war-brochure-in-english-2024.pdf | dovidka.info - Life in times of war
+
+# Ministry of Health (МОЗ), Ukrainian only
+uk | https://moz.gov.ua/uk/moz-nagadue-bazovi-pravila-domedichnoi-dopomogi | МОЗ - МОЗ нагадує, базові правила домедичної допомоги
+uk | https://moz.gov.ua/uk/pjat-mifiv-pro-nadannja-domedichnoi-dopomogi- | МОЗ - П’ять міфів про надання домедичної допомоги
+uk | https://moz.gov.ua/uk/jak-provoditi-pervinnu-obrobku-ran | МОЗ - Як проводити первинну обробку ран
+uk | https://moz.gov.ua/uk/scho-robiti-u-razi-radiacijnoi-avarii | МОЗ - Що робити у разі радіаційної аварії
+uk | https://moz.gov.ua/uk/jodna-profilaktika-u-razi-radiacijnoi-avarii | МОЗ - Пам’ятка, йодна профілактика у разі радіаційної аварії
+uk | https://moz.gov.ua/uk/scho-slid-mati-vdoma-schob-zahistitisja-vid-naslidkiv-radiacijnoi-avarii | МОЗ - Що слід мати вдома, щоб захиститися від наслідків радіаційної аварії
+uk | https://moz.gov.ua/uk/8-vidpovidej-na-zapitannja-schodo-jodnoi-profilaktiki | МОЗ - 8 відповідей на запитання щодо йодної профілактики
+uk | https://moz.gov.ua/uk/tihij-vbivcja-jak-uberegtisja-vid-otruennja-chadnim-gazom | МОЗ - Тихий вбивця, як уберегтися від отруєння чадним газом
+uk | https://moz.gov.ua/uk/u-chomu-nebezpeka-chadnogo-gazu-ta-jak-uberegtisja-vid-otruennja | МОЗ - У чому небезпека чадного газу та як уберегтися від отруєння
+uk | https://moz.gov.ua/uk/yak-zberegti-zdorov-ya-vzimku-nagaduyemo-osnovni-pravila-profilaktiki-zahvoryuvan-ta-pidtrimki-imunitetu | МОЗ - Як зберегти здоров’я взимку, основні правила профілактики захворювань та підтримки імунітету
+
+# Public Health Center (ЦГЗ), Ukrainian only
+uk | https://phc.org.ua/news/yak-znezaraziti-vodu-ta-profilaktika-zakhvoryuvan-scho-peredayutsya-cherez-vodu | ЦГЗ - Як знезаразити воду та профілактика захворювань, що передаються через воду
+uk | https://phc.org.ua/news/yak-zberigati-vodu-i-produkti-pid-chas-pereboiv-z-elektro-i-vodopostachannyam | ЦГЗ - Як зберігати воду і продукти під час перебоїв з електро- і водопостачанням
+uk | https://phc.org.ua/news/yak-vberegtisya-vid-kholeri-pid-chas-viyni | ЦГЗ - Як вберегтися від холери під час війни
+uk | https://phc.org.ua/news/prosti-pravila-zapobigannya-gostrim-kishkovim-infekciyam | ЦГЗ - Прості правила запобігання гострим кишковим інфекціям
+uk | https://phc.org.ua/news/rekomendacii-dlya-naselennya-pid-chas-voennogo-stanu | ЦГЗ - Рекомендації для населення під час воєнного стану
+uk | https://phc.org.ua/news/yak-uberegtisya-vid-pereokholodzhennya | ЦГЗ - Як уберегтися від переохолодження
+uk | https://phc.org.ua/reaguvannya-na-nadzvichayni-situacii/radiaciyna-nadzvichayna-situaciya/yodid-kaliyu-ta-radiaciya | ЦГЗ - Йодид калію та радіація
+uk | https://phc.org.ua/news/yakscho-radiaciyna-avariya-zastala-vas-na-vulici-algoritm-diy | ЦГЗ - Якщо радіаційна аварія застала вас на вулиці, алгоритм дій
+uk | https://phc.org.ua/reaguvannya-na-nadzvichayni-situacii/khimichna-nadzvichayna-situaciya/yak-ubezpechiti-sebe-pid-chas-khimichnoi-nadzvichaynoi-situacii- | ЦГЗ - Як убезпечити себе під час хімічної надзвичайної ситуації
+
+# Ukrainian Red Cross: pages, one-page first aid leaflets (PDF) and the first aid handbook for the public (PDF, edition 2021)
+uk | https://redcross.org.ua/mines/ | Червоний Хрест - Мінна небезпека
+en | https://redcross.org.ua/en/risk-awareness-safer-behaviour-relating-to-mines-erw/ | Червоний Хрест - Mine danger
+uk | https://redcross.org.ua/wp-content/uploads/2026/06/12_чадний_газ.pdf | Червоний Хрест - Отруєння чадним газом, перша допомога
+uk | https://redcross.org.ua/wp-content/uploads/2026/06/13_опіки.pdf | Червоний Хрест - Пожежі та опіки, перша допомога
+uk | https://redcross.org.ua/wp-content/uploads/2026/06/14_алгоритм_ПД.pdf | Червоний Хрест - Алгоритм надання першої допомоги
+uk | https://redcross.org.ua/wp-content/uploads/2026/06/15_НС.pdf | Червоний Хрест - Індивідуальна аптечка першої допомоги
+uk | https://redcross.org.ua/wp-content/uploads/2026/06/5_переохолодження_ПД.pdf | Червоний Хрест - Переохолодження, перша допомога
+uk | https://redcross.org.ua/wp-content/uploads/2026/06/4_переохолодження_укриття.pdf | Червоний Хрест - Уникнення переохолодження в укритті
+uk | https://redcross.org.ua/wp-content/uploads/2026/06/2_переохолодження.pdf | Червоний Хрест - Як уникнути переохолодження
+uk | https://redcross.org.ua/wp-content/uploads/2026/06/3_тепло_вдома.pdf | Червоний Хрест - Як підтримати тепло вдома
+uk | https://redcross.org.ua/wp-content/uploads/2022/02/%D0%A1%D0%BF%D1%80%D0%B0%D0%B2%D0%BE%D1%87%D0%BD%D0%B8%D0%BA-%D0%9F%D0%9F-%E2%80%94-2021-%D1%81%D1%82%D0%B8%D1%81%D0%BD%D1%83%D1%82%D0%BE.pdf | Червоний Хрест - Перша допомога, довідник для населення
+
+# State Emergency Service (ДСНС): optional. Its sites answer 403 behind Cloudflare from outside Ukraine, so these are skipped
+# there; inside Ukraine they are saved. The addresses are from a search and could not be checked from abroad.
+uk | https://dsns.gov.ua/news/ostanni-novini/iak-diiati-pid-cas-signalu-povitriana-trivoga | ДСНС - Як діяти під час сигналу повітряна тривога
+uk | https://dsns.gov.ua/abetka-bezpeki/diyi-naselennya-v-umovax-nadzvicainix-situacii-vojennogo-xarakteru | ДСНС - Дії населення в умовах надзвичайних ситуацій воєнного характеру
+uk | https://bezpeka.dsns.gov.ua/materials/bezpeka-v-umovakh-viyny | ДСНС - Безпека в умовах війни
+uk | https://bezpeka.dsns.gov.ua/materials/vybukhonebezpechni-predmety-ta-pravyla-povodzhennya-z-nymy | ДСНС - Вибухонебезпечні предмети та правила поводження з ними
+uk | https://bezpeka.dsns.gov.ua/materials/minna-bezpeka-dlya-ditey-i-doroslykh | ДСНС - Мінна безпека для дітей і дорослих
+uk | https://bezpeka.dsns.gov.ua/materials/yak-obraty-ukryttya-u-razi-povitryanoyi-tryvohy | ДСНС - Як обрати укриття у разі повітряної тривоги

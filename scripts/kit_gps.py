@@ -6,8 +6,14 @@ Macs have no GPS of their own. Any USB GPS receiver that sends NMEA sentences wo
 background and keeps the latest position. No drivers, no internet.
 
 Set KIT_GPS_DEVICE=/dev/cu.something to use a specific device.
+
+Lent positions (a Visitor device or a phone sending its position, web/mobil/) are only accepted while lending
+is turned on. The switch is turned on and off at the Kit Mac itself (serve-web.py checks who asks), and its
+state is the one thing kept on disk: the file `lending` in the kit folder. A Lent position itself stays in
+memory only, and is forgotten when lending is turned off.
 """
 import glob
+import json
 import os
 import termios
 import threading
@@ -21,6 +27,34 @@ _lock = threading.Lock()
 _state = {"device": None, "fix": False}
 _phone = {}   # the last position a phone shared (web/mobil/), used when there is no USB receiver
 PHONE_FRESH_S = 30
+KIT = os.environ.get("EK_KIT") or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # the kit folder
+LENDING_FILE = os.path.join(KIT, "lending")   # {"on": true}; missing or unreadable means off
+
+
+class LendingOff(Exception):
+    """A Lent position arrived while lending is turned off."""
+
+
+def lending_on():
+    """Whether lending is turned on. Read from the kit folder each time, so it is always what is on disk.
+    A missing or damaged file means off."""
+    try:
+        with open(LENDING_FILE, encoding="utf-8") as f:
+            return json.load(f).get("on") is True
+    except (OSError, ValueError, AttributeError):
+        return False
+
+
+def set_lending(on):
+    """Turns lending on or off and keeps that on disk (written whole, then moved into place). Turning it off
+    also forgets any Lent position."""
+    tmp = LENDING_FILE + ".part"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump({"on": bool(on)}, f)
+    os.replace(tmp, LENDING_FILE)
+    if not on:
+        with _lock:
+            _phone.clear()
 
 
 def status():
@@ -39,7 +73,7 @@ def status():
     if s.get("fix"):
         s["source"] = "usb"
         return s
-    if phone and time.time() - phone["updated"] < PHONE_FRESH_S:
+    if phone and lending_on() and time.time() - phone["updated"] < PHONE_FRESH_S:
         age = round(time.time() - phone.pop("updated"), 1)
         return {**phone, "device": s.get("device") or "mobil", "fix": True, "source": "phone", "age_s": age,
                 "usb_device": s.get("device")}
@@ -47,7 +81,9 @@ def status():
 
 
 def share(lat, lon, accuracy_m):
-    """A phone on the Wi-Fi shares its GPS position (from web/mobil/)."""
+    """A phone on the Wi-Fi lends its GPS position (from web/mobil/). Raises LendingOff unless lending is on."""
+    if not lending_on():
+        raise LendingOff()
     lat, lon = float(lat), float(lon)
     if not (-90 <= lat <= 90 and -180 <= lon <= 180):
         raise ValueError("position out of range")

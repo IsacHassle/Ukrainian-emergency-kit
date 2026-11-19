@@ -12,6 +12,10 @@ models and Book index workspace, so a request with any other name fails.
 
 ServedKit(peer="192.168.1.50") makes every request look like it comes from that address, as a Visitor device
 on the Wi-Fi does (tests/peer_launcher.py); the default is the Kit Mac itself.
+
+ServedKit(env={...}) adds environment variables for the web server (for example KIT_GPS_DEVICE, a simulated
+USB receiver). kit.restart(peer=...) stops the web server and starts it again on the same kit folder, so a
+test can check what survives a restart, and who is asking can change between the two runs.
 """
 import json
 import os
@@ -38,8 +42,9 @@ def free_port():
 
 
 class ServedKit:
-    def __init__(self, ai_delay=0.0, country=None, peer=None, tiles=False):
+    def __init__(self, ai_delay=0.0, country=None, peer=None, tiles=False, env=None):
         self.peer = peer
+        self.extra_env = env or {}
         self.tiles = tiles   # put a tiny map (tests/kit/maps) in the kit, as the world and the country's map file
         self.country = None
         with open(os.path.join(REPO, "config", "country.json"), encoding="utf-8") as f:
@@ -60,6 +65,21 @@ class ServedKit:
         self.url = None
         self._proc = None
 
+    def saved_guides(self):
+        """{path under the guides folder: text or bytes} saved in the test kit. Names follow the real config
+        (config/country.json) unless the test runs another country, which has only its first print page."""
+        name = self.facts["official_guides"]["print_pages"][0]
+        saved = {name + ".md": "# %s\n\nPress hard on the wound.\n" % name.split(" - ", 1)[1]}
+        if self.country is None:
+            d = "dovidka.info - "
+            saved.update({
+                d + "Тактична медицина, як зупинити кровотечу.md": "# Тактична медицина\n\nДжерело: dovidka.info, https://x. Збережено 2026-11-19.\n\nНатисніть на рану.\n",
+                "en/" + d + "Tactical medicine, how to stop bleeding.md": "# Tactical medicine\n\nSource: dovidka.info, https://x. Saved 2026-11-19.\n\nPress on the wound.\n",
+                "Червоний Хрест - Переохолодження, перша допомога.pdf": b"%PDF-1.4\n%%EOF\n",
+                "en/" + d + "Rescue is in our hands, the rules of first aid.md": "# Rescue\n\nSource: dovidka.info, https://x. Saved 2026-11-19.\n\nCall 103.\n",
+            })
+        return saved
+
     def env(self):
         env = dict(os.environ)
         env.update({
@@ -70,6 +90,7 @@ class ServedKit:
         })
         if self.country:
             env["EK_COUNTRY"] = os.path.join(self.tmp, "country.json")
+        env.update(self.extra_env)
         return env
 
     def start(self):
@@ -80,13 +101,15 @@ class ServedKit:
                 json.dump(self.country, f, ensure_ascii=False)
         shutil.copytree(os.path.join(TESTS, "kit", "documents"), os.path.join(self.kit_dir, "documents"))
         shutil.copytree(os.path.join(TESTS, "kit", "tools"), os.path.join(self.kit_dir, "tools"))
-        # One saved Official Guide, the first the country config prints, so the guide pages have something to show.
+        # Saved Official Guides, as the guide saver leaves them: Ukrainian in the folder, English in en/ (a PDF is
+        # just bytes). The first the country config prints is always there, so the guide pages have something to show.
         guides = self.facts["official_guides"]
         folder = os.path.join(self.kit_dir, "documents", guides["folder"])
-        os.makedirs(folder, exist_ok=True)
-        name = guides["print_pages"][0]
-        with open(os.path.join(folder, name + ".md"), "w", encoding="utf-8") as f:
-            f.write("# %s\n\nPress hard on the wound.\n" % name.split(" - ", 1)[1])
+        for rel, text in self.saved_guides().items():
+            path = os.path.join(folder, *rel.split("/"))
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "wb") as f:
+                f.write(text if isinstance(text, bytes) else text.encode("utf-8"))
         if self.tiles:
             os.makedirs(os.path.join(self.kit_dir, "maps"))
             for name in ("world", self.facts["map"]["pmtiles"]):
@@ -98,6 +121,10 @@ class ServedKit:
         # The start page is built from the Library, as share-library.sh does.
         subprocess.run([sys.executable, os.path.join(REPO, "scripts", "build-home.py")], env=self.env(), check=True,
                        stdout=subprocess.DEVNULL)
+        self._launch()
+        return self
+
+    def _launch(self):
         for attempt in range(5):
             self.port = free_port()
             env = self.env()
@@ -109,9 +136,20 @@ class ServedKit:
                                           env=env, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
             self.url = "http://127.0.0.1:%d" % self.port
             if self._wait_ready():
-                return self
+                return
             self._proc.kill()
         raise RuntimeError("the web server did not start: " + self._proc.stderr.read().decode())
+
+    def restart(self, peer=None):
+        """Stops the web server and starts it again on the same kit folder (peer: who the requests look like)."""
+        self._proc.terminate()
+        try:
+            self._proc.wait(5)
+        except subprocess.TimeoutExpired:
+            self._proc.kill()
+        self._proc.stderr.close()
+        self.peer = peer
+        self._launch()
 
     def _wait_ready(self):
         for _ in range(100):

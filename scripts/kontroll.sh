@@ -54,9 +54,12 @@ fi
 
 section "Dokument"
 n=$(find "$KIT/documents" -type f \( -name '*.pdf' -o -name '*.md' \) | wc -l | tr -d ' ')
-[ -s "$KIT/documents/Om-krisen-eller-kriget-kommer.pdf" ] && ok "Broschyren Om krisen eller kriget kommer" || bad "Broschyren saknas. Kör installationen igen med internet."
-sv=$(ls "$KIT/documents/library/Svenska myndigheter/"*.md 2>/dev/null | wc -l | tr -d ' ')
-[ "$sv" -gt 0 ] && ok "Svenska myndigheters råd: $sv sidor" || bad "Myndigheternas råd saknas. Kör installationen igen med internet."
+# The Official Guides (saved by scripts/fetch-pages.py): the texts, and the handbook as PDF. The rest of this
+# check is rewritten for Ukraine in its own ticket.
+guides="$KIT/documents/$(country official_guides.folder)"
+sv=$(ls "$guides/"*.md 2>/dev/null | wc -l | tr -d ' ')
+[ "$sv" -gt 0 ] && ok "Офіційні посібники / Official Guides: $sv" || bad "Офіційних посібників немає. Запустіть встановлення з інтернетом / Official Guides missing. Run the installation with internet."
+ls "$guides/"*.pdf >/dev/null 2>&1 && ok "PDF: $(ls "$guides/"*.pdf | wc -l | tr -d ' ')" || bad "PDF-посібників немає / No PDF guides."
 [ "$n" -gt 100 ] && ok "Böcker och dokument: $n filer" || bad "Bara $n dokument. Kör installationen igen."
 
 section "AI"
