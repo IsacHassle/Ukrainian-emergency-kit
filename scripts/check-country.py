@@ -111,9 +111,34 @@ def main():
         get(f"official_guides.sources[{i}]", s, "id", str)
         get(f"official_guides.sources[{i}]", s, "host", str)
         texts(f"official_guides.sources[{i}].label", s.get("label") if isinstance(s, dict) else None, lang)
+        if isinstance(s, dict):
+            if "optional" in s and not isinstance(s["optional"], bool):
+                bad(f"official_guides.sources[{i}].optional", "must be true or false")
+            cont = s.get("container", [])
+            if not isinstance(cont, list) or not all(isinstance(x, str) and x for x in cont):
+                bad(f"official_guides.sources[{i}].container", "must be a list of selectors like \"article\" or \"div.post\"")
     pages = get("official_guides", og, "print_pages", list) or []
     if not all(isinstance(p, str) and " - " in p for p in pages):
         bad("official_guides.print_pages", "each must be a saved guide's name like \"Source - Title\"")
+
+    # The guide list beside the config (config/pages.txt), when there is one: (language, name) of every line.
+    listed = None
+    pages = os.path.join(os.path.dirname(os.path.abspath(PATH)), "pages.txt")
+    if os.path.exists(pages):
+        listed = set()
+        ids = {s.get("id") for s in og.get("sources", []) if isinstance(s, dict)}
+        with open(pages, encoding="utf-8") as f:
+            for number, line in enumerate(f, 1):
+                line = line.split("#", 1)[0].strip()
+                if not line:
+                    continue
+                parts = [x.strip() for x in line.split("|")]
+                if len(parts) != 3 or not parts[1].startswith("http") or " - " not in parts[2]:
+                    bad(f"pages.txt:{number}", "must be `language | address | Source - Title`")
+                    continue
+                listed.add((parts[0], parts[2]))
+                if parts[2].split(" - ", 1)[0] not in ids:
+                    bad(f"pages.txt:{number}", f"{parts[2].split(' - ', 1)[0]!r} is not a source in official_guides.sources")
 
     # Emergency Topics.
     topics = get("", c, "emergency_topics", list) or []
@@ -131,7 +156,17 @@ def main():
         texts(w + ".label", t.get("label") if isinstance(t, dict) else None, lang)
         guide = t.get("official_guide") if isinstance(t, dict) else None
         if guide is not None:
-            texts(w + ".official_guide", guide, lang)
+            if not isinstance(guide, dict) or not guide:
+                bad(w + ".official_guide", "must be {\"uk\": [guide names], \"en\": [...]}, a language per key")
+                guide = {}
+            for code, names in guide.items():
+                names = [names] if isinstance(names, str) else names
+                if not isinstance(names, list) or not all(isinstance(n, str) and " - " in n for n in names):
+                    bad(f"{w}.official_guide.{code}", "must be saved guides' names like \"Source - Title\" (one, or a list)")
+                    continue
+                for n in names:   # a name has to be in the list the saver reads, in that language
+                    if listed is not None and (code, n) not in listed:
+                        bad(f"{w}.official_guide.{code}", f"{n!r} is not in pages.txt for {code}")
 
     # Start page lists.
     for i, b in enumerate(get("", c, "books", list) or []):
@@ -143,9 +178,6 @@ def main():
         for j, lib in enumerate(get(f"library_groups[{i}]", g, "libraries", list) or []):
             get(f"library_groups[{i}].libraries[{j}]", lib, "prefix", str)
             texts(f"library_groups[{i}].libraries[{j}].description", lib.get("description") if isinstance(lib, dict) else None, lang)
-    for i, b in enumerate(get("", c, "brochures", list) or []):
-        get(f"brochures[{i}]", b, "url", str)
-        get(f"brochures[{i}]", b, "file", str)
     sl = get("", c, "search_languages", dict) or {}
     for k in ("main", "country"):
         get("search_languages", sl, k, str)

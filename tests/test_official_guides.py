@@ -339,5 +339,57 @@ class GuideListTest(unittest.TestCase):
             self.assertIn(word, names)
 
 
+class TopicGuidesConfigTest(unittest.TestCase):
+    """Which Official Guide each Emergency Topic opens (the user's decisions: the English page never opens a
+    Ukrainian guide)."""
+
+    def config(self):
+        with open(os.path.join(REPO, "config", "country.json"), encoding="utf-8") as f:
+            return json.load(f)
+
+    def check(self, config, with_list=True):
+        with tempfile.TemporaryDirectory() as d:
+            if with_list:
+                shutil.copy(os.path.join(REPO, "config", "pages.txt"), d)
+            path = os.path.join(d, "country.json")
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(config, f, ensure_ascii=False)
+            run = subprocess.run([sys.executable, os.path.join(REPO, "scripts", "check-country.py"), path], capture_output=True, text=True)
+            return run.returncode, run.stdout + run.stderr
+
+    def test_the_real_config_and_list_agree(self):
+        code, out = self.check(self.config())
+        self.assertEqual(code, 0, out)
+
+    def test_a_guide_name_that_is_not_in_the_list_is_refused_and_named(self):
+        c = self.config()
+        c["emergency_topics"][0]["official_guide"]["uk"] = ["dovidka.info - Немає такої сторінки"]
+        code, out = self.check(c)
+        self.assertNotEqual(code, 0)
+        self.assertIn("emergency_topics[0].official_guide.uk", out)
+
+    def test_an_english_topic_names_only_english_guides(self):
+        lang = {}
+        with open(os.path.join(REPO, "config", "pages.txt"), encoding="utf-8") as f:
+            for l in f:
+                parts = [x.strip() for x in l.split("#")[0].split("|")]
+                if len(parts) == 3:
+                    lang[parts[2]] = parts[0]
+        for t in self.config()["emergency_topics"]:
+            for code, names in t.get("official_guide", {}).items():
+                for n in names:
+                    self.assertEqual(lang[n], code, "%s opens %s on the %s page" % (t["id"], n, code))
+
+    def test_the_topics_open_these_guides(self):
+        got = {t["id"]: t.get("official_guide", {}) for t in self.config()["emergency_topics"]}
+        self.assertEqual(got["hypothermia"].get("en"), None)   # no English guide exists: English WikiMed only
+        self.assertEqual(got["mines"]["en"][0], "dovidka.info - A guide to handling the threat of mining")
+        self.assertEqual(got["mines"]["uk"][0], "dovidka.info - Мінна безпека")
+        self.assertEqual(got["co"]["en"], ["dovidka.info - Blackout"])
+        self.assertEqual(got["bleeding"]["uk"][0], "dovidka.info - Тактична медицина, як зупинити кровотечу")
+        self.assertEqual(got["cpr"]["uk"][0], "Червоний Хрест - Перша допомога, довідник для населення")
+        self.assertEqual(set(got), {"bleeding", "blast", "crush", "cpr", "burns", "shock", "hypothermia", "co", "mines", "radiation"})
+
+
 if __name__ == "__main__":
     unittest.main()

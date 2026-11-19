@@ -27,7 +27,11 @@ curl -sf "$A/ping" >/dev/null || { echo "AnythingLLM is not running. Open it and
 find "$DOCS" -maxdepth 1 -type f \( -name '*.pdf' -o -name '*.md' \) > /tmp/embed-order.$$
 find "$DOCS"/library/{"Medical Library","Military Medicine","Water Treatment","Food for Preppers","Knots","NHS Medicines","Post Disaster"} -type f 2>/dev/null >> /tmp/embed-order.$$
 find "$DOCS" -mindepth 1 -type f \( -name '*.pdf' -o -name '*.md' -o -name '*.txt' -o -name '*.docx' \) >> /tmp/embed-order.$$
+# Only Ukrainian Official Guides go into the index: the guides of another language are saved in a subfolder named by
+# the language code (scripts/fetch-pages.py, "indexed: false" in its saved.json), and are left out here.
+GUIDES="$DOCS/$(country official_guides.folder)"
 awk '!seen[$0]++' /tmp/embed-order.$$ | while IFS= read -r f; do
+  case "$f" in "$GUIDES"/?*/*) continue ;; esac   # a guide in a language subfolder (en/): for reading only
   grep -qxF "$f" "$DONE" && continue
   # Quote the name: curl treats commas and semicolons in a bare file name as separators.
   q=${f//\\/\\\\}; q=${q//\"/\\\"}

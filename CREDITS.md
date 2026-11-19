@@ -25,19 +25,17 @@ Packaged by [Kiwix](https://kiwix.org) and [openZIM](https://openzim.org), downl
 
 The books extracted by `scripts/extract-documents.py` come from these libraries and keep their licences.
 
-## Swedish authorities' advice pages
+## Official Guides (Ukrainian authorities)
 
-Saved by `scripts/fetch-swedish-pages.py` from each authority's own website, on the user's own computer, for reading
-without internet. The list is in `config/swedish-pages.txt`. Not redistributed from this repository.
+Saved by `scripts/fetch-pages.py` from each authority's own website, on the user's own computer, for reading
+without internet. The list is `config/pages.txt`. Not redistributed from this repository; a Kit Drive is a copy from
+person to person.
 
-- [1177](https://www.1177.se) (Inera AB, on behalf of Sweden's regions): first aid and injuries
-- [Myndigheten för civilt försvar (MCF)](https://www.mcf.se): home preparedness, warnings, shelters, fire safety
-- [Livsmedelsverket](https://www.livsmedelsverket.se): drinking water and food in a crisis
-- [Krisinformation.se](https://www.krisinformation.se)
-
-## Swedish government brochure
-
-*Om krisen eller kriget kommer* and *In case of crisis or war*, © Myndigheten för civilt försvar (MCF, formerly MSB).
+- [dovidka.info](https://dovidka.info) (the government's information site, written with the State Emergency Service): advice pages in Ukrainian and English, the handbook *У разі надзвичайної ситуації або війни* (Центр стратегічних комунікацій та інформаційної безпеки, ДСНС, Міноборони) and the English brochure *Life in times of war*
+- [Міністерство охорони здоров'я України (МОЗ)](https://moz.gov.ua): first aid, radiation, carbon monoxide
+- [Центр громадського здоров'я (ЦГЗ)](https://phc.org.ua): water, infections, hypothermia
+- [Товариство Червоного Хреста України](https://redcross.org.ua): mine danger, first aid leaflets and the first aid handbook for the public
+- [ДСНС](https://dsns.gov.ua): optional, saved only where the site answers (it refuses requests from outside Ukraine)
 Downloaded from msb.se / rib.msb.se, not redistributed.
 
 ## Maps
