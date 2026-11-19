@@ -256,6 +256,47 @@ class UpdateTest(SaverTestCase):
         self.assertGreaterEqual(min(gaps), 0.14)
 
 
+class LinkCheckTest(SaverTestCase):
+    """The weekly link check reads the same list: gone is a problem, refused is only a note, moved is a warning."""
+
+    def check(self):
+        run = subprocess.run([sys.executable, os.path.join(REPO, "scripts", "check-links.py"), "--guides"],
+                             env=dict(os.environ, EK_PAGES=self.saver.list, **self.net.env()), capture_output=True, text=True, timeout=120)
+        return run.returncode, run.stdout + run.stderr
+
+    def test_all_answering_and_the_optional_source_refusing_passes_and_says_refused(self):
+        code, out = self.check()
+        self.assertEqual(code, 0, out)
+        self.assertRegex(out, r"(?i)refused.*%s" % re.escape(DSNS))
+        self.assertNotIn("PROBLEM", out)
+        self.assertNotIn("WARNING", out)
+
+    def test_a_guide_that_is_gone_is_a_problem(self):
+        self.net.add(PHC, 404, b"nothing", "text/html")
+        code, out = self.check()
+        self.assertEqual(code, 1, out)
+        self.assertRegex(out, r"PROBLEM.*%s" % re.escape(PHC))
+
+    def test_an_optional_guide_that_is_gone_is_only_a_warning(self):
+        self.net.add(DSNS, 404, b"nothing", "text/html")
+        code, out = self.check()
+        self.assertEqual(code, 0, out)
+        self.assertRegex(out, r"WARNING.*%s" % re.escape(DSNS))
+
+    def test_a_guide_that_redirects_to_another_page_is_a_warning(self):
+        self.net.redirect(MOZ, "http://moz.gov.ua/uk/news")
+        self.net.page("http://moz.gov.ua/uk/news", "moz.html")
+        code, out = self.check()
+        self.assertEqual(code, 0, out)
+        self.assertRegex(out, r"WARNING.*%s" % re.escape(MOZ))
+
+    def test_a_required_source_that_refuses_is_a_warning_not_a_problem(self):
+        self.net.refuse(MOZ)
+        code, out = self.check()
+        self.assertEqual(code, 0, out)
+        self.assertRegex(out, r"WARNING.*%s" % re.escape(MOZ))
+
+
 class GuideListTest(unittest.TestCase):
     """The real list, config/pages.txt, against the real country config."""
 
