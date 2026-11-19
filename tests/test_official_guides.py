@@ -120,7 +120,8 @@ class SavedTextTest(SaverTestCase):
     def test_a_dovidka_article_keeps_its_structure(self):
         t = self.saver.read(UK[1])
         self.assertTrue(t.startswith("# Тактична медицина: як зупинити кровотечу\n"), t[:80])
-        self.assertIn("Сильна кровотеча вбиває за кілька хвилин. Діяти треба одразу.", t)   # a no-break space is a plain space
+        self.assertIn("Сильна кровотеча вбиває за кілька хвилин. Діяти треба одразу,", t)   # a no-break space is a plain space
+        self.assertIn("Діяти треба одразу, і без паніки.", t)   # a line separator in the page is a space, not nothing
         self.assertIn("\n## Як зупинити сильну кровотечу\n", t)   # the page's own title sits below the guide's
         self.assertIn("\n### Джгут\n", t)
         self.assertIn("\n#### Що ще\n", t)
@@ -175,7 +176,9 @@ class SavedTextTest(SaverTestCase):
     def test_english_guides_are_saved_apart_from_the_ukrainian_ones(self):
         self.assertEqual(self.saver.files("en"), ["dovidka.info - Tactical medicine, how to stop bleeding.md"])
         self.assertNotIn("en", [f for f in self.saver.files() if f.endswith(".md")])
-        self.assertTrue(self.saver.read("en", self.saver.files("en")[0]).startswith("# Tactical medicine: how to stop bleeding\n"))
+        t = self.saver.read("en", self.saver.files("en")[0])
+        self.assertTrue(t.startswith("# Tactical medicine: how to stop bleeding\n"))
+        self.assertEqual(t.count("Tactical medicine: how to stop bleeding"), 1)   # the page's own first heading is the same title
 
     def test_the_manifest_marks_only_ukrainian_guides_for_the_ai_index(self):
         m = json.loads(self.saver.read("saved.json"))

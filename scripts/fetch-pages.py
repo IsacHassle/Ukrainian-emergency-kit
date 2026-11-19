@@ -62,6 +62,10 @@ def text_guide(guide, result, today):
     if len(body) < MIN_TEXT:
         return None, "almost no text"
     title = kit_html.page_title(page, source.get("title_suffix") or ()) or guide.name.split(" - ", 1)[1]
+    # Many pages repeat their title as the first heading of the article: the saved text has it once.
+    first, _, rest = body.partition("\n")
+    if first.lstrip("#").strip().replace("\u201c", '"').replace("\u201d", '"') == title.replace("\u201c", '"').replace("\u201d", '"'):
+        body = rest.strip() or body
     line = SOURCE_LINE.get(guide.language, SOURCE_LINE["en"]).format(source=guide.source_id, url=guide.url, date=today)
     return f"# {title}\n\n{line}\n\n{body}\n".encode("utf-8"), ""
 

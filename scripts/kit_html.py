@@ -51,7 +51,7 @@ class _Converter(HTMLParser):
 
     # ---- output ----
     def flush(self):
-        text = re.sub(r"[ \t\r\n ]+", " ", "".join(self.buf)).strip()
+        text = re.sub(r"\s+", " ", "".join(self.buf)).strip()   # \s also covers no-break and line separator spaces
         if self.prefix.startswith("#"):
             text = text.replace("*", "")   # a heading is bold already
         self.buf = []
