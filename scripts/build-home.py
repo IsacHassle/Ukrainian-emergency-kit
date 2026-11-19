@@ -200,9 +200,12 @@ def main():
         label = both(t["label"])
         if guides:
             (href, source), more = guides[0], guides[1:]
-            extra = "".join(f'<small><a href="{h}">{html.escape(s)}</a></small>' for h, s in more)
-            link = f'<small><a data-k="{html.escape(article)}"><span data-t="home.urgent.article"></span></a></small>{note}' if article else ""
-            return f'<li data-l="{code}"><a href="{href}">{label}</a><small>{html.escape(source)}</small>{extra}{link}</li>'
+            # One note under the topic: the guide's source, any other guide, then the article. It may wrap, so a
+            # topic with several guides stays inside its column.
+            parts = [html.escape(source)] + [f'<a href="{h}">{html.escape(s)}</a>' for h, s in more]
+            if article:
+                parts.append(f'<a data-k="{html.escape(article)}"><span data-t="home.urgent.article"></span></a>')
+            return f'<li data-l="{code}"><a href="{href}">{label}</a><small class="links">{" · ".join(parts)}</small>{note}</li>'
         return f'<li data-l="{code}"><a data-k="{html.escape(article)}">{label}</a>{note}</li>'
 
     first = [e for e in emergency if e[0]["id"] in FIRST]
@@ -272,6 +275,7 @@ TEMPLATE = r"""<!doctype html>
   .where { margin: 10px 0 0; font-size: 15px; }
   .where a { text-decoration: none; } .where a:hover { text-decoration: underline; }
   .where small { margin-left: 6px; }
+  ul.list small.links { white-space: normal; text-align: right; }
   form.search { display: flex; gap: 8px; }
   form.search input { flex: 1; min-width: 0; }
   details.more { border-top: 1px solid var(--line); }

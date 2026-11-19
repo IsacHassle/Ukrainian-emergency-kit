@@ -351,7 +351,7 @@ class StartPageGuidesTest(unittest.TestCase):
         li = self.li("Сильна кровотеча, джгут", "uk")
         self.assertIn('href="las/?f=docs/Official%20Guides/dovidka.info%20-%20%D0%A2%D0%B0%D0%BA%D1%82%D0%B8%D1%87%D0%BD%D0%B0', li)
         self.assertLess(li.index("las/?f="), li.index("data-k="))
-        self.assertIn("dovidka.info</small>", li)   # it names its source
+        self.assertIn('<small class="links">dovidka.info · ', li)   # it names its source
         self.assertIn('data-t="home.urgent.article"', li)
         self.assertIn(viewer(LIB_UK, "Зупинка_кровотечі"), li)
 
