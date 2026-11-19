@@ -123,5 +123,45 @@ class FromSourcesTest(unittest.TestCase):
         self.assertEqual(set(self.kit.ai.searched_workspaces), {"emergency-kit"})
 
 
+class InstructionsTest(unittest.TestCase):
+    """The AI's instructions, as the AI receives them in From sources."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.kit = ServedKit()
+        cls.kit.start()
+        ask(cls.kit, "Як зупинити кровотечу?")
+        answer = [r for r in cls.kit.ai.chat_requests if r.get("stream")][-1]
+        cls.system = answer["messages"][0]["content"]
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.kit.stop()
+
+    def test_they_name_every_emergency_number_of_ukraine(self):
+        for number in ("101", "102", "103", "104", "112"):
+            self.assertIn(number, self.system)
+
+    def test_they_cover_air_raid_alert_mines_carbon_monoxide_and_potassium_iodide(self):
+        low = self.system.lower()
+        self.assertIn("air raid", low)
+        self.assertIn("do not touch", low)
+        self.assertIn("mark", low)
+        self.assertIn("carbon monoxide", low)
+        self.assertIn("potassium iodide", low)
+        self.assertIn("only", low[low.index("potassium iodide"):low.index("potassium iodide") + 200])
+        self.assertIn("official guides", low)
+
+    def test_they_answer_in_the_users_language_without_mixing(self):
+        low = self.system.lower()
+        for language in ("ukrainian", "russian", "english"):
+            self.assertIn(language, low)
+        self.assertIn("never mix", low)
+
+    def test_nothing_of_the_swedish_kit_is_left(self):
+        for word in ("Sweden", "Swedish", "1177", "MCF", "Krislåda", "Hesa Fredrik", "VMA", "Ready.gov", "crisis"):
+            self.assertNotIn(word, self.system, word)
+
+
 if __name__ == "__main__":
     unittest.main()
