@@ -2,6 +2,7 @@
 <html lang="uk">
 <head>
 <meta charset="utf-8">
+<script src="/lib/escape.js"></script>
 <script src="/lib/country.js"></script>
 <script src="/lib/lang.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -168,14 +169,14 @@
   // The lights and the lines on what to fix, from the last status (drawn again when the language changes).
   function renderStatus() {
     if (!status) return;
-    const lamp = (on, key) => `<span class="lamp${on ? '' : ' off'}">${esc(t(key))}: ${esc(t(on ? 'ai.status.on' : 'ai.status.off'))}</span>`;
+    const lamp = (on, key) => `<span class="lamp${on ? '' : ' off'}">${escapeHtml(t(key))}: ${escapeHtml(t(on ? 'ai.status.on' : 'ai.status.off'))}</span>`;
     const s = [lamp(status.ollama, 'ai.status.engine'), lamp(status.books, 'ai.status.books'), lamp(status.libraries, 'ai.status.libraries')], fix = [];
     if (!status.ollama) fix.push(t('ai.fix.engine'));
     if (!status.books) fix.push(t('ai.fix.books'));
     if (!status.libraries) fix.push(t('ai.fix.libraries'));
     const b = status.battery;
     if (b && b.on_battery) {
-      s.push(`<span class="lamp warn">${esc(t('ai.status.battery', { percent: b.percent }))}</span>`);
+      s.push(`<span class="lamp warn">${escapeHtml(t('ai.status.battery', { percent: b.percent }))}</span>`);
       if (b.percent < 40 && mode !== SMALL) fix.push(t('ai.fix.battery'));
     }
     $('#status').innerHTML = s.join('');
@@ -206,8 +207,7 @@
   document.querySelectorAll('input[name=mode]').forEach(i => i.addEventListener('change', () => setMode(i.value)));
 
   // ---------- rendering ----------
-  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const inline = s => esc(s)
+  const inline = s => escapeHtml(s)
     .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
     .replace(/(^|[^*\w])\*(?!\s)([^*]+?)\*(?!\w)/g, '$1<i>$2</i>')
     .replace(/`([^`]+)`/g, '<code>$1</code>');
@@ -259,7 +259,7 @@
     thumbs.innerHTML = '';
     photos.forEach((p, i) => {
       const d = document.createElement('div');
-      d.innerHTML = `<img src="${p}" alt="${esc(t('ai.photo.attached'))}"><button type="button" aria-label="${esc(t('ai.photo.remove'))}">✕</button>`;
+      d.innerHTML = `<img src="${p}" alt="${escapeHtml(t('ai.photo.attached'))}"><button type="button" aria-label="${escapeHtml(t('ai.photo.remove'))}">✕</button>`;
       d.querySelector('button').onclick = () => { photos.splice(i, 1); drawThumbs(); };
       thumbs.appendChild(d);
     });
@@ -302,7 +302,7 @@
     const box = add('div', 'msg ai');
     const t0 = Date.now(), used = mode;
     let raw = '', sources = [], failed = null, shown = false, place = 0, full = false, doing = used === 'books' ? t('ai.doing.searching') : t('ai.doing.thinking');
-    box.innerHTML = `<div class="wait">${esc(doing)}… ${esc(t('ai.seconds', { n: 0 }))}</div>`;
+    box.innerHTML = `<div class="wait">${escapeHtml(doing)}… ${escapeHtml(t('ai.seconds', { n: 0 }))}</div>`;
     // While waiting in the queue the place (and a hint) replaces the "Thinking" line; redrawn every second, so a
     // change of page language shows at once.
     const drawWait = () => {
@@ -344,23 +344,23 @@
     }
 
     if (full) {   // busy: point to what answers at once, in the page language (data-t, so a language switch updates it)
-      box.innerHTML = `<div class="err" data-t="ai.busy.text">${esc(t('ai.busy.text'))}</div><ul class="busy">` +
-        `<li><a href="../" data-t="ai.busy.topics">${esc(t('ai.busy.topics'))}</a></li>` +
-        `<li><a href="${esc(KIWIX)}/" target="_blank" data-t="ai.busy.libraries">${esc(t('ai.busy.libraries'))}</a></li></ul>`;
+      box.innerHTML = `<div class="err" data-t="ai.busy.text">${escapeHtml(t('ai.busy.text'))}</div><ul class="busy">` +
+        `<li><a href="../" data-t="ai.busy.topics">${escapeHtml(t('ai.busy.topics'))}</a></li>` +
+        `<li><a href="${escapeHtml(KIWIX)}/" target="_blank" data-t="ai.busy.libraries">${escapeHtml(t('ai.busy.libraries'))}</a></li></ul>`;
       return;
     }
     if (!visible(raw)) box.innerHTML = '';
-    if (failed === 'stopped') box.insertAdjacentHTML('beforeend', `<div class="meta">${esc(t('ai.stopped'))}</div>`);
-    else if (failed) box.insertAdjacentHTML('beforeend', `<div class="err">${esc(String(failed))}</div>`);
+    if (failed === 'stopped') box.insertAdjacentHTML('beforeend', `<div class="meta">${escapeHtml(t('ai.stopped'))}</div>`);
+    else if (failed) box.insertAdjacentHTML('beforeend', `<div class="err">${escapeHtml(String(failed))}</div>`);
     const secs = Math.round((Date.now() - t0) / 1000);
-    box.insertAdjacentHTML('beforeend', `<div class="meta">${esc(label(used))} · ${esc(t('ai.seconds', { n: secs }))}</div>`);
+    box.insertAdjacentHTML('beforeend', `<div class="meta">${escapeHtml(label(used))} · ${escapeHtml(t('ai.seconds', { n: secs }))}</div>`);
 
     // The kit's books open as PDFs or in the reader; library articles open in Kiwix.
     const seen = new Set(), list = sources.filter(s => s.title && !seen.has(s.title + s.library) && seen.add(s.title + s.library));
     if (list.length) {
       const src = document.createElement('div');
       src.className = 'src';
-      src.innerHTML = '<b>' + esc(t('ai.sources')) + '</b> ';
+      src.innerHTML = '<b>' + escapeHtml(t('ai.sources')) + '</b> ';
       box.appendChild(src);
       for (const s of list) {
         if (s.href) {

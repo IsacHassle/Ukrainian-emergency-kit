@@ -53,6 +53,7 @@
   <p class="sub noprint" data-t="print.guides.intro"></p>
   <div id="pack"><p data-t="print.loading"></p></div>
 </main>
+<script src="../lib/escape.js"></script>
 <script src="../lib/md.js"></script>
 <script>
 (() => {
@@ -82,7 +83,6 @@
   // folder named by language code (where the guide saver puts them).
   const pagesFor = lang => (COUNTRY.official_guides.print_pages[lang] || COUNTRY.official_guides.print_pages[COUNTRY.default_language]);
   const folderFor = lang => DIR + (lang === COUNTRY.default_language ? '' : lang + '/');
-  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
   let drawn = 0;
   function draw() {
     const lang = KIT.lang, mine = ++drawn;
@@ -95,10 +95,10 @@
       const ok = docs.map((d, i) => d && { ...d, name: names[i] }).filter(Boolean);
       // Both names of the kit are on the paper, whichever language it is printed in.
       const both = [lang, ...Object.keys(COUNTRY.kit_name).filter(l => l !== lang)].map(l => COUNTRY.kit_name[l]).filter(Boolean).join(' / ');
-      let html = `<section class="cover"><h1>${esc(both)}</h1>
+      let html = `<section class="cover"><h1>${escapeHtml(both)}</h1>
         <p class="nums">${numbers()}<br>${KIT.t('print.cover.radio', { radio: COUNTRY.text(COUNTRY.radio.print_label) })}</p>
         <p>${KIT.t('print.cover.saved', { date: today })}</p>
-        <h4>${KIT.t('print.cover.contents')}</h4><ol class="toc">${ok.map(d => `<li>${esc(d.title || d.name.split(' - ')[1])} <span class="src">(${esc(d.name.split(' - ')[0])})</span></li>`).join('')}</ol></section>`;
+        <h4>${KIT.t('print.cover.contents')}</h4><ol class="toc">${ok.map(d => `<li>${escapeHtml(d.title || d.name.split(' - ')[1])} <span class="src">(${escapeHtml(d.name.split(' - ')[0])})</span></li>`).join('')}</ol></section>`;
       html += ok.map(d => `<section>${d.html}</section>`).join('');
       if (!ok.length) html = '<p>' + KIT.t('print.guides.missing') + '</p>';
       document.getElementById('pack').innerHTML = html;

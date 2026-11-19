@@ -1,9 +1,8 @@
 // Turns the kit's Markdown documents into HTML (headings, lists, tables, bold, italics).
-// Used by the reader (web/read/) and the print pack (web/print/).
+// Needs lib/escape.js loaded first. Used by the reader (web/read/) and the print pack (web/print/).
 window.renderMarkdown = function (src, opts) {
   opts = opts || {};
-  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const inline = s => esc(s)
+  const inline = s => escapeHtml(s)
     .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
     .replace(/(^|[^*\w])\*(?!\s)([^*]+?)\*(?!\w)/g, '$1<i>$2</i>')
     .replace(/`([^`]+)`/g, '<code>$1</code>');

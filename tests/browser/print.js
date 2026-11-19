@@ -23,6 +23,11 @@ const check = (cond, msg) => { if (!cond) throw new Error(msg); };
     check(t.includes('Натисніть на рану.'), 'the Ukrainian guide is printed');
     ok('the print pack prints the Ukrainian Official Guide with both kit names');
 
+    // One escape helper for the print page, the AI page and the Markdown reader (web/lib/escape.js).
+    check(await page.evaluate(() => escapeHtml('a<b>&"c"') === 'a&lt;b&gt;&amp;&quot;c&quot;'), 'escapeHtml escapes < > & and quotes');
+    check(await page.evaluate(() => renderMarkdown('x > y <b>').html.includes('x &gt; y &lt;b&gt;')), 'the reader escapes through it');
+    ok('one escape helper (web/lib/escape.js) serves the print page and the Markdown reader');
+
     check(!t.includes('Спротив') && !t.includes('#Медицина') && !t.includes('ЗМІ') && !t.includes('Не публікуйте'), 'page furniture printed: ' + t);
     ok('navigation tags and the media notice stay off the paper');
 
