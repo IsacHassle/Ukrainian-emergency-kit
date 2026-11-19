@@ -30,12 +30,14 @@ def get(where, obj, key, kind):
     return v
 
 
-def texts(where, v, lang):
-    """A text per language, with the default language always there."""
+def texts(where, v, lang, also=()):
+    """A text per language, with the default language always there (and the languages in `also`)."""
     if not isinstance(v, dict) or not all(isinstance(k, str) and isinstance(t, str) for k, t in v.items()):
-        bad(where, "must be a text per language, like {\"sv\": \"...\"}")
-    elif not v.get(lang, "").strip():
-        bad(where, f"has no text in the default language ({lang})")
+        bad(where, "must be a text per language, like {\"uk\": \"...\", \"en\": \"...\"}")
+        return
+    for code in (lang,) + tuple(also):
+        if not v.get(code, "").strip():
+            bad(where, f"has no text in {code}" + (" (the default language)" if code == lang else ""))
 
 
 def point(where, v):
@@ -56,12 +58,12 @@ def main():
     get("", c, "country", str)
     lang = get("", c, "default_language", str)
     if lang is None:
-        lang = "sv"
+        lang = "uk"
     elif not re.fullmatch(r"[a-z]{2,3}", lang):
         bad("default_language", "must be a language code like uk")
     get("", c, "locale", str)
     texts("kit_description", get("", c, "kit_description", dict), lang)
-    texts("kit_name", get("", c, "kit_name", dict), lang)
+    texts("kit_name", get("", c, "kit_name", dict), lang, also=("en",))   # the name in both languages
 
     # The AI.
     ai = get("", c, "ai", dict) or {}
@@ -94,8 +96,8 @@ def main():
     for i, n in enumerate(nums):
         w = f"emergency_numbers[{i}]"
         get(w, n, "number", str)
-        texts(w + ".label", n.get("label") if isinstance(n, dict) else None, lang)
-        texts(w + ".print_label", n.get("print_label") if isinstance(n, dict) else None, lang)
+        texts(w + ".label", n.get("label") if isinstance(n, dict) else None, lang, also=("en",))
+        texts(w + ".print_label", n.get("print_label") if isinstance(n, dict) else None, lang, also=("en",))
     if sum(1 for n in nums if isinstance(n, dict) and n.get("primary")) != 1:
         bad("emergency_numbers", "exactly one number must be marked primary")
     radio = get("", c, "radio", dict) or {}

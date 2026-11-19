@@ -77,7 +77,7 @@ def pages_script():
 
 
 # Loaded first by every page: text(), the kit name in the title, and elements marked data-kit, data-number
-# and data-country.
+# and data-country. Follows the page language (lang.js sets <html lang>, and says "kitlang" when it changes).
 PAGE_HELPERS = r"""(() => {
   const C = window.COUNTRY;
   const lang = () => (document.documentElement.lang || C.default_language);
@@ -85,8 +85,11 @@ PAGE_HELPERS = r"""(() => {
   C.text = v => (v && typeof v === 'object') ? (v[lang()] || v[C.default_language] || '') : (v || '');
   C.kit = () => C.text(C.kit_name);
   C.primaryNumber = () => (C.emergency_numbers.find(n => n.primary) || C.emergency_numbers[0]).number;
-  addEventListener('DOMContentLoaded', () => {
-    document.title = document.title.split('{kit}').join(C.kit());
+  // The title keeps its template ("Checklist · {kit}") so the kit's name can change with the language.
+  function apply() {
+    const root = document.documentElement;
+    if (!root.dataset.title) root.dataset.title = document.title;
+    document.title = root.dataset.title.split('{kit}').join(C.kit());
     document.querySelectorAll('[data-kit]').forEach(el => { el.textContent = C.kit(); });
     document.querySelectorAll('[data-kit-attr]').forEach(el => {
       const [a, v] = el.dataset.kitAttr.split('=');
@@ -97,6 +100,8 @@ PAGE_HELPERS = r"""(() => {
       el.textContent = C.text(el.dataset.country.split('.').reduce((o, k) => (o == null ? o : o[k]), C));
     });
     document.querySelectorAll('[data-number]').forEach(el => { el.textContent = C.primaryNumber(); });
-  });
+  }
+  addEventListener('DOMContentLoaded', apply);
+  addEventListener('kitlang', apply);
 })();
 """

@@ -1,4 +1,4 @@
-/* Krislåda: the kit's look, shared by every page. Minimal on purpose:
+/* The kit's look, shared by every page. Minimal on purpose:
    the system font, black and grey on off-white, thin rules, plenty of space,
    and red only where a life may be at stake. Dark mode follows the computer. */
 :root {
@@ -70,3 +70,6 @@ footer.kit { margin-top: 56px; padding-top: 14px; border-top: 1px solid var(--li
   section { margin-top: 32px; }
   ul.list.rows li { grid-template-columns: 1fr; gap: 0; }
 }
+
+/* A text written in both languages (<span data-l="uk">..</span><span data-l="en">..</span>) shows the page's one. */
+html[lang=uk] [data-l=en], html[lang=en] [data-l=uk] { display: none; }

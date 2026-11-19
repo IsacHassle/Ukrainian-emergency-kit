@@ -7,9 +7,10 @@ phones on the same Wi-Fi.
     Ollama (the two models named in the country config). In "From sources" the AI first gets
     excerpts from the kit's books (AnythingLLM, the Book index workspace named in the country config)
     and from the big medical libraries in Kiwix (scripts/kit_search.py).
-- /lib/country.js gives every page the part of the country config it needs (window.COUNTRY).
   Only these few actions are passed on, so phones on the Wi-Fi can ask
   questions but cannot change settings or delete anything.
+- /lib/country.js gives every page the part of the country config it needs (window.COUNTRY).
+- /lib/lang.js gives every page its texts in all languages and the language switch (web/lang/*.json).
 
 Usage: python3 scripts/serve-web.py [port]
 Then open http://localhost:<port>/  (default port 8091)
@@ -31,6 +32,7 @@ import threading
 import urllib.parse
 
 import kit_country  # the country's facts (config/country.json)
+import kit_lang  # the language files (web/lang/*.json)
 import kit_gps      # the USB GPS receiver, if one is plugged in (scripts/kit_gps.py)
 import kit_search   # what the AI reads before answering in "From sources" (scripts/kit_search.py)
 
@@ -259,8 +261,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     def do_GET(self):
         url = urllib.parse.urlsplit(self.path)
-        if url.path == "/lib/country.js":   # the country config for the pages
-            data = kit_country.pages_script().encode()
+        if url.path in ("/lib/country.js", "/lib/lang.js"):   # the country config and the texts, for the pages
+            data = (kit_country.pages_script() if url.path == "/lib/country.js" else kit_lang.pages_script(ROOT)).encode()
             self.send_response(200)
             self.send_header("Content-Type", "text/javascript; charset=utf-8")
             self.send_header("Cache-Control", "no-store")
