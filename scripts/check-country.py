@@ -203,10 +203,12 @@ def main():
 
     # Checklist.
     cl = get("", c, "checklist", dict) or {}
-    ol = get("checklist", cl, "official_list", dict) or {}
-    for k in ("guide", "section", "source_prefix"):
-        get("checklist.official_list", ol, k, str)
-    texts("checklist.official_list.heading", ol.get("heading"), lang)
+    # Each list is read from a saved Official Guide: the section, the line that starts the list and the line it ends before.
+    for i, ol in enumerate(get("checklist", cl, "official_lists", list) or []):
+        where = f"checklist.official_lists[{i}]"
+        get(where, ol, "id", str)
+        for k in ("heading", "guide", "section", "start", "until"):
+            texts(f"{where}.{k}", ol.get(k) if isinstance(ol, dict) else None, lang)
     for i, a in enumerate(get("checklist", cl, "additions", list) or []):
         texts(f"checklist.additions[{i}]", a, lang)
 

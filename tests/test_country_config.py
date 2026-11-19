@@ -58,7 +58,8 @@ def testland(c):
     c["checklist"]["additions"] = [{"uk": "Ett testföremål"}]
     c["map"]["shortcuts"] = [{"label": {"uk": "Testby"}, "center": [1.5, 2.5], "zoom": 9}]
     c["map"]["overview_label"] = {"uk": "Testland"}
-    c["checklist"]["official_list"]["heading"] = {"uk": "Hemma"}
+    c["checklist"]["official_lists"] = [{"id": "home", "heading": {"uk": "Hemma"}, "guide": {"uk": "TL1 - Home"},
+                                         "section": {"uk": "Home"}, "start": {"uk": "Have:"}, "until": {"uk": "End"}}]
     return c
 
 

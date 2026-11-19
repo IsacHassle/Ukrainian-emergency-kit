@@ -699,15 +699,54 @@
   "country": "ukr"
  },
  "checklist": {
-  "official_list": {
-   "guide": "MCF - Grunder i hemberedskap",
-   "section": "Checklista",
-   "heading": {
-    "uk": "Вдома (офіційний перелік)",
-    "en": "At home (official list)"
+  "official_lists": [
+   {
+    "id": "home",
+    "heading": {
+     "uk": "Вдома",
+     "en": "At home"
+    },
+    "guide": {
+     "uk": "dovidka.info - Як підготуватися до надзвичайної ситуації",
+     "en": "dovidka.info - How to prepare for an emergency"
+    },
+    "section": {
+     "uk": "Як підготувати власну оселю до надзвичайної ситуації",
+     "en": "How to prepare your own home"
+    },
+    "start": {
+     "uk": "Перевірте, чи є у вас:",
+     "en": "Make sure you have:"
+    },
+    "until": {
+     "uk": "Якщо ви живете в приватному будинку",
+     "en": "If you live in a private house"
+    }
    },
-   "source_prefix": "Källa: "
-  },
+   {
+    "id": "gobag",
+    "heading": {
+     "uk": "Що покласти в тривожну валізу",
+     "en": "What to put in the go-bag"
+    },
+    "guide": {
+     "uk": "dovidka.info - Як підготуватися до надзвичайної ситуації",
+     "en": "dovidka.info - How to prepare for an emergency"
+    },
+    "section": {
+     "uk": "Що покласти в тривожну валізу",
+     "en": "What to put in a survival kit"
+    },
+    "start": {
+     "uk": "**У валізу покладіть:**",
+     "en": "**Put in the survival kit:**"
+    },
+    "until": {
+     "uk": "Покладіть у верхню чи бокову кишеню",
+     "en": "Put a tag in your top or side pocket"
+    }
+   }
+  ],
   "additions": [
    {
     "uk": "Тривожну валізу встановлено й перевірено",
@@ -1004,8 +1043,6 @@
  "_placeholders": [
   "Values below are still Sweden's and belong to later tickets; they are marked here so nobody ships them.",
   "ai.authorities, ai.example_source (07)",
-  "radio (12)",
-  "checklist.official_list.guide, checklist.official_list.source_prefix (12)",
   "map.* except regions, pmtiles, shape, max_zoom, world_max_zoom, center, zoom, shortcuts, overview_label and nearest labels: name_tags, labels, zoom_by_type, search_priority (09)"
  ]
 }

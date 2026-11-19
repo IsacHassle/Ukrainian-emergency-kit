@@ -1,4 +1,11 @@
 {
+ "checklist.count": "{done} of {total} done",
+ "checklist.intro": "Tick what you already have at home. The aim is to manage on your own for at least a week. Ticks are kept in this browser only.",
+ "checklist.kit.heading": "For the kit itself",
+ "checklist.missing": "The official list is missing. Run the installation with internet.",
+ "checklist.print": "Print",
+ "checklist.reset": "Start over",
+ "checklist.title": "Checklist",
  "home.ai.text": "Ask about injuries, illness, water, food and heat. The answer comes from the books and articles in the kit.",
  "home.ai.title": "Ask the AI",
  "home.battery": "The computer is running on battery ({percent} %). Save power: lower the brightness, close other apps and choose Save battery in the AI.",
