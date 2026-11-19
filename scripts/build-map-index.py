@@ -184,7 +184,7 @@ def other_names(tags, shown, en, limit=6):
     return "|".join(out[:limit])
 
 
-def km(a, b):
+def distance_km(a, b):
     return math.hypot((a[0] - b[0]) * 111.3 * math.cos(math.radians(a[1])), (a[1] - b[1]) * 110.6)
 
 

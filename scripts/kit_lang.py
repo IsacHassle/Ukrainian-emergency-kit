@@ -33,7 +33,7 @@ def load(web=None):
     return dict(sorted(texts.items(), key=lambda kv: kv[0] != DEFAULT))
 
 
-def t(texts, key, lang=None, params=None):
+def text_in(texts, key, lang=None, params=None):
     """The text for `key` in `lang`, else in the default language, else the key itself.
     A parameter may itself be a text per language ({"uk": ..., "en": ...})."""
     lang = lang or DEFAULT
@@ -69,13 +69,13 @@ def fill(page, texts, lang=None):
     import html
 
     def element(m):
-        return m.group(1) + html.escape(t(texts, m.group(3), lang, _params(m.group(1))), quote=False) + m.group(5)
+        return m.group(1) + html.escape(text_in(texts, m.group(3), lang, _params(m.group(1))), quote=False) + m.group(5)
 
     def attrs(m):
         tag = m.group(0)
         for pair in m.group(1).split(";"):
             name, _, key = pair.partition(":")
-            value = html.escape(t(texts, key, lang, _params(tag)), quote=True)
+            value = html.escape(text_in(texts, key, lang, _params(tag)), quote=True)
             if re.search(r"\s" + re.escape(name) + r'="', tag):
                 tag = re.sub(r"(\s" + re.escape(name) + r'=")[^"]*"', lambda a: a.group(1) + value + '"', tag, count=1)
             else:
