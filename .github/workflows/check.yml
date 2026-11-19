@@ -25,7 +25,8 @@ jobs:
   served-kit:
     # The harness: the web server against the small test kit, with stand-ins for the AI and the Library
     # server, driven over HTTP and in headless Chrome (tests/). Neither Ollama nor AnythingLLM is needed.
-    runs-on: ubuntu-latest
+    # Pinned: the kit runs on macOS's own Python 3.9, which newer Ubuntu images no longer offer.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
