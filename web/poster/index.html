@@ -1,1 +1,207 @@
-<!doctype html><script src="/lib/qrcode.js"></script>
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<script src="/lib/country.js"></script>
+<script src="/lib/lang.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Плакат · {kit}</title>
+<link rel="stylesheet" href="../lib/kit.css">
+<script src="../lib/qrcode.js"></script>
+<style>
+  .page { max-width: 980px; }
+  .controls { display: grid; gap: 14px; max-width: 520px; margin: 18px 0 8px; }
+  .controls label { display: grid; gap: 4px; font-weight: 600; font-size: 15px; }
+  .controls input[type=text], .controls input[type=password] { font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); }
+  .controls .check { display: flex; gap: 8px; align-items: center; font-weight: 400; }
+  .controls .note { margin: 0; color: var(--muted); font-size: 14px; }
+  .controls button.print { font: inherit; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 0; background: var(--fg); color: var(--bg); cursor: pointer; justify-self: start; }
+
+  /* The poster itself: always black on white, in both languages, whatever the screen's theme. */
+  .sheet { box-sizing: border-box; width: 210mm; max-width: 100%; margin: 24px 0; padding: 12mm; background: #fff; color: #000;
+           border: 1px solid var(--line); font-family: var(--font); line-height: 1.25; }
+  .sheet h1 { font-size: 40pt; line-height: 1.05; margin: 0; text-align: center; }
+  .sheet .en-name { font-size: 24pt; font-weight: 600; text-align: center; margin: 4pt 0 0; color: #333; }
+  .sheet .offline { text-align: center; font-size: 13pt; margin: 8pt 0 0; }
+  .sheet .offline span { display: block; color: #333; }
+  .codes { display: grid; grid-template-columns: 1fr 1fr; gap: 10mm; margin: 9mm 0 7mm; }
+  .code { text-align: center; border: 2px solid #000; border-radius: 4mm; padding: 5mm 4mm; }
+  .code h2 { font-size: 17pt; letter-spacing: 0; text-transform: none; color: #000; margin: 0; line-height: 1.15; }
+  .sheet h2 span { display: block; font-weight: 500; font-size: 13pt; color: #333; }
+  .code .qr { width: 70mm; height: 70mm; max-width: 100%; margin: 4mm auto; display: block; }
+  .code .qr.empty { display: grid; place-items: center; border: 2px dashed #999; color: #666; font-size: 12pt; padding: 4mm; }
+  .code .hint { font-size: 11pt; color: #333; margin: 0; }
+  .code .detail { font-size: 14pt; font-weight: 600; margin: 3mm 0 0; overflow-wrap: anywhere; }
+  .code .detail small { display: block; font-weight: 400; font-size: 10.5pt; color: #333; }
+  .code .detail.addr { font-size: 15pt; font-family: var(--mono); }
+  .numbers { border-top: 2px solid #000; padding-top: 4mm; }
+  .numbers h2 { font-size: 15pt; text-transform: none; letter-spacing: 0; color: #000; margin: 0 0 2mm; }
+  .numbers ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 2mm 8mm; }
+  .numbers li { display: flex; gap: 4mm; align-items: baseline; font-size: 12pt; }
+  .numbers li b { font-size: 26pt; line-height: 1; min-width: 17mm; }
+  .numbers li.primary b { color: #b00020; }
+  .numbers li span small { display: block; color: #333; font-size: 10.5pt; }
+
+  @media (max-width: 800px) { .codes { grid-template-columns: 1fr; } .sheet { padding: 8mm; } }
+  @media print {
+    @page { size: A4; margin: 0; }
+    html, body { background: #fff; }
+    .page { max-width: none; padding: 0; }
+    .page > :not(.sheet) { display: none; }
+    .sheet { width: 210mm; height: 296mm; margin: 0; border: 0; padding: 12mm; overflow: hidden; break-inside: avoid; }
+    .codes { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<main class="page">
+  <a class="back" href="/">← <span data-kit></span></a>
+  <h1 data-t="poster.title"></h1>
+  <p class="meta" data-t="poster.intro"></p>
+
+  <!-- Not a <form>: nothing here is ever submitted. The password is read from the box only to draw the code. -->
+  <div class="controls">
+    <label><span data-t="poster.field.ssid"></span>
+      <input type="text" id="ssid" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+    <label><span data-t="poster.field.password"></span>
+      <input type="password" id="pass" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+    <label class="check"><input type="checkbox" id="show"> <span data-t="poster.field.showpassword"></span></label>
+    <label class="check"><input type="checkbox" id="words"> <span data-t="poster.field.printpassword"></span></label>
+    <label><span data-t="poster.field.address"></span>
+      <input type="text" id="addr" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="url"></label>
+    <p class="note" data-t="poster.note.address"></p>
+    <button class="print" id="print" type="button" data-t="poster.print"></button>
+  </div>
+
+  <article class="sheet" id="sheet" aria-label="Poster"></article>
+</main>
+<script>
+(() => {
+  // The poster is printed in every language the kit has, at once, whichever one the screen shows.
+  const LANGS = Object.keys(KIT_LANG.texts).sort((a, b) => (b === KIT_LANG.default) - (a === KIT_LANG.default));
+  const T = (code, key) => KIT_LANG.texts[code][key];
+  const $ = id => document.getElementById(id);
+  const SVG = 'http://www.w3.org/2000/svg';
+
+  // The QR format reads text as UTF-8, so Ukrainian network names scan correctly.
+  qrcode.stringToBytes = qrcode.stringToBytesFuncs['UTF-8'];
+
+  // What a phone's camera reads to join a Wi-Fi: WIFI:T:WPA;S:name;P:password;; where \ ; , : " in the
+  // name and password get a backslash. A network with no password is T:nopass.
+  const esc = s => s.replace(/([\\;,:"])/g, '\\$1');
+  const wifiString = (ssid, pass) => pass
+    ? 'WIFI:T:WPA;S:' + esc(ssid) + ';P:' + esc(pass) + ';;'
+    : 'WIFI:T:nopass;S:' + esc(ssid) + ';;';
+
+  // The code as an SVG (sharp at any size on paper), with the quiet zone of four modules the scanners need.
+  function drawQR(text) {
+    const qr = qrcode(0, 'M');
+    qr.addData(text);
+    qr.make();
+    const n = qr.getModuleCount(), q = 4;
+    let d = '';
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) d += 'M' + (c + q) + ' ' + (r + q) + 'h1v1h-1z';
+    const svg = document.createElementNS(SVG, 'svg');
+    svg.setAttribute('viewBox', '0 0 ' + (n + 2 * q) + ' ' + (n + 2 * q));
+    svg.setAttribute('shape-rendering', 'crispEdges');
+    svg.setAttribute('class', 'qr');
+    svg.setAttribute('role', 'img');
+    const bg = document.createElementNS(SVG, 'rect');
+    bg.setAttribute('width', n + 2 * q); bg.setAttribute('height', n + 2 * q); bg.setAttribute('fill', '#fff');
+    const path = document.createElementNS(SVG, 'path');
+    path.setAttribute('d', d); path.setAttribute('fill', '#000');
+    svg.append(bg, path);
+    return svg;
+  }
+
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  // A line in every language: the first as the text, the others in a small line under it.
+  function both(parent, tag, key) {
+    const e = el(tag, null, T(LANGS[0], key));
+    LANGS.slice(1).forEach(code => e.appendChild(el('span', null, T(code, key))));
+    parent.appendChild(e);
+    return e;
+  }
+
+  function render() {
+    const sheet = $('sheet');
+    sheet.replaceChildren();
+    const C = window.COUNTRY;
+
+    sheet.appendChild(el('h1', null, C.kit_name[LANGS[0]]));
+    LANGS.slice(1).forEach(code => sheet.appendChild(el('p', 'en-name', C.kit_name[code])));
+    const off = el('p', 'offline', T(LANGS[0], 'poster.sheet.offline'));
+    LANGS.slice(1).forEach(code => off.appendChild(el('span', null, T(code, 'poster.sheet.offline'))));
+    sheet.appendChild(off);
+
+    const codes = el('div', 'codes');
+    const ssid = $('ssid').value.trim(), pass = $('pass').value, addr = $('addr').value.trim();
+
+    const wifi = el('section', 'code');
+    wifi.id = 'wifi-code';
+    both(wifi, 'h2', 'poster.sheet.wifi.title');
+    if (ssid) wifi.appendChild(drawQR(wifiString(ssid, pass)));
+    else { const e = el('div', 'qr empty', T(LANGS[0], 'poster.sheet.wifi.empty')); wifi.appendChild(e); }
+    wifi.appendChild(el('p', 'hint', LANGS.map(c => T(c, 'poster.sheet.wifi.hint')).join(' · ')));
+    if (ssid) {
+      const d = el('p', 'detail', ssid);
+      d.prepend(el('small', null, LANGS.map(c => T(c, 'poster.sheet.wifi.name')).join(' / ')));
+      wifi.appendChild(d);
+      if (pass && $('words').checked) {
+        const p = el('p', 'detail', pass);
+        p.prepend(el('small', null, LANGS.map(c => T(c, 'poster.sheet.wifi.password')).join(' / ')));
+        wifi.appendChild(p);
+      }
+    }
+    codes.appendChild(wifi);
+
+    const kit = el('section', 'code');
+    kit.id = 'kit-code';
+    both(kit, 'h2', 'poster.sheet.kit.title');
+    if (addr) kit.appendChild(drawQR(addr));
+    else kit.appendChild(el('div', 'qr empty', T(LANGS[0], 'poster.sheet.kit.empty')));
+    kit.appendChild(el('p', 'hint', LANGS.map(c => T(c, 'poster.sheet.kit.hint')).join(' · ')));
+    if (addr) kit.appendChild(el('p', 'detail addr', addr));
+    if (alt && addr === auto) kit.appendChild(el('p', 'detail addr', alt));
+    codes.appendChild(kit);
+    sheet.appendChild(codes);
+
+    const nums = el('section', 'numbers');
+    both(nums, 'h2', 'poster.sheet.numbers');
+    const ul = el('ul');
+    C.emergency_numbers.forEach(n => {
+      const li = el('li', n.primary ? 'primary' : '');
+      li.appendChild(el('b', null, n.number));
+      const label = el('span', null, (n.print_label || n.label)[LANGS[0]]);
+      LANGS.slice(1).forEach(code => label.appendChild(el('small', null, (n.print_label || n.label)[code])));
+      li.appendChild(label);
+      ul.appendChild(li);
+    });
+    nums.appendChild(ul);
+    sheet.appendChild(nums);
+  }
+
+  // The kit's address for phones on the Wi-Fi: this Mac's Wi-Fi address (and its .local name as a second
+  // way in), from the same status the start page reads.
+  let alt = '', auto = '';   // the second way in, and the address found for the first
+  async function findAddress() {
+    try {
+      const s = await (await fetch('/ai-api/status', { cache: 'no-store' })).json();
+      const url = host => 'http://' + host + (s.port && s.port !== 80 ? ':' + s.port : '') + '/';
+      const first = s.lan || s.name;
+      if (first) $('addr').value = auto = url(first);
+      if (s.lan && s.name) alt = url(s.name);
+    } catch (e) { /* the Keeper can type the address */ }
+  }
+
+  $('show').addEventListener('change', () => { $('pass').type = $('show').checked ? 'text' : 'password'; });
+  ['ssid', 'pass', 'addr', 'words'].forEach(id => $(id).addEventListener('input', render));
+  $('words').addEventListener('change', render);
+  $('print').addEventListener('click', () => window.print());
+  findAddress().then(() => { render(); document.body.dataset.ready = '1'; });
+  render();
+})();
+</script>
+</body>
+</html>
