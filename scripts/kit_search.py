@@ -4,9 +4,10 @@ Two places are searched at the same time:
   - The kit's books, embedded in AnythingLLM (the Book index workspace named in the country config): the
     Official Guides, the brochure, the medical, water, food and knot books, NHS Medicines and Ready.gov.
   - The big medical libraries in Kiwix, which are too big to embed: the Libraries named in the country
-    config (for Sweden WikiMed, MDWiki and MedlinePlus).
-    The libraries are in English, so the AI first turns the question into English article titles;
-    Kiwix finds the articles in a tenth of a second, and their most useful sections are passed on.
+    config, each with its language (for Ukraine WikiMed in Ukrainian and in English, MDWiki, MedlinePlus).
+    The AI first turns the question into article titles in Ukrainian and in English; Ukrainian titles are
+    looked up in the Ukrainian Libraries and English titles in the English ones. Kiwix finds the articles in a
+    tenth of a second, and their most useful sections are passed on.
 
 Either place may be missing (AnythingLLM not open, Kiwix not started): the other still works.
 Uses only Python's standard library, like serve-web.py.
@@ -45,23 +46,26 @@ WORKSPACE = kit_country.workspace()
 MODEL = kit_country.models()["main"]
 OPTIONS = {"num_ctx": 16384}   # room for the instructions, the excerpts and the conversation
 
-# Kiwix libraries searched (from the country config), by the start of their file name. The "encyclopedia"
-# ones use Wikipedia's article titles. (Sweden leaves CDC's library out: it is travel advice by country, too noisy.)
+# Kiwix libraries searched (from the country config), by the start of their file name, per language. The
+# "encyclopedia" ones use Wikipedia's article titles, "plain" ones are plain-language health pages.
 _LIBS = kit_country.COUNTRY["ai"]["libraries"]
-# Only the English Libraries for now: the planning call returns English titles. Looking up Ukrainian titles in
-# the Ukrainian Libraries is a later step.
-WIKIS = [(l["prefix"], l["label"]) for l in _LIBS if l["kind"] == "encyclopedia" and l["language"] == "en"]
+WIKIS = {lang: [(l["prefix"], l["label"]) for l in _LIBS if l["kind"] == "encyclopedia" and l["language"] == lang]
+         for lang in ("uk", "en")}
 PLAIN = [(l["prefix"], l["label"]) for l in _LIBS if l["kind"] == "plain" and l["language"] == "en"]
+ALL_LIBS = [x for lang in WIKIS for x in WIKIS[lang]] + PLAIN
 
 PLAN_PROMPT = (
-    "You prepare two searches for an offline crisis kit. Reply with exactly two lines and nothing else.\n"
+    "You prepare searches for an offline emergency kit in Ukraine. Reply with exactly three lines and nothing else.\n"
     "SEARCH: the user's latest question rewritten so it stands on its own (bring in what an earlier question "
     "was about), in the user's own language.\n"
-    "TERMS: 1 to 3 English encyclopedia article titles for a medical library (Wikipedia's medical articles and "
-    "MedlinePlus), separated by semicolons. Use the shortest common title, for example: Burn (not Burn treatment), "
-    "Hypothermia, Bleeding, Laceration, Tick-borne encephalitis, Water purification, Carbon monoxide poisoning, "
-    "Ibuprofen. Name conditions, injuries or medicines, not whole fields (not Pediatrics). Write TERMS: NONE if the question is not about health, illness, injuries, medicines, poisoning, "
-    "or safe drinking water and food.")
+    "UKRAINIAN: 1 to 3 article titles in Ukrainian for the Ukrainian Wikipedia's medical articles, separated by "
+    "semicolons, in the nominative case, as the encyclopedia titles them: Опік, Гіпотермія, Зупинка кровотечі, "
+    "Отруєння чадним газом, Серцево-легенева реанімація, Вибухова травма.\n"
+    "ENGLISH: 1 to 3 English article titles for a medical library (Wikipedia's medical articles and MedlinePlus), "
+    "separated by semicolons. Use the shortest common title, for example: Burn (not Burn treatment), Hypothermia, "
+    "Bleeding, Tourniquet, Blast injury, Carbon monoxide poisoning, Water purification, Ibuprofen.\n"
+    "Name conditions, injuries or medicines, not whole fields. Write NONE on both title lines if the question is "
+    "not about health, illness, injuries, medicines, poisoning, or safe drinking water and food.")
 
 _lock = threading.Lock()
 _key = None
@@ -120,28 +124,30 @@ def book_passages(query, top=6):
 # ---------- one quick call to the AI ----------
 
 def plan(question, earlier=""):
-    """(the question as a stand-alone search, English article titles or [] if it is not a health question)."""
+    """(the question as a stand-alone search, Ukrainian article titles, English article titles). The title lists
+    are empty if it is not a health question."""
     ask = (f"Earlier question: {earlier}\n" if earlier else "") + f"Latest question: {question}"
     body = {"model": MODEL, "stream": False, "think": False, "keep_alive": "30m",
             "messages": [{"role": "system", "content": PLAN_PROMPT}, {"role": "user", "content": ask[:3000]}],
-            "options": dict(OPTIONS, temperature=0, num_predict=120)}
+            "options": dict(OPTIONS, temperature=0, num_predict=160)}
     try:
         reply = json.load(_request(OLLAMA + "/api/chat", body, timeout=180))["message"]["content"]
     except (OSError, ValueError, KeyError, TypeError):
-        return question, []
-    search, terms = question, []
+        return question, [], []
+    search, found = question, {"UKRAINIAN": [], "ENGLISH": []}
     for line in reply.splitlines():
-        m = re.match(r"\W*(SEARCH|TERMS)\W*:\s*(.*)", line, re.I)
+        m = re.match(r"\W*(SEARCH|UKRAINIAN|ENGLISH)\W*:\s*(.*)", line, re.I)
         if not m:
             continue
-        if m.group(1).upper() == "SEARCH":
+        kind = m.group(1).upper()
+        if kind == "SEARCH":
             search = m.group(2).strip() or question
             continue
         for t in re.split(r"[;,]", m.group(2)):
             t = t.strip().strip("\"'.*").strip()
-            if t and t.upper() != "NONE" and len(t) <= 60 and t not in terms:
-                terms.append(t)
-    return search, terms[:3]
+            if t and t.upper() != "NONE" and len(t) <= 60 and t not in found[kind]:
+                found[kind].append(t)
+    return search, found["UKRAINIAN"][:3], found["ENGLISH"][:3]
 
 
 # ---------- the big libraries (Kiwix) ----------
@@ -151,10 +157,27 @@ def _libraries():
     xml = _request(KIWIX + "/catalog/v2/entries?count=500", timeout=5).read().decode("utf-8", "ignore")
     newest = {}
     for name in re.findall(r'href="/content/([^"/]+)"', xml):
-        for prefix, _ in WIKIS + PLAIN:
+        for prefix, _ in ALL_LIBS:
             if name.startswith(prefix + "_") and name > newest.get(prefix, ""):
                 newest[prefix] = name
     return newest
+
+
+def _suggest(book, term, n=5):
+    """Article titles in one Library that start like `term`: [(title, path)]. This works on a Library with no
+    full-text index (Ukrainian WikiMed has titles only), where _search cannot."""
+    query = urllib.parse.urlencode({"content": book, "term": term, "count": n})
+    try:
+        found = json.load(_request(KIWIX + "/suggest?" + query, timeout=5))
+    except (OSError, ValueError):
+        return []
+    hits = []
+    for item in found if isinstance(found, list) else []:
+        title = html.unescape(re.sub(r"<[^>]+>", "", item.get("label") or item.get("value") or "")).strip()
+        path = item.get("path")
+        if title and path and item.get("kind", "path") == "path":
+            hits.append((title, "/content/%s/%s" % (book, urllib.parse.quote(path.lstrip("/")))))
+    return hits
 
 
 def _search(books, pattern, n=8):
@@ -235,8 +258,9 @@ class _Text(html.parser.HTMLParser):
 
 
 HIGH = re.compile(r"first aid|treatment|management|what to do|do not|home care|self.care|rewarming|"
-                  r"when to (call|contact|see)", re.I)
-MID = re.compile(r"symptom|signs|emergency|prevention|diagnosis", re.I)
+                  r"when to (call|contact|see)|перша допомога|домедична|лікування|терапі|невідкладн|"
+                  r"що робити|допомога", re.I)
+MID = re.compile(r"symptom|signs|emergency|prevention|diagnosis|симптом|ознаки|профілактика|діагностика", re.I)
 
 
 def _excerpt(path, terms, limit=2400):
@@ -245,7 +269,7 @@ def _excerpt(path, terms, limit=2400):
     p.feed(_request(KIWIX + path, timeout=10).read().decode("utf-8", "ignore"))
     p.flush()
     lead = " ".join(p.sections[0]["paras"])[:700]
-    words = {w.lower() for t in terms for w in re.findall(r"[A-Za-z]{4,}", t)}
+    words = {w.lower() for t in terms for w in re.findall(r"[^\W\d_]{4,}", t)}
     scored = []
     for i, s in enumerate(p.sections[1:], 1):
         if not s["paras"]:
@@ -274,21 +298,23 @@ def _book_of(link):
     return parts[2] if len(parts) > 2 else ""
 
 
-def library_articles(terms, limit=3):
-    """Up to `limit` articles from Kiwix for the search terms: [{"title", "library", "href", "text"}]."""
-    if not terms:
+def library_articles(uk_titles, en_titles, limit=4):
+    """Up to `limit` articles from Kiwix: Ukrainian titles are looked up in the Ukrainian Libraries and English
+    titles in the English ones. [{"title", "library", "href", "text"}], Ukrainian ones first."""
+    if not (uk_titles or en_titles):
         return []
     try:
         libs = _libraries()
     except (OSError, ValueError):
         return []
-    label = {libs[p]: name for p, name in WIKIS + PLAIN if p in libs}
-    wikis = [libs[p] for p, _ in WIKIS if p in libs]
+    label = {libs[p]: name for p, name in ALL_LIBS if p in libs}
+    books = {lang: [libs[p] for p, _ in WIKIS[lang] if p in libs] for lang in WIKIS}
     plain = [libs[p] for p, _ in PLAIN if p in libs]
+    terms = list(uk_titles) + list(en_titles)
     picked, seen = [], set()
 
     def take(title, path):
-        key = re.sub(r"[^a-z0-9]", "", title.lower())
+        key = re.sub(r"\W", "", title.lower())
         if key in seen or len(picked) >= limit:
             return False
         try:
@@ -301,40 +327,51 @@ def library_articles(terms, limit=3):
         picked.append({"title": title, "library": label.get(_book_of(path), "Kiwix"), "href": path, "text": text})
         return True
 
-    for n, term in enumerate(terms):
-        # The encyclopedia article with this title (WikiMed first, then MDWiki), else one whose title has every word.
-        got = False
-        for book in wikis:
+    def article(lang, term):
+        """The encyclopedia article with this title (first Library first), else the closest title that has every
+        word of it (a title search, or a full-text search where the Library has an index)."""
+        words = term.lower().split()
+        for book in books[lang]:
             path = f"/content/{book}/" + urllib.parse.quote((term[:1].upper() + term[1:]).replace(" ", "_"))
             try:
                 final = urllib.parse.urlsplit(_request(KIWIX + path, timeout=5).geturl()).path   # follows redirects
             except (OSError, ValueError):
                 continue
-            got = take(_title_of(final), final)
-            break
-        if not got and wikis:
+            return take(_title_of(final), final)
+        hits = []
+        for book in books[lang]:
+            hits += _suggest(book, term)
+        if books[lang] and not hits:
             try:
-                hits = _search(wikis, term, 5)
+                hits = _search(books[lang], term, 5)
             except (OSError, ValueError):
                 hits = []
-            words = term.lower().split()
-            for title, link in hits:
-                if all(w in title.lower() for w in words) and take(title, link):
-                    break
-        # For the main term, also the plain-language page (MedlinePlus often has a "First aid" section).
-        if n == 0 and plain:
-            try:
-                hits = _search(plain, term)
-            except (OSError, ValueError):
-                hits = []
-            hits = [h for h in hits if not re.search(r"multiple languages|series|spanish|español", h[0], re.I)
-                    and not re.search(r"/(presentations|languages|lab-tests|genetics)/", h[1])]
-            words = re.findall(r"[a-z]{4,}", term.lower()) or [term.lower()]
-            hits = [h for h in hits if any(w in h[0].lower() for w in words)]   # the title must be about the term
-            hits.sort(key=lambda h: term.lower() not in h[0].lower())          # titles naming all of it first
-            for title, link in hits[:3]:
-                if take(re.split(r"\s*[:|]\s*", title)[0], link):
-                    break
+        for title, link in hits:
+            if all(w in title.lower() for w in words) and take(title, link):
+                return True
+        return False
+
+    # Alternate between the languages so the answer gets both: first Ukrainian title, first English title, ...
+    order = []
+    for i in range(3):
+        order += [("uk", t) for t in uk_titles[i:i + 1]] + [("en", t) for t in en_titles[i:i + 1]]
+    for lang, term in order:
+        article(lang, term)
+    # For the first English term, also the plain-language page (MedlinePlus often has a "First aid" section).
+    if en_titles and plain:
+        term = en_titles[0]
+        try:
+            hits = _search(plain, term)
+        except (OSError, ValueError):
+            hits = []
+        hits = [h for h in hits if not re.search(r"multiple languages|series|spanish|español", h[0], re.I)
+                and not re.search(r"/(presentations|languages|lab-tests|genetics)/", h[1])]
+        words = re.findall(r"[a-z]{4,}", term.lower()) or [term.lower()]
+        hits = [h for h in hits if any(w in h[0].lower() for w in words)]   # the title must be about the term
+        hits.sort(key=lambda h: term.lower() not in h[0].lower())          # titles naming all of it first
+        for title, link in hits[:3]:
+            if take(re.split(r"\s*[:|]\s*", title)[0], link):
+                break
     return picked
 
 
@@ -351,11 +388,11 @@ def gather(question, earlier=""):
     if not earlier:   # a first question can search the books while the AI picks the article titles
         jobs.append(threading.Thread(target=books, args=(question,), daemon=True))
         jobs[-1].start()
-    search, terms = plan(question, earlier)
+    search, uk_titles, en_titles = plan(question, earlier)
     if earlier:       # a follow-up ("and for a child?") searches with the rewritten, stand-alone question
         jobs.append(threading.Thread(target=books, args=(search,), daemon=True))
         jobs[-1].start()
-    out["libs"] = library_articles(terms)
+    out["libs"] = library_articles(uk_titles, en_titles)
     for j in jobs:
         j.join(120)
     return out.get("books", []), out.get("libs", [])
@@ -381,5 +418,6 @@ def system_prompt(base, passages, articles):
         + ai["authorities"] + " first. Name the sources "
         "you used, only from the list below and by the name shown there (for example \"" + ai["example_source"] + "\" "
         "or \"WikiMed: Hypothermia\"); never name a source that is not below. "
-        "The library excerpts are in English: translate what you use, and never mix English into a " + ai["answer_language"] + " answer. "
+        "Library excerpts may be in Ukrainian or in English: write the answer in the language of the user's question "
+        "(Ukrainian, Russian or English), translate what you use, and never mix English into a " + ai["answer_language"] + " answer or one language into another. "
         "If the excerpts do not cover the question, say so and answer carefully.\n\n" + "\n\n".join(parts))
