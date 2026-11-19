@@ -638,7 +638,7 @@
   "shape": "config/map-area.geojson",
   "max_zoom": 15,
   "world_max_zoom": 6,
-  "search_release_repo": "IsacHassle/Swedish-doomsdaykit",
+  "search_release_repo": "IsacHassle/Ukrainian-emergency-kit",
   "center": [
    31.2,
    48.6
@@ -684,106 +684,122 @@
    }
   ],
   "name_tags": [
-   "name:sv",
-   "name"
+   "name:uk",
+   "name",
+   "name:en",
+   "name:ru",
+   "old_name",
+   "int_name",
+   "alt_name",
+   "official_name"
   ],
   "labels": {
    "place": {
-    "city": "Stad",
-    "town": "Tätort",
-    "village": "By",
-    "hamlet": "Småort",
-    "suburb": "Stadsdel",
-    "borough": "Stadsdel",
-    "quarter": "Område",
-    "neighbourhood": "Område",
-    "island": "Ö",
-    "islet": "Ö",
-    "isolated_dwelling": "Gård",
-    "farm": "Gård",
-    "locality": "Ort"
+    "city": "city",
+    "town": "town",
+    "village": "village",
+    "hamlet": "hamlet",
+    "suburb": "suburb",
+    "borough": "suburb",
+    "quarter": "quarter",
+    "neighbourhood": "neighbourhood",
+    "island": "island",
+    "islet": "island",
+    "isolated_dwelling": "farm",
+    "farm": "farm",
+    "locality": "locality"
    },
    "base_places": [
-    "By",
-    "Område",
-    "Småort",
-    "Stad",
-    "Stadsdel",
-    "Tätort",
-    "Ö"
+    "city",
+    "town",
+    "village",
+    "hamlet",
+    "suburb",
+    "quarter",
+    "neighbourhood",
+    "island"
    ],
    "service": {
-    "amenity=hospital": "Sjukhus",
-    "amenity=clinic": "Vårdcentral",
-    "amenity=doctors": "Läkare",
-    "amenity=dentist": "Tandläkare",
-    "amenity=pharmacy": "Apotek",
-    "amenity=police": "Polis",
-    "amenity=fire_station": "Brandstation",
-    "amenity=drinking_water": "Dricksvatten",
-    "amenity=water_point": "Vattenpost",
-    "amenity=fuel": "Bensinstation",
-    "amenity=townhall": "Kommunhus",
-    "amenity=veterinary": "Veterinär",
-    "shop=supermarket": "Livsmedel",
-    "shop=convenience": "Närbutik",
-    "shop=hardware": "Järnhandel"
+    "amenity=hospital": "hospital",
+    "amenity=clinic": "clinic",
+    "amenity=doctors": "doctors",
+    "amenity=dentist": "dentist",
+    "amenity=pharmacy": "pharmacy",
+    "amenity=police": "police",
+    "amenity=fire_station": "fire_station",
+    "amenity=drinking_water": "drinking_water",
+    "amenity=water_point": "water_point",
+    "amenity=fuel": "fuel",
+    "amenity=townhall": "townhall",
+    "amenity=veterinary": "veterinary",
+    "shop=supermarket": "supermarket",
+    "shop=convenience": "convenience",
+    "shop=hardware": "hardware"
    },
    "landmark": {
-    "railway=station": "Station",
-    "public_transport=station": "Station",
-    "amenity=school": "Skola",
-    "amenity=place_of_worship": "Kyrka",
-    "amenity=shelter": "Vindskydd",
-    "leisure=park": "Park",
-    "leisure=nature_reserve": "Naturreservat",
-    "natural=peak": "Topp",
-    "natural=beach": "Strand",
-    "tourism=camp_site": "Camping",
-    "leisure=marina": "Hamn",
-    "amenity=ferry_terminal": "Färja",
-    "aeroway=aerodrome": "Flygplats"
+    "railway=station": "station",
+    "public_transport=station": "station",
+    "amenity=school": "school",
+    "amenity=place_of_worship": "place_of_worship",
+    "amenity=shelter": "shelter",
+    "leisure=park": "park",
+    "leisure=nature_reserve": "nature_reserve",
+    "natural=peak": "peak",
+    "natural=beach": "beach",
+    "tourism=camp_site": "camp_site",
+    "leisure=marina": "marina",
+    "amenity=ferry_terminal": "ferry_terminal",
+    "aeroway=aerodrome": "aerodrome"
    },
-   "street": "Gata",
-   "address": "Adress",
-   "approximate_prefix": "Ungefär",
-   "approximate": "Ungefärligt läge",
+   "street": "street",
+   "address": "address",
+   "border_crossing": "border_crossing",
    "area_types": [
-    "Stadsdel",
-    "Område",
-    "Tätort",
-    "By",
-    "Småort"
+    "suburb",
+    "quarter",
+    "neighbourhood",
+    "town",
+    "village",
+    "hamlet"
    ],
    "town_types": [
-    "Stad",
-    "Tätort"
+    "city",
+    "town"
    ]
   },
   "zoom_by_type": {
-   "Adress": 18.5,
-   "Stad": 12,
-   "Tätort": 13.5,
-   "Stadsdel": 14.5,
-   "Område": 15,
-   "By": 15,
-   "Småort": 15,
-   "Ort": 15.5,
-   "Gård": 16,
-   "Gata": 17
+   "address": 18.5,
+   "city": 12,
+   "town": 13.5,
+   "suburb": 14.5,
+   "quarter": 15,
+   "neighbourhood": 15,
+   "village": 15,
+   "hamlet": 15,
+   "island": 15,
+   "locality": 15.5,
+   "farm": 16,
+   "street": 17,
+   "border_crossing": 14,
+   "station": 16,
+   "hospital": 17,
+   "clinic": 17,
+   "pharmacy": 17
   },
   "search_priority": {
-   "Stad": -0.8,
-   "Sjukhus": -0.6,
-   "Tätort": -0.5,
-   "Vårdcentral": -0.4,
-   "Apotek": -0.4,
-   "Polis": -0.4,
-   "Brandstation": -0.4,
-   "Stadsdel": -0.2,
-   "Område": -0.1,
-   "Gård": 0.3,
-   "Ort": 0.3
+   "city": -0.8,
+   "hospital": -0.6,
+   "town": -0.5,
+   "border_crossing": -0.5,
+   "clinic": -0.4,
+   "pharmacy": -0.4,
+   "police": -0.4,
+   "fire_station": -0.4,
+   "suburb": -0.2,
+   "quarter": -0.1,
+   "neighbourhood": -0.1,
+   "farm": 0.3,
+   "locality": 0.3
   },
   "nearest": [
    {
@@ -792,7 +808,7 @@
      "en": "Hospital"
     },
     "types": [
-     "Sjukhus"
+     "hospital"
     ]
    },
    {
@@ -801,8 +817,8 @@
      "en": "Clinic"
     },
     "types": [
-     "Vårdcentral",
-     "Läkare"
+     "clinic",
+     "doctors"
     ]
    },
    {
@@ -811,7 +827,7 @@
      "en": "Pharmacy"
     },
     "types": [
-     "Apotek"
+     "pharmacy"
     ]
    },
    {
@@ -820,7 +836,7 @@
      "en": "Police"
     },
     "types": [
-     "Polis"
+     "police"
     ]
    },
    {
@@ -829,7 +845,7 @@
      "en": "Fire station"
     },
     "types": [
-     "Brandstation"
+     "fire_station"
     ]
    },
    {
@@ -838,8 +854,8 @@
      "en": "Water"
     },
     "types": [
-     "Dricksvatten",
-     "Vattenpost"
+     "drinking_water",
+     "water_point"
     ]
    },
    {
@@ -848,8 +864,8 @@
      "en": "Food"
     },
     "types": [
-     "Livsmedel",
-     "Närbutik"
+     "supermarket",
+     "convenience"
     ]
    },
    {
@@ -858,7 +874,7 @@
      "en": "Fuel"
     },
     "types": [
-     "Bensinstation"
+     "fuel"
     ]
    }
   ]
@@ -868,7 +884,6 @@
   "ai.authorities, ai.example_source (07)",
   "radio (12)",
   "official_guides.* and checklist.official_list.guide, checklist.official_list.source_prefix (06)",
-  "brochures (06)",
-  "map.* except regions, pmtiles, shape, max_zoom, world_max_zoom, center, zoom, shortcuts, overview_label and nearest labels: name_tags, labels, zoom_by_type, search_priority (09)"
+  "brochures (06)"
  ]
 }

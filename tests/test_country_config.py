@@ -231,7 +231,7 @@ class ShellScriptsReadTheConfigTest(unittest.TestCase):
         self.assertEqual(shell(REPO, None, "country map.pmtiles"), "ukraine")
         self.assertEqual(shell(REPO, None, "country map.shape"), "config/map-area.geojson")
         self.assertEqual(shell(REPO, None, "country map.max_zoom"), "15")
-        self.assertEqual(shell(REPO, None, "country map.search_release_repo"), "IsacHassle/Swedish-doomsdaykit")
+        self.assertEqual(shell(REPO, None, "country map.search_release_repo"), "IsacHassle/Ukrainian-emergency-kit")
         self.assertEqual(shell(REPO, None, "country kit_name"), "Тривожна валіза")
         self.assertEqual(shell(REPO, None, "country ai.check.expect"), "112")
 

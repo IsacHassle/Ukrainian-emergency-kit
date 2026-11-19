@@ -6,7 +6,8 @@ import subprocess
 import sys
 import unittest
 
-from servedkit import REPO
+from servedkit import REPO, ServedKit
+from test_served_kit_browser import REQUIRED, find_chrome, why_skip
 
 sys.path.insert(0, os.path.join(REPO, "scripts"))
 
@@ -30,6 +31,34 @@ class BuilderRulesTest(unittest.TestCase):
                          ("strip_type", t.strip_type), ("letter", t.letter_of)):
             for given, want in cases[name]:
                 self.assertEqual(fn(given), want, name + " " + given)
+
+
+class ConfigKindsTest(unittest.TestCase):
+    def test_every_kind_the_build_can_write_has_a_name_in_both_languages(self):
+        with open(os.path.join(REPO, "config", "country.json"), encoding="utf-8") as f:
+            labels = json.load(f)["map"]["labels"]
+        kinds = set(labels["place"].values()) | set(labels["service"].values()) | set(labels["landmark"].values())
+        kinds |= {labels["street"], labels["address"], labels["border_crossing"]}
+        for lang in ("uk", "en"):
+            with open(os.path.join(REPO, "web", "lang", lang + ".json"), encoding="utf-8") as f:
+                texts = json.load(f)
+            for kind in kinds:
+                self.assertIn("map.type." + kind, texts, lang + " " + kind)
+
+
+@unittest.skipIf(why_skip() and not REQUIRED, why_skip())
+class SearchInTheBrowserTest(unittest.TestCase):
+    def test_searching_the_map_page(self):
+        kit = ServedKit(tiles=True)
+        try:
+            kit.start()
+            env = dict(os.environ, EK_TEST_URL=kit.url, EK_CHROME=find_chrome())
+            run = subprocess.run(["node", os.path.join(REPO, "tests", "browser", "search.js")], env=env, cwd=REPO,
+                                 capture_output=True, text=True, timeout=240)
+            self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
+            self.assertIn("ok - no result shows a Russian name", run.stdout)
+        finally:
+            kit.stop()
 
 
 if __name__ == "__main__":
