@@ -27,7 +27,7 @@ curl -fsSL https://raw.githubusercontent.com/IsacHassle/Ukrainian-emergency-kit/
 
 **If the State Emergency Service (ДСНС) site does not answer** from abroad (it often does not), the installation skips its pages and says so. The other Official Guides are saved.
 
-The Ollama and AnythingLLM installers are kept in `installers/`, so that the kit can later be put on another Mac with no internet (a Kit Drive, later).
+The Ollama and AnythingLLM installers are kept in `installers/`, so that the kit can be put on another Mac with no internet (a Kit Drive, see "Update and copy the kit").
 
 **Double-click files** in the kit folder (their names are in both languages):
 
@@ -36,6 +36,8 @@ The Ollama and AnythingLLM installers are kept in `installers/`, so that the kit
 | **Встановити - Install.command** | Installs the kit (or continues an interrupted installation) |
 | **Запустити - Start.command** | Starts the kit and opens the start page |
 | **Перевірити - Check.command** | Says what works and what is missing (see "Check" below) |
+| **Оновити - Update.command** | Updates the kit when you have internet (see "Update and copy the kit") |
+| **Створити USB - Make USB.command** | Makes a Kit Drive: a USB drive that installs the kit on another Mac with no internet |
 
 <!-- user-guide:start -->
 ## Start here
@@ -110,6 +112,20 @@ A **Community Point** is any place where a Kit Mac serves people outside your ho
 7. **Privacy.** Visitors' questions to the AI are never stored. There is nothing to wipe when the Mac passes to someone else.
 8. **Paper.** Keep this guide and the **Print** pack printed nearby, so that people have the advice even when the Mac's battery is empty.
 
+## Update and copy the kit
+
+### Update
+
+Once a month, when you have internet, double-click **"Оновити - Update.command"**. It refreshes the kit's code, saves the Official Guides again, downloads newer Libraries (each one checked before it replaces the old one) and reads only new or changed Books into the AI's index. Your Libraries, map and Books are not touched otherwise. Without internet it says so and changes nothing. Restart the kit afterwards to see the new versions.
+
+### Copy the kit to another Mac (a Kit Drive)
+
+A **Kit Drive** is a USB drive that installs the whole kit on a Mac with no internet: for a family, or for a Community Point.
+
+1. On a Kit Mac where the kit is fully installed, plug in a USB drive with 64 GB or more, formatted as **exFAT** (Disk Utility can do that).
+2. Double-click **"Створити USB - Make USB.command"** and choose the drive. It copies the kit, the apps and the AI models into the folder `Emergency-Kit-Drive` on the drive. Other files on the drive stay. If it was interrupted, run it again: it continues.
+3. On the other Mac, plug the drive in, open `Emergency-Kit-Drive/kit` and double-click **"Встановити - Install.command"**. It checks every file against its checksum, copies the kit to `~/Emergency-Kit` and installs the apps and the AI models from the drive. No internet is needed.
+
 ## Get ready
 
 ### Checklist
@@ -153,9 +169,8 @@ If something is marked ⚠️, running **Install** again usually helps: it downl
 ## Known limits
 
 - English labels on the map in Crimea come from OpenStreetMap (`name:en`) and are mostly Russian transliterations (Armyansk, Dzhankoy). This is a limit of the data. The Ukrainian names are correct.
-- Not every shelter is on the map: OpenStreetMap marks only some. The Nearest page says so every time. Follow local signs and listen to the authorities too.
+- Not every shelter is on the map: OpenStreetMap marks only some. The Nearest page says so every time. Follow local signs and listen to the authorities too. The shelter list reaches 30 km from you; if nothing is that close it still says how far the nearest shelter is. Nothing inside the Chornobyl exclusion zone is listed.
 - Russian street names find the street but not an address with a house number.
-- On the English page the Red Cross source name is still in Cyrillic ("Червоний Хрест"), and a few Red Cross pages about mines keep some stray lines from the site ("Останні новини", "Підписатись").
 - The State Emergency Service (ДСНС) site does not answer from abroad, so its pages are saved only where it is reachable.
 - The Mac has no GPS of its own: you need a USB GPS receiver or a lent phone position.
 - The AI can be wrong. Check the sources under the answer, especially medicine doses.
