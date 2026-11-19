@@ -5,6 +5,7 @@ from another address (tests/peer_launcher.py). Headers a Visitor device can send
 so on) must not change the answer.
 """
 import http.client
+import os
 import unittest
 
 from servedkit import ServedKit
@@ -46,7 +47,12 @@ class PosterOnTheKitMacTest(unittest.TestCase):
         self.assertIn(b"qrcode.js", body)
 
     def test_the_poster_opens_on_the_kit_mac_in_every_spelling(self):
-        for path in ("/poster/index.html", "/Poster/", "/%70oster/", "//poster/"):
+        spellings = ["/poster/index.html", "/%70oster/", "//poster/"]
+        # "/Poster/" finds the page only where file names ignore case, as on a Mac; on Linux (CI) it is
+        # simply not there. Visitors are refused it either way (PosterRefusedToVisitorsTest).
+        if os.path.exists(os.path.join(self.kit.web_dir, "Poster")):
+            spellings.append("/Poster/")
+        for path in spellings:
             self.assertEqual(request(self.kit, path)[0], 200, path)
 
     def test_a_head_request_works_the_same(self):
