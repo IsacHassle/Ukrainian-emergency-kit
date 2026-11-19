@@ -13,6 +13,8 @@ set -eu
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source=country.sh
 . "$KIT/scripts/country.sh"   # the country's facts (config/country.json)
+# shellcheck source=say.sh
+. "$KIT/scripts/say.sh"
 KIT_NAME=$(country kit_name)
 C="$KIT/tools/certs"
 SSL=/usr/bin/openssl   # macOS's own LibreSSL, present on every Mac
@@ -29,7 +31,7 @@ distinguished_name = dn
 prompt = no
 x509_extensions = v3_ca
 [dn]
-CN = $KIT_NAME på $NAME
+CN = $KIT_NAME @ $NAME
 O = $KIT_NAME
 [v3_ca]
 basicConstraints = critical, CA:true, pathlen:0
@@ -41,7 +43,7 @@ EOF
   chmod 600 "$C/ca.key"
   "$SSL" req -x509 -new -key "$C/ca.key" -sha256 -days 3650 -config "$C/ca.cnf" -out "$C/ca.crt"
   rm -f "$C/server.crt"
-  echo "Gjorde certifikatet för mobilens GPS."
+  say "Створено сертифікат для GPS телефона" "Made the certificate for the phone's GPS"
 fi
 
 # The https certificate must name this Mac and its current address; renew it if not.
