@@ -12,11 +12,9 @@ Packaged by [Kiwix](https://kiwix.org) and [openZIM](https://openzim.org), downl
 
 | Library | Source | Licence |
 |---|---|---|
-| WikiMed (Wikipedia Medicine), Swedish Wikipedia | Wikipedia contributors | CC BY-SA 4.0 |
+| WikiMed (Wikipedia Medicine, Ukrainian and English), Ukrainian Wikipedia | Wikipedia contributors | CC BY-SA 4.0 |
 | MDWiki | mdwiki.org contributors | CC BY-SA 4.0 |
 | MedlinePlus | US National Library of Medicine | Public domain (US government work) |
-| CDC Health Information | US Centers for Disease Control and Prevention | Public domain (US government work) |
-| Ready.gov | US Federal Emergency Management Agency (FEMA) | Public domain (US government work) |
 | NHS Medicines A to Z | NHS England (nhs.uk) | Open Government Licence v3.0 |
 | Military Medicine | US military field manuals, via irp.fas.org | Public domain (US government work) |
 | Medical Library, Water Treatment, Food for Preppers, A Library of Knots, Post Disaster Resource Library | Collections compiled by openZIM ("zimgit") from freely available books and guides | Each work keeps its own licence |
@@ -36,7 +34,6 @@ person to person.
 - [Центр громадського здоров'я (ЦГЗ)](https://phc.org.ua): water, infections, hypothermia
 - [Товариство Червоного Хреста України](https://redcross.org.ua): mine danger, first aid leaflets and the first aid handbook for the public
 - [ДСНС](https://dsns.gov.ua): optional, saved only where the site answers (it refuses requests from outside Ukraine)
-Downloaded from msb.se / rib.msb.se, not redistributed.
 
 ## Maps
 
@@ -49,7 +46,7 @@ Downloaded from msb.se / rib.msb.se, not redistributed.
 - Map symbols in `web/map/assets/sprites/`: protomaps/basemaps-assets (BSD 3-Clause / CC0).
 - [MapLibre GL JS](https://github.com/maplibre/maplibre-gl-js) (BSD 3-Clause) and
   [PMTiles](https://github.com/protomaps/PMTiles) (BSD 3-Clause) in `web/map/lib/`.
-- Addresses from OpenStreetMap Sweden, via [Geofabrik](https://download.geofabrik.de).
+- Places, streets and addresses for the map search from OpenStreetMap, via [Geofabrik](https://download.geofabrik.de) extracts of Ukraine, Moldova, Poland, Slovakia, Hungary and Romania.
 
 ## Keeper poster
 
@@ -74,4 +71,4 @@ Downloaded from msb.se / rib.msb.se, not redistributed.
 This kit is built from the Swedish kit, [IsacHassle/Swedish-doomsdaykit](https://github.com/IsacHassle/Swedish-doomsdaykit) (MIT), at version 1.9.
 
 [Project N.O.M.A.D.](https://github.com/Crosstalk-Solutions/project-nomad) by Crosstalk Solutions (Apache 2.0),
-an offline knowledge server. This kit started from its library list and map style, rebuilt for a Mac and for Sweden.
+an offline knowledge server. This kit started from its library list and map style, rebuilt for a Mac and for Ukraine.
