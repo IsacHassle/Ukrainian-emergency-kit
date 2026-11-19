@@ -186,8 +186,8 @@ def _search(books, pattern, n=8):
     hits = []
     for item in re.findall(r"<item>(.*?)</item>", xml, re.S):
         title, link = re.search(r"<title>(.*?)</title>", item, re.S), re.search(r"<link>(.*?)</link>", item, re.S)
-        if title and link:
-            hits.append((html.unescape(title.group(1)).strip(), html.unescape(link.group(1)).strip()))
+        if title and link:   # kiwix-serve marks the matched words in the title with <b>
+            hits.append((re.sub(r"</?b>", "", html.unescape(title.group(1))).strip(), html.unescape(link.group(1)).strip()))
     return hits
 
 
@@ -418,6 +418,8 @@ def system_prompt(base, passages, articles):
         + ai["authorities"] + " first. Name the sources "
         "you used, only from the list below and by the name shown there (for example \"" + ai["example_source"] + "\" "
         "or \"WikiMed: Hypothermia\"); never name a source that is not below. "
-        "Library excerpts may be in Ukrainian or in English: write the answer in the language of the user's question "
-        "(Ukrainian, Russian or English), translate what you use, and never mix English into a " + ai["answer_language"] + " answer or one language into another. "
+        "The excerpts are in Ukrainian or in English whatever the question's language. Write the whole answer in the language "
+        "of the user's LATEST message (a Russian question gets a Russian answer, an English question an English one, "
+        "a Ukrainian question a Ukrainian one; " + ai["answer_language"] + " if it is unclear), translate what you use, "
+        "and never mix languages in one answer. "
         "If the excerpts do not cover the question, say so and answer carefully.\n\n" + "\n\n".join(parts))

@@ -123,6 +123,21 @@ class FromSourcesTest(unittest.TestCase):
         self.assertEqual(set(self.kit.ai.searched_workspaces), {"emergency-kit"})
 
 
+class LanguageTest(unittest.TestCase):
+    def test_the_answer_is_asked_for_in_the_language_of_the_latest_message(self):
+        kit = ServedKit()
+        kit.start()
+        try:
+            ask(kit, "Мужчина ранен в ногу, как наложить жгут?")
+            system = [r for r in kit.ai.chat_requests if r.get("stream")][-1]["messages"][0]["content"]
+        finally:
+            kit.stop()
+        tail = system.split("EXCERPTS FOR THIS QUESTION", 1)[1]
+        self.assertIn("a Russian question gets a Russian answer", tail)
+        self.assertIn("LATEST message", tail)
+        self.assertIn("never mix languages", tail)
+
+
 class InstructionsTest(unittest.TestCase):
     """The AI's instructions, as the AI receives them in From sources."""
 

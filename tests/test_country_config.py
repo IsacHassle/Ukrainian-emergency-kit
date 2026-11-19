@@ -192,7 +192,7 @@ class OtherCountryTest(unittest.TestCase):
         # The instructions file (config/AI-PROMPT.txt) is the country's own text; the part the engine adds is checked.
         system = answer["messages"][0]["content"].split("EXCERPTS FOR THIS QUESTION", 1)[1]
         self.assertIn("the Testland authorities (TL1, TL2)", system)
-        self.assertIn("into a Testish answer", system)
+        self.assertIn("Testish if it is unclear", system)   # the country's default answer language
         self.assertIn("TL1 - Stop bleeding", system)
         self.assertNotIn("1177", system)
         self.assertNotIn("Swedish", system)
