@@ -173,7 +173,7 @@ def _suggest(book, term, n=5):
         return []
     hits = []
     for item in found if isinstance(found, list) else []:
-        title = html.unescape(re.sub(r"<[^>]+>", "", item.get("label") or item.get("value") or "")).strip()
+        title = (item.get("value") or re.sub(r"<[^>]+>", "", html.unescape(item.get("label") or ""))).strip()   # kiwix-serve's label is the title with the matched words in <b>
         path = item.get("path")
         if title and path and item.get("kind", "path") == "path":
             hits.append((title, "/content/%s/%s" % (book, urllib.parse.quote(path.lstrip("/")))))
