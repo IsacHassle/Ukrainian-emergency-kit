@@ -11,6 +11,7 @@ import sys
 
 PATH = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                                                          "config", "country.json")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # map.shape is a path from here
 problems = []
 
 
@@ -44,6 +45,24 @@ def point(where, v):
     if not (isinstance(v, list) and len(v) == 2 and all(isinstance(n, (int, float)) for n in v)
             and -180 <= v[0] <= 180 and -90 <= v[1] <= 90):
         bad(where, "must be [longitude, latitude]")
+
+
+def check_shape(path):
+    """The map's shape (map.shape, a path from the repo folder): a GeoJSON file with one valid Polygon."""
+    if not path:
+        return
+    full = os.path.join(ROOT, path)
+    try:
+        with open(full, encoding="utf-8") as f:
+            g = json.load(f)
+    except (OSError, ValueError) as e:
+        return bad("map.shape", f"{path} cannot be read as JSON ({e})")
+    geoms = [x.get("geometry") for x in g.get("features", [])] if g.get("type") == "FeatureCollection" else [g.get("geometry") if g.get("type") == "Feature" else g]
+    if len(geoms) != 1 or not isinstance(geoms[0], dict) or geoms[0].get("type") != "Polygon":
+        return bad("map.shape", f"{path} must hold exactly one Polygon")
+    for ring in geoms[0].get("coordinates") or [[]]:
+        if len(ring) < 4 or ring[0] != ring[-1] or not all(isinstance(p, list) and len(p) == 2 and -180 <= p[0] <= 180 and -90 <= p[1] <= 90 for p in ring):
+            return bad("map.shape", f"{path} has a ring that is not closed or has coordinates outside the world")
 
 
 def main():
@@ -178,11 +197,10 @@ def main():
         bad("map.regions", "at least one region must be full detail")
     get("map", m, "pmtiles", str)
     get("map", m, "search_release_repo", str)
-    bbox = get("map", m, "bbox", list)
-    if bbox is not None:
-        if not (len(bbox) == 4 and all(isinstance(n, (int, float)) for n in bbox)
-                and bbox[0] < bbox[2] and bbox[1] < bbox[3]):
-            bad("map.bbox", "must be [west, south, east, north] with west < east and south < north")
+    check_shape(get("map", m, "shape", str))
+    for k in ("max_zoom", "world_max_zoom"):
+        if not isinstance(m.get(k), int) or isinstance(m.get(k), bool) or not 0 <= m[k] <= 22:
+            bad(f"map.{k}", "must be a whole number from 0 to 22")
     point("map.center", m.get("center"))
     if not isinstance(m.get("zoom"), (int, float)):
         bad("map.zoom", "must be a number")
