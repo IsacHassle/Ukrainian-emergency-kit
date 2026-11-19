@@ -16,6 +16,9 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from kit_say import die, say  # noqa: E402
+
 ROOT = sys.argv[1] if len(sys.argv) > 1 else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 KEY = r"[a-z0-9][a-z0-9_.-]*"
 PLACEHOLDER = re.compile(r"\{([a-z]+)\}")
@@ -92,8 +95,8 @@ def main():
     for p in problems:
         print(p)
     if problems:
-        sys.exit(f"{len(problems)} problem(s) in the language files")
-    print(f"language files ok: {len(texts)} languages, {len(every)} keys")
+        die(f"проблем у мовних файлах: {len(problems)}", f"{len(problems)} problem(s) in the language files")
+    say(f"мовні файли в порядку: мов {len(texts)}, ключів {len(every)}", f"language files ok: {len(texts)} languages, {len(every)} keys")
 
 
 main()

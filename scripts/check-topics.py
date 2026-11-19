@@ -11,12 +11,12 @@ import os
 import sys
 
 import kit_country
+from kit_say import die, say
 
 try:
     from libzim.reader import Archive
 except ImportError:
-    print("libzim is not installed, so the topics were not checked")
-    sys.exit(3)
+    die("libzim не встановлено, тож теми не перевірено", "libzim is not installed, so the topics were not checked", 3)
 
 KIT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CACHE = os.path.expanduser("~/.cache/emergency-kit-build/zim")
@@ -29,16 +29,15 @@ for code, prefix in wikimed.items():
     if found:
         archives[code] = (Archive(found[-1]), os.path.basename(found[-1]))
 if not archives:
-    print("no WikiMed Library files in " + " or ".join(folders))
-    sys.exit(3)
+    die("Немає файлів бібліотеки WikiMed у " + " або ".join(folders), "no WikiMed Library files in " + " or ".join(folders), 3)
 
 missing = 0
 for t in kit_country.COUNTRY["emergency_topics"]:
     for code, (z, name) in archives.items():
         path = t["wikimed"].get(code)
         if not path or not z.has_entry_by_path(path):
-            print(f"MISSING {t['id']}: {code} {path} not in {name}")
+            say(f"НЕМАЄ {t['id']}: {code} {path} відсутнє в {name}", f"MISSING {t['id']}: {code} {path} not in {name}")
             missing += 1
         else:
-            print(f"ok      {t['id']}: {code} {path}")
+            say(f"є      {t['id']}: {code} {path}", f"ok      {t['id']}: {code} {path}")
 sys.exit(1 if missing else 0)

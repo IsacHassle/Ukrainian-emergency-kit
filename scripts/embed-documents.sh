@@ -17,6 +17,8 @@ A=http://${EK_ANYTHINGLLM:-localhost:3001}/api   # EK_ANYTHINGLLM: where the tes
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # the kit folder (where this repo is)
 # shellcheck source=country.sh
 . "$KIT/scripts/country.sh"   # the country's facts (config/country.json)
+# shellcheck source=say.sh
+. "$KIT/scripts/say.sh"
 WORKSPACE=$(country ai.workspace)
 DOCS="$KIT/documents"
 DONE="$KIT/logs/embed-uploaded.txt"
@@ -24,9 +26,9 @@ LOG="$KIT/logs/embed.log"
 mkdir -p "$KIT/logs"
 touch "$DONE"
 exec >>"$LOG" 2>&1
-echo "=== START $(date)"
+say "=== ПОЧАТОК $(date)" "=== START $(date)"
 
-curl -sf "$A/ping" >/dev/null || { echo "AnythingLLM is not running. Open it and try again."; exit 1; }
+curl -sf "$A/ping" >/dev/null || { say "AnythingLLM не запущено. Відкрийте його й спробуйте знову" "AnythingLLM is not running. Open it and try again"; exit 1; }
 
 # 1. Upload (parse) every document not uploaded before. Kit guide and brochures first.
 find "$DOCS" -maxdepth 1 -type f \( -name '*.pdf' -o -name '*.md' \) > /tmp/embed-order.$$
@@ -58,7 +60,7 @@ awk '!seen[$0]++' /tmp/embed-order.$$ | while IFS= read -r f; do
   q=${f//\\/\\\\}; q=${q//\"/\\\"}
   # The reply says only "success", so find the file in the store: the one just written there.
   mark=$(python3 -c 'import time; print(time.time())')
-  curl -sf -X POST "$A/workspace/$WORKSPACE/upload" -F "file=@\"$q\"" | grep -q '"success":true' || { echo "UPLOAD FAILED $(basename "$f")"; continue; }
+  curl -sf -X POST "$A/workspace/$WORKSPACE/upload" -F "file=@\"$q\"" | grep -q '"success":true' || { say "НЕ ЗАВАНТАЖЕНО $(basename "$f")" "UPLOAD FAILED $(basename "$f")"; continue; }
   loc=$(python3 - "$STORE" "$mark" <<'PY'
 import os, sys
 folder, mark = sys.argv[1], float(sys.argv[2])
@@ -68,17 +70,18 @@ print("custom-documents/" + max(new)[1] if new else "")
 PY
 )
   if [ -n "$loc" ]; then
-    printf '%s\t%s\t%s\n' "$f" "$loc" "$hash" >> "$DONE"; echo "$([ -n "$replaced" ] && echo REPLACED || echo UPLOADED) $(basename "$f")"
+    printf '%s\t%s\t%s\n' "$f" "$loc" "$hash" >> "$DONE"; if [ -n "$replaced" ]; then say "Замінено $(basename "$f")" "REPLACED $(basename "$f")"; else say "Завантажено $(basename "$f")" "UPLOADED $(basename "$f")"; fi
   else
-    echo "UPLOAD FAILED $(basename "$f")"
+    say "НЕ ЗАВАНТАЖЕНО $(basename "$f")" "UPLOAD FAILED $(basename "$f")"
   fi
 done
 rm -f /tmp/embed-order.$$
 touch /tmp/embed-deletes.$$
 
 # 2. Embed every uploaded document that is not yet in the workspace, in small batches.
-python3 - "$A" "$WORKSPACE" "$DONE" /tmp/embed-deletes.$$ <<'PY'
+PYTHONPATH="$KIT/scripts" python3 - "$A" "$WORKSPACE" "$DONE" /tmp/embed-deletes.$$ <<'PY'
 import json, sys, time, urllib.request
+from kit_say import say
 A, WS, DONE, DELETES = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
 def get(p): return json.load(urllib.request.urlopen(A + p, timeout=120))
 def post(p, body):
@@ -96,25 +99,25 @@ if old:
     try:
         post("/workspace/" + WS + "/update-embeddings", {"adds": [], "deletes": old})
     except Exception as e:
-        print("delete error:", e, flush=True)
+        say("помилка видалення: %s" % e, "delete error: %s" % e, flush=True)
     for _ in range(120):
         in_ws = {d["docpath"] for d in get("/workspace/" + WS)["workspace"].get("documents", [])}
         if not set(old) & in_ws: break
         time.sleep(5)
-    print(f"taken out (changed Books): {len(old)}", flush=True)
+    say(f"вилучено (змінені книги): {len(old)}", f"taken out (changed Books): {len(old)}", flush=True)
 todo = [d for d in all_docs() if d not in in_ws]
-print(f"to embed: {len(todo)} (already embedded: {len(in_ws)})", flush=True)
+say(f"до вбудовування: {len(todo)} (уже вбудовано: {len(in_ws)})", f"to embed: {len(todo)} (already embedded: {len(in_ws)})", flush=True)
 for i in range(0, len(todo), 20):
     batch = todo[i:i + 20]
     try:
         post("/workspace/" + WS + "/update-embeddings", {"adds": batch, "deletes": []})
     except Exception as e:
-        print("batch error:", e, flush=True)
+        say("помилка пакета: %s" % e, "batch error: %s" % e, flush=True)
     for _ in range(120):  # wait for the batch to land before sending the next
         n = len(get("/workspace/" + WS)["workspace"].get("documents", []))
         if n >= len(in_ws) + i + len(batch): break
         time.sleep(5)
-    print(f"embedded {min(i + 20, len(todo))}/{len(todo)} (workspace now {n})", flush=True)
+    say(f"вбудовано {min(i + 20, len(todo))}/{len(todo)} (у просторі зараз {n})", f"embedded {min(i + 20, len(todo))}/{len(todo)} (workspace now {n})", flush=True)
 PY
 rm -f /tmp/embed-deletes.$$
-echo "=== DONE $(date)"
+say "=== ГОТОВО $(date)" "=== DONE $(date)"

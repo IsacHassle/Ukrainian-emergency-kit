@@ -71,6 +71,6 @@ PY
 # 3. The books.
 echo "Завантажую документи в ШІ (близько 40 хвилин вперше, хід у logs/embed.log) / Loading the documents into the AI (about 40 minutes the first time, progress in logs/embed.log)"
 bash "$KIT/scripts/embed-documents.sh"
-progress=$(grep -E "embedded|to embed" "$KIT/logs/embed.log" | tail -1 || true)
+progress=$(grep -E " / (embedded|to embed)" "$KIT/logs/embed.log" | tail -1 | sed 's/.* \/ //' || true)
 say "Індекс книг: ${progress:-порожній}" "Book index: ${progress:-empty}"
 say "ШІ готовий" "The AI is ready"

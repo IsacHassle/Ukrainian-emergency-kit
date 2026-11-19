@@ -73,8 +73,8 @@ main() {
       bash "$KIT/scripts/embed-documents.sh"
       # What this run did, from the end of the log (it starts at the last "=== START").
       log="$KIT/logs/embed.log"
-      new=$(awk '/^=== START/ {n = 0} /^UPLOADED / {n++} END {print n + 0}' "$log")
-      replaced=$(awk '/^=== START/ {n = 0} /^REPLACED / {n++} END {print n + 0}' "$log")
+      new=$(awk '/=== START/ {n = 0} / UPLOADED / {n++} END {print n + 0}' "$log")
+      replaced=$(awk '/=== START/ {n = 0} / REPLACED / {n++} END {print n + 0}' "$log")
       say "Книги в індексі: нових $new, змінених $replaced" "Books in the index: $new new, $replaced changed"
     else
       say "ШІ не запущено. Відкрийте AnythingLLM і Ollama й виконайте: bash scripts/embed-documents.sh" \

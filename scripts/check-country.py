@@ -9,6 +9,9 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from kit_say import die, say  # noqa: E402
+
 PATH = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                                                          "config", "country.json")
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # map.shape is a path from here
@@ -70,9 +73,9 @@ def main():
         with open(PATH, encoding="utf-8") as f:
             c = json.load(f)
     except (OSError, ValueError) as e:
-        sys.exit(f"{PATH}: cannot be read as JSON ({e})")
+        die(f"{PATH}: не читається як JSON ({e})", f"{PATH}: cannot be read as JSON ({e})")
     if not isinstance(c, dict):
-        sys.exit(f"{PATH}: must be a JSON object")
+        die(f"{PATH}: має бути об'єктом JSON", f"{PATH}: must be a JSON object")
 
     get("", c, "country", str)
     lang = get("", c, "default_language", str)
@@ -275,8 +278,8 @@ def main():
     for p in problems:
         print(p)
     if problems:
-        sys.exit(f"{PATH}: {len(problems)} problem(s)")
-    print(f"{PATH}: ok")
+        die(f"{PATH}: проблем {len(problems)}", f"{PATH}: {len(problems)} problem(s)")
+    say(f"{PATH}: усе гаразд", f"{PATH}: ok")
 
 
 main()

@@ -17,6 +17,7 @@ import sys
 import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from kit_say import say  # noqa: E402
 import kit_guides   # noqa: E402  (the guide list and the polite fetch, shared with the guide saver)
 
 KIT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -25,7 +26,7 @@ problems, warnings = [], []
 listings = {}
 
 
-def ok(url):
+def answers(url):
     for method in ("HEAD", "GET"):
         try:
             req = urllib.request.Request(url, method=method, headers=UA)
@@ -47,7 +48,7 @@ def check_guides():
                 warnings.append(f"Official Guide moved (now {r.final_url}): {guide.url}")
         elif r.state == "refused":
             if optional:
-                print(f"NOTE: refused (expected from outside Ukraine), not checked: {guide.url}")
+                say(f"ПРИМІТКА: відмовлено (очікувано поза Україною), не перевірено: {guide.url}", f"NOTE: refused (expected from outside Ukraine), not checked: {guide.url}")
             else:
                 warnings.append(f"Official Guide refused the check ({r.detail}), not known to be gone: {guide.url}")
         elif r.state == "gone":
@@ -58,10 +59,10 @@ def check_guides():
 
 def finish():
     for w in warnings:
-        print("WARNING:", w)
+        print("УВАГА / WARNING:", w)
     for p in problems:
-        print("PROBLEM:", p)
-    print(f"{len(problems)} problems, {len(warnings)} warnings")
+        print("ПРОБЛЕМА / PROBLEM:", p)
+    say(f"проблем {len(problems)}, попереджень {len(warnings)}", f"{len(problems)} problems, {len(warnings)} warnings")
     sys.exit(1 if problems else 0)
 
 
@@ -84,7 +85,7 @@ for line in open(os.path.join(KIT, "config", "libraries.txt")):
     if not m:
         continue
     url, extra = m.group(0), line.lstrip().startswith("#")
-    if ok(url):
+    if answers(url):
         continue
     newer = newest_on_kiwix(url)
     note = f"{url.rsplit('/', 1)[1]} is gone from Kiwix" + (f"; the installer will use {newer}" if newer else "; no replacement found")
@@ -99,11 +100,11 @@ required = {
 pm = re.search(r"PMTILES_VERSION=(\S+)", open(os.path.join(KIT, "scripts", "get-tools.sh")).read()).group(1)
 required["pmtiles"] = f"https://github.com/protomaps/go-pmtiles/releases/download/v{pm}/go-pmtiles-{pm}_Darwin_arm64.zip"
 for what, url in required.items():
-    if not ok(url):
+    if not answers(url):
         problems.append(f"{what}: {url} does not answer")
 
 today = datetime.date.today()
-if not any(ok(f"https://build.protomaps.com/{(today - datetime.timedelta(days=d)):%Y%m%d}.pmtiles") for d in range(8)):
+if not any(answers(f"https://build.protomaps.com/{(today - datetime.timedelta(days=d)):%Y%m%d}.pmtiles") for d in range(8)):
     problems.append("No Protomaps map build from the last 8 days (scripts/get-maps.sh needs one)")
 
 check_guides()

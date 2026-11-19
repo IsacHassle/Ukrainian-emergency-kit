@@ -58,6 +58,24 @@ class BookIndexTest(unittest.TestCase):
         self.embed()
         self.assertEqual(len(self.ai.uploads), 3)
 
+    def test_every_line_of_the_log_holds_both_languages_and_update_can_count_uploads(self):
+        self.embed()
+        with open(os.path.join(self.kit, "logs", "embed.log"), encoding="utf-8") as f:
+            lines = [l for l in f.read().splitlines() if l.strip()]
+        self.assertTrue(lines)
+        for line in lines:
+            self.assertIn(" / ", line, line)
+        self.assertEqual(sum(" / UPLOADED " in l for l in lines), 3)   # scripts/update.sh counts these
+
+    def test_without_the_book_index_app_the_message_is_one_line_in_both_languages(self):
+        env = dict(os.environ, EK_ANYTHINGLLM="127.0.0.1:1")
+        run = subprocess.run(["bash", os.path.join(self.kit, "scripts", "embed-documents.sh")], env=env, cwd=self.kit,
+                             capture_output=True, text=True, timeout=60)
+        self.assertEqual(run.returncode, 1)
+        with open(os.path.join(self.kit, "logs", "embed.log"), encoding="utf-8") as f:
+            log = f.read()
+        self.assertIn("не запущено. Відкрийте його й спробуйте знову / AnythingLLM is not running", log)
+
 
 if __name__ == "__main__":
     unittest.main()
