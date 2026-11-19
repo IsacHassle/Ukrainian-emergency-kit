@@ -3,6 +3,9 @@
 # (ai.workspace), so the AI can search it and cite its sources.
 # Safe to re-run: files already uploaded are skipped, so add new files to
 # documents/ (any subfolder) and run this again.
+# AnythingLLM keeps every uploaded file in one store shared by all its workspaces (another kit's, on a Mac that has
+# two). So this script remembers where AnythingLLM put each file it uploaded (logs/embed-uploaded.txt, one
+# "file<TAB>location" line each) and embeds only those, never whatever else is in the store.
 #
 # Needs AnythingLLM and Ollama running.
 # Run:   bash scripts/embed-documents.sh
@@ -32,11 +35,15 @@ find "$DOCS" -mindepth 1 -type f \( -name '*.pdf' -o -name '*.md' -o -name '*.tx
 GUIDES="$DOCS/$(country official_guides.folder)"
 awk '!seen[$0]++' /tmp/embed-order.$$ | while IFS= read -r f; do
   case "$f" in "$GUIDES"/?*/*) continue ;; esac   # a guide in a language subfolder (en/): for reading only
-  grep -qxF "$f" "$DONE" && continue
+  grep -qF "$f	" "$DONE" && continue
   # Quote the name: curl treats commas and semicolons in a bare file name as separators.
   q=${f//\\/\\\\}; q=${q//\"/\\\"}
-  if curl -sf -X POST "$A/workspace/$WORKSPACE/upload" -F "file=@\"$q\"" | grep -q '"success":true'; then
-    echo "$f" >> "$DONE"; echo "UPLOADED $(basename "$f")"
+  reply=$(curl -sf -X POST "$A/workspace/$WORKSPACE/upload" -F "file=@\"$q\"") || reply=""
+  loc=$(printf '%s' "$reply" | python3 -c 'import json,sys
+try: print(json.load(sys.stdin)["documents"][0]["location"].split("/storage/documents/")[-1])
+except Exception: pass')
+  if [ -n "$loc" ]; then
+    printf '%s\t%s\n' "$f" "$loc" >> "$DONE"; echo "UPLOADED $(basename "$f")"
   else
     echo "UPLOAD FAILED $(basename "$f")"
   fi
@@ -44,19 +51,17 @@ done
 rm -f /tmp/embed-order.$$
 
 # 2. Embed every uploaded document that is not yet in the workspace, in small batches.
-python3 - "$A" "$WORKSPACE" <<'PY'
+python3 - "$A" "$WORKSPACE" "$DONE" <<'PY'
 import json, sys, time, urllib.request
-A, WS = sys.argv[1], sys.argv[2]
+A, WS, DONE = sys.argv[1], sys.argv[2], sys.argv[3]
 def get(p): return json.load(urllib.request.urlopen(A + p, timeout=120))
 def post(p, body):
     req = urllib.request.Request(A + p, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
     return json.load(urllib.request.urlopen(req, timeout=3600))
 def all_docs():
-    # The API only reports a file count per folder, so list AnythingLLM's storage directly.
-    import os
-    storage = get("/setup-complete")["results"]["StorageDir"]
-    folder = os.path.join(storage, "documents", "custom-documents")
-    return sorted("custom-documents/" + n for n in os.listdir(folder) if n.endswith(".json"))
+    # Only the files this kit uploaded (the store may hold another kit's files too).
+    with open(DONE, encoding="utf-8") as f:
+        return sorted({l.rstrip("\n").split("\t")[1] for l in f if "\t" in l})
 in_ws = {d["docpath"] for d in get("/workspace/" + WS)["workspace"].get("documents", [])}
 todo = [d for d in all_docs() if d not in in_ws]
 print(f"to embed: {len(todo)} (already embedded: {len(in_ws)})", flush=True)
