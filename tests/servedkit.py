@@ -168,6 +168,8 @@ class ServedKit:
                 "Червоний Хрест - Переохолодження, перша допомога.pdf": b"%PDF-1.4\n%%EOF\n",
                 d + "Як підготуватися до надзвичайної ситуації.md": PREPARE_UK,
                 "en/" + d + "How to prepare for an emergency.md": PREPARE_EN,
+                "en/" + d + "A guide to handling the threat of mining.md": "# Mines\n\nSource: dovidka.info, https://x. Saved 2026-11-19 for reading offline.\n\nStay away.\n",
+                "en/Червоний Хрест - Mine danger.md": "# Mine danger\n\nSource: Червоний Хрест, https://x. Saved 2026-11-19 for reading offline.\n\nDo not touch it.\n",
                 "en/" + d + "Rescue is in our hands, the rules of first aid.md": "# Rescue\n\nSource: dovidka.info, https://x. Saved 2026-11-19.\n\nCall 103.\n",
             })
         return saved

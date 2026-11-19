@@ -77,6 +77,12 @@ def text_guide(guide, result, today):
     body = kit_html.to_markdown(page, source.get("container") or ["article", "main"])
     if body is None:
         return None, "no article on the page"
+    # A site's footer after the article (news, subscribe): cut from the first line a pattern of the source matches.
+    lines = body.split("\n")
+    for i, line in enumerate(lines):
+        if any(re.match(p, line.strip()) for p in source.get("cut_from") or ()):
+            body = "\n".join(lines[:i]).rstrip()
+            break
     if len(body) < MIN_TEXT:
         return None, "almost no text"
     title = kit_html.page_title(page, source.get("title_suffix") or ()) or guide.name.split(" - ", 1)[1]

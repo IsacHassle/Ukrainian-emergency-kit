@@ -169,6 +169,12 @@ def main():
     for i, s in enumerate(get("official_guides", og, "sources", list) or []):
         get(f"official_guides.sources[{i}]", s, "id", str)
         get(f"official_guides.sources[{i}]", s, "host", str)
+        for pattern in (s.get("cut_from") or []) if isinstance(s, dict) else []:
+            try:
+                re.compile(pattern)
+            except (re.error, TypeError):
+                bad(f"official_guides.sources[{i}].cut_from", f"{pattern!r} is not a valid pattern")
+        texts(f"official_guides.sources[{i}].name", s.get("name") if isinstance(s, dict) else None, lang, also=("en",))
         texts(f"official_guides.sources[{i}].label", s.get("label") if isinstance(s, dict) else None, lang)
         if isinstance(s, dict):
             if "optional" in s and not isinstance(s["optional"], bool):

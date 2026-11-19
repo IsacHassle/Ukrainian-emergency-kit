@@ -52,6 +52,7 @@ GROUPS = [(g["heading"], [(l["prefix"], l["description"]) for l in g["libraries"
 
 ADVICE_ORDER = [s["id"] for s in C["official_guides"]["sources"]]
 ADVICE_NAMES = {s["id"]: s["label"] for s in C["official_guides"]["sources"]}
+SOURCE_NAMES = {s["id"]: s.get("name") or s["id"] for s in C["official_guides"]["sources"]}   # a source by name, per language
 
 
 def saved(code, stem):
@@ -199,7 +200,8 @@ def main():
             (href, source), more = guides[0], guides[1:]
             # One note under the topic: the guide's source, any other guide, then the article. It may wrap, so a
             # topic with several guides stays inside its column.
-            parts = [html.escape(source)] + [f'<a href="{h}">{html.escape(s)}</a>' for h, s in more]
+            name = lambda source_id: html.escape(text(SOURCE_NAMES.get(source_id, source_id), code))   # in the page language
+            parts = [name(source)] + [f'<a href="{h}">{name(s)}</a>' for h, s in more]
             if article:
                 parts.append(f'<a data-k="{html.escape(article)}"><span data-t="home.urgent.article"></span></a>')
             return f'<li data-l="{code}"><a href="{href}">{label}</a><small class="links">{" · ".join(parts)}</small>{note}</li>'

@@ -117,6 +117,14 @@ class SavedTextTest(SaverTestCase):
         for noise in ("Пошук по сайту", "Підписатися", "ACCEPT ALL", "youtube", "Головна", "Поради"):
             self.assertNotIn(noise, t)
 
+    def test_the_news_footer_at_the_end_of_a_red_cross_page_is_not_saved(self):
+        """Followup 5: "Останні новини" and "Підписатись" ended the saved mines page."""
+        t = self.saver.read(UK[4])
+        self.assertIn("Мінна небезпека залишається в багатьох регіонах.", t)
+        for noise in ("Останні новини", "Підписатись"):
+            self.assertNotIn(noise, t)
+        self.assertTrue(t.rstrip().endswith("багатьох регіонах."), t[-80:])
+
     def test_a_dovidka_article_keeps_its_structure(self):
         t = self.saver.read(UK[1])
         self.assertTrue(t.startswith("# Тактична медицина: як зупинити кровотечу\n"), t[:80])
@@ -355,12 +363,20 @@ class StartPageGuidesTest(unittest.TestCase):
         self.assertIn('data-t="home.urgent.article"', li)
         self.assertIn(viewer(LIB_UK, "Зупинка_кровотечі"), li)
 
+    def test_a_source_is_named_in_the_page_language(self):
+        """Followup 5: the English page named the Red Cross in Ukrainian letters."""
+        en = re.search(r'<li data-l="en">(?:(?!</li>).)*Mines and unexploded ordnance.*?</li>', self.page, re.S).group(0)
+        self.assertIn(">Red Cross</a>", en)
+        note = re.sub(r"<span data-t=.*?</span>", "", re.search(r'<small class="links">.*?</small>', en, re.S).group(0))
+        self.assertNotRegex(note, "[\u0400-\u04ff]")   # the note under the topic
+
     def test_the_english_page_opens_the_english_guide_and_never_a_ukrainian_one(self):
         li = self.li("Сильна кровотеча, джгут", "en")
         self.assertIn('href="read/?f=docs/Official%20Guides/en/dovidka.info%20-%20Tactical%20medicine', li)
         self.assertIn(viewer(LIB_EN, "Bleeding"), li)
         for page_li in blocks(self.page, "li", "en"):
-            self.assertNotIn("%D0%", re.sub(r"data-k=\"[^\"]*\"", "", page_li), page_li)   # no Cyrillic address in a guide link
+            for href in re.findall(r'href="(read/\?f=[^"]*)"', page_li):
+                self.assertIn("/en/", href, page_li)   # only guides from the en/ folder, never one in Ukrainian
 
     def test_a_topic_with_no_english_guide_opens_the_english_article_only(self):
         self.assertIsNone(self.li("Переохолодження", "en"))   # no English guide and no article in the test Library
@@ -395,7 +411,7 @@ class StartPageGuidesTest(unittest.TestCase):
 
     def test_the_summary_counts_the_guides_of_each_language(self):
         self.assertRegex(self.page, r'<span data-l="uk" data-t="home.guides.summary" data-p=\'\{"count": 4\}\'>')
-        self.assertRegex(self.page, r'<span data-l="en" data-t="home.guides.summary" data-p=\'\{"count": 4\}\'>')
+        self.assertRegex(self.page, r'<span data-l="en" data-t="home.guides.summary" data-p=\'\{"count": 6\}\'>')
 
     def test_the_sources_are_headed_with_their_name_in_each_language(self):
         self.assertIn("dovidka.info · Укриття, війна, перша допомога", self.page)

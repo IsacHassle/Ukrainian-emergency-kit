@@ -230,6 +230,10 @@
    {
     "id": "dovidka.info",
     "host": "dovidka.info",
+    "name": {
+     "uk": "dovidka.info",
+     "en": "dovidka.info"
+    },
     "container": [
      "article",
      "main"
@@ -245,6 +249,10 @@
    {
     "id": "МОЗ",
     "host": "moz.gov.ua",
+    "name": {
+     "uk": "МОЗ",
+     "en": "Ministry of Health"
+    },
     "container": [
      "div.article_content--post"
     ],
@@ -256,6 +264,10 @@
    {
     "id": "ЦГЗ",
     "host": "phc.org.ua",
+    "name": {
+     "uk": "ЦГЗ",
+     "en": "Public Health Center"
+    },
     "container": [
      "div.full-news-content"
     ],
@@ -270,8 +282,15 @@
    {
     "id": "Червоний Хрест",
     "host": "redcross.org.ua",
+    "name": {
+     "uk": "Червоний Хрест",
+     "en": "Red Cross"
+    },
     "container": [
      "div.wpb-content-wrapper"
+    ],
+    "cut_from": [
+     "^#+\\s*(Останні новини|Latest news)\\s*$"
     ],
     "title_suffix": [
      " – Товариство Червоного Хреста України",
@@ -285,6 +304,10 @@
    {
     "id": "ДСНС",
     "host": "dsns.gov.ua",
+    "name": {
+     "uk": "ДСНС",
+     "en": "State Emergency Service"
+    },
     "optional": true,
     "container": [
      "article",
