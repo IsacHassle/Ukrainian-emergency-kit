@@ -124,6 +124,10 @@ class Watch:
 
     def __init__(self, sock):
         self.sock = sock
+        # A TLS socket cannot be peeked at (reading one byte would take it from what follows the request, and
+        # could block on a record with no data in it). So the Watch looks at the connection under the TLS layer:
+        # a second handle on the same connection, only ever peeked at, never read from or written to.
+        self._look = socket.socket(fileno=os.dup(sock.fileno())) if isinstance(sock, ssl.SSLSocket) else sock
         self.gone = threading.Event()
         self.upstream = None
         self._stop = threading.Event()
@@ -145,11 +149,21 @@ class Watch:
 
     def _closed(self):
         try:
-            if not select.select([self.sock], [], [], 0.1)[0]:
+            if not select.select([self._look], [], [], 0.1)[0]:
                 return False
-            if isinstance(self.sock, ssl.SSLSocket):
-                return self.sock.recv(1) == b""   # a TLS socket cannot peek
-            return self.sock.recv(1, socket.MSG_PEEK) == b""
+            seen = self._look.recv(8, socket.MSG_PEEK | socket.MSG_DONTWAIT)
+            if seen == b"":
+                return True
+            # Something is waiting to be read: what follows the request, or a TLS record. It stays where it is,
+            # with one exception: a record that is only an alert (at most 31 bytes, nothing a request could fit in)
+            # is the page saying goodbye. It is taken out of the way, and the end of the connection behind it is
+            # then seen by the next look.
+            if self._look is not self.sock and seen[0] in (0x15, 0x17) and len(seen) >= 5:
+                size = 5 + int.from_bytes(seen[3:5], "big")
+                if size <= 36 and len(self._look.recv(size, socket.MSG_PEEK | socket.MSG_DONTWAIT)) == size:
+                    self._look.recv(size, socket.MSG_DONTWAIT)
+            self._stop.wait(0.1)   # do not spin while there is data
+            return False
         except (ssl.SSLWantReadError, BlockingIOError):
             return False
         except (OSError, ValueError):
@@ -170,7 +184,9 @@ class Watch:
                 self.gone.set()
                 QUEUE.poke()
                 self._cut()
-                return
+                break
+        if self._look is not self.sock:
+            self._look.close()   # only the second handle; the connection itself is closed by the server
 
 
 def upstream(host, method, path, body=None, timeout=900):

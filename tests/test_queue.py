@@ -5,7 +5,10 @@ No test sleeps for a fixed time: a running answer is kept running with a hold (t
 first word until the test releases it), and tests wait for what they expect to see."""
 import http.client
 import json
+import os
 import socket
+import ssl
+import subprocess
 import threading
 import time
 import unittest
@@ -28,15 +31,20 @@ def until(cond, what, timeout=10):
 class Ask:
     """One visitor's request, read line by line as the stream arrives. close() is the page being closed."""
 
-    def __init__(self, kit, mode=MAIN, text="How do I stop bleeding?"):
+    def __init__(self, kit, mode=MAIN, text="How do I stop bleeding?", https=False, wait=True):
         if mode == BOOKS:
             path, payload = "/ai-api/books-chat", {"messages": [{"role": "user", "content": text}]}
         else:
             model = kit.facts["ai"]["models"]["main" if mode == MAIN else "small"]
             path, payload = "/ai-api/chat", {"model": model, "messages": [{"role": "user", "content": text}]}
-        self.conn = http.client.HTTPConnection("127.0.0.1", kit.port, timeout=15)
+        if https:   # the same site on the https port (phones that opened the map over https use the AI there too)
+            context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+            context.check_hostname, context.verify_mode = False, ssl.CERT_NONE
+            self.conn = http.client.HTTPSConnection("127.0.0.1", kit.port + 352, timeout=15, context=context)
+        else:
+            self.conn = http.client.HTTPConnection("127.0.0.1", kit.port, timeout=15)
         self.conn.request("POST", path, json.dumps(payload), {"Content-Type": "application/json"})
-        self.resp = self.conn.getresponse()   # headers come with the first line, so this returns once something is known
+        self.resp = self.conn.getresponse() if wait else None   # headers come with the first line, so this returns once something is known
 
     def line(self):
         raw = self.resp.readline()
@@ -54,14 +62,30 @@ class Ask:
         return "".join(d.get("message", {}).get("content", "") for d in self.lines())
 
     def close(self):
-        self.resp.close()   # the response holds the socket open until it is closed too
+        if self.resp:
+            self.resp.close()   # the response holds the socket open until it is closed too
         self.conn.close()
 
 
+def make_certificate(kit):
+    """A throwaway certificate for the test kit (tools/certs/server.crt and server.key), as scripts/make-cert.sh
+    leaves one; the web server then also listens on its https port (port + 352)."""
+    folder = os.path.join(kit.kit_dir, "tools", "certs")
+    os.makedirs(folder, exist_ok=True)
+    subprocess.run(["openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "2", "-subj", "/CN=localhost",
+                    "-keyout", os.path.join(folder, "server.key"), "-out", os.path.join(folder, "server.crt")],
+                   check=True, capture_output=True)
+    kit.restart()
+
+
 class QueueTest(unittest.TestCase):
+    HTTPS = False   # the same tests run again over the https port in HttpsQueueTest
+
     def setUp(self):
         self.kit = ServedKit()
         self.kit.start()
+        if self.HTTPS:
+            make_certificate(self.kit)
         self.holds = []
         self.asks = []
 
@@ -79,7 +103,7 @@ class QueueTest(unittest.TestCase):
         return h
 
     def ask(self, *a, **kw):
-        x = Ask(self.kit, *a, **kw)
+        x = Ask(self.kit, *a, https=self.HTTPS, **kw)
         self.asks.append(x)
         return x
 
@@ -173,6 +197,28 @@ class QueueTest(unittest.TestCase):
         h.set()
         self.assertEqual(c.text(), ANSWER)
         self.assertEqual(len(self.kit.ai.chat_requests), 2)   # a and c only: b's search never ran
+
+    def test_closing_a_page_during_the_planning_call_starts_no_answer_and_frees_the_turn(self):
+        """Story 65: From sources first asks the AI to plan the search. A page that closes meanwhile must not
+        get an answer made for it, and the next visitor's turn comes as soon as the call returns."""
+        plan = threading.Event()
+        self.holds.append(plan)
+        self.kit.ai.plan_holds.append(plan)
+        gone = self.ask(BOOKS, wait=False)   # its first line only comes after the planning call, so do not wait for it
+        until(lambda: len(self.kit.ai.chat_requests) == 1, "the planning call to reach the AI")
+        gone.close()
+        time.sleep(0.5)   # the web server notices the closed connection while the planning call is still open
+        waiting = self.ask(MAIN)
+        self.assertEqual(waiting.line(), {"queue": 1})
+        plan.set()
+        self.assertEqual(waiting.text(), ANSWER)
+        streamed = [r for r in self.kit.ai.chat_requests if r.get("stream")]
+        self.assertEqual(len(streamed), 1)   # only the waiting visitor's answer was made
+
+
+class HttpsQueueTest(QueueTest):
+    """Every queue test again, over the https port: the Watch that notices a closed page cannot peek at a TLS socket."""
+    HTTPS = True
 
 
 if __name__ == "__main__":

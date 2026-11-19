@@ -98,6 +98,7 @@ class StandInAI:
         self.embedded = {}
         self.deleted = []   # (workspace, docpath) of every document taken out of a workspace
         # What the planning call answers: the stand-alone question, Ukrainian titles, English titles.
+        self.plan_holds = []   # events: the next planning calls wait for them (a test closes the page meanwhile)
         self.plan_reply = "SEARCH: how to stop bleeding\nUKRAINIAN: Зупинка кровотечі\nENGLISH: " + SOURCE
         self.passages = read_json(os.path.join(HERE, "kit", "book-passages.json"))
         ai = self
@@ -128,6 +129,10 @@ class StandInAI:
 
             def chat(self, body, hold):
                 if body.get("stream") is False:   # the quick planning call of "From sources"
+                    with lock:
+                        wait = ai.plan_holds.pop(0) if ai.plan_holds else None
+                    if wait:
+                        wait.wait(30)
                     return self.send_json({"message": {"role": "assistant",
                                            "content": ai.plan_reply}, "done": True})
                 self.send_response(200)
