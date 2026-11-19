@@ -5,7 +5,7 @@
 <script src="/lib/country.js"></script>
 <script src="/lib/lang.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Läs · {kit}</title>
+<title>{kit}</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icon-180.png">
 <meta name="apple-mobile-web-app-title" content="" data-kit-attr="content={kit}">
@@ -30,19 +30,33 @@
 </head>
 <body>
 <main class="page">
-  <div class="tools"><a class="back" style="margin:0" href="/">← <span data-kit></span></a><span class="grow"></span><a class="button plain" href="../ai/">Fråga AI</a><a class="button plain" href="#" onclick="print(); return false">Skriv ut</a></div>
-  <article id="doc"><p>Laddar…</p></article>
+  <div class="tools"><a class="back" style="margin:0" href="/">← <span data-kit></span></a><span class="grow"></span><a class="button plain" href="../ai/" data-t="reader.ask"></a><a class="button plain" href="#" onclick="print(); return false" data-t="reader.print"></a></div>
+  <article id="doc"><p data-t="reader.loading"></p></article>
 </main>
 <script src="../lib/md.js"></script>
 <script>
 (() => {
-  // Shows a saved text document (Markdown) from documents/, for reading without internet.
+  // Shows a saved text document (Markdown) from documents/, for reading without internet. The page around the text
+  // follows the page language; the guide itself is in the language it was saved in (a Ukrainian guide in the folder,
+  // an English one in its en/ subfolder), and the start page only links the guides of the page language.
   const f = new URLSearchParams(location.search).get('f') || '';
   const box = document.getElementById('doc');
-  if (!/^docs\/[^?#]+\.(md|txt)$/.test(f) || f.includes('..')) { box.innerHTML = '<p class="err">Okänt dokument.</p>'; return; }
-  fetchDoc(f)
-    .then(t => { const d = renderMarkdown(t); box.innerHTML = d.html; if (d.title) document.title = d.title + ' · ' + COUNTRY.kit(); })
-    .catch(() => { box.innerHTML = '<p class="err">Dokumentet hittades inte. Kör installationen igen för att hämta det.</p>'; });
+  let state = 'loading', doc = null;   // what the box shows, so it can be written again when the language changes
+  const show = () => {
+    if (state === 'doc') {
+      box.innerHTML = doc.html;
+      document.title = (doc.title ? doc.title + ' · ' : '') + COUNTRY.kit();
+    } else if (state !== 'loading') {
+      box.innerHTML = '<p class="err">' + (state === 'unknown' ? KIT.t('reader.error.unknown') : KIT.t('reader.error.missing')) + '</p>';
+    }
+  };
+  if (!/^docs\/[^?#]+\.(md|txt)$/.test(f) || f.includes('..')) { state = 'unknown'; show(); }
+  else {
+    fetchDoc(f)
+      .then(t => { doc = renderMarkdown(t); state = 'doc'; show(); })
+      .catch(() => { state = 'missing'; show(); });
+  }
+  KIT.onChange(show);
 })();
 </script>
 </body>

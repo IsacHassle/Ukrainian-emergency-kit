@@ -13,9 +13,11 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import urllib.request
 
-from servedkit import REPO
+from servedkit import REPO, ServedKit
 from standins import StandInInternet
+from test_emergency_topics import EN as LIB_EN, UK as LIB_UK, item, viewer
 
 SAVER = os.path.join(REPO, "scripts", "fetch-pages.py")
 FOLDER = "Official Guides"
@@ -295,6 +297,110 @@ class LinkCheckTest(SaverTestCase):
         code, out = self.check()
         self.assertEqual(code, 0, out)
         self.assertRegex(out, r"WARNING.*%s" % re.escape(MOZ))
+
+
+def read(kit, path="/"):
+    with urllib.request.urlopen(kit.url + path, timeout=10) as r:
+        return r.read().decode("utf-8")
+
+
+def blocks(page, tag, lang):
+    return re.findall(r'<%s data-l="%s"[^>]*>.*?</%s>' % (tag, lang, tag), page, re.S)
+
+
+class StartPageGuidesTest(unittest.TestCase):
+    """The start page over a test kit with a few saved guides (tests/servedkit.py): Emergency Topics open their
+    Official Guide first, in the page's language, then the article; the list of guides follows the page language."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.kit = ServedKit()
+        cls.kit.start()
+        cls.page = read(cls.kit)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.kit.stop()
+
+    def li(self, label, lang):
+        return item(self.page, label, lang)
+
+    def test_a_topic_opens_its_ukrainian_guide_in_the_reader_first_then_the_article(self):
+        li = self.li("Сильна кровотеча, джгут", "uk")
+        self.assertIn('href="las/?f=docs/Official%20Guides/dovidka.info%20-%20%D0%A2%D0%B0%D0%BA%D1%82%D0%B8%D1%87%D0%BD%D0%B0', li)
+        self.assertLess(li.index("las/?f="), li.index("data-k="))
+        self.assertIn("dovidka.info</small>", li)   # it names its source
+        self.assertIn('data-t="home.urgent.article"', li)
+        self.assertIn(viewer(LIB_UK, "Зупинка_кровотечі"), li)
+
+    def test_the_english_page_opens_the_english_guide_and_never_a_ukrainian_one(self):
+        li = self.li("Сильна кровотеча, джгут", "en")
+        self.assertIn('href="las/?f=docs/Official%20Guides/en/dovidka.info%20-%20Tactical%20medicine', li)
+        self.assertIn(viewer(LIB_EN, "Bleeding"), li)
+        for page_li in blocks(self.page, "li", "en"):
+            self.assertNotIn("%D0%", re.sub(r"data-k=\"[^\"]*\"", "", page_li), page_li)   # no Cyrillic address in a guide link
+
+    def test_a_topic_with_no_english_guide_opens_the_english_article_only(self):
+        self.assertIsNone(self.li("Переохолодження", "en"))   # no English guide and no article in the test Library
+        li = self.li("Серцево-легенева реанімація", "en")
+        self.assertIn("Rescue%20is%20in%20our%20hands", li)   # CPR has an English guide, then the article
+        self.assertIn(viewer(LIB_EN, "Cardiopulmonary_resuscitation"), li)
+
+    def test_when_the_first_guide_is_not_saved_the_next_one_opens(self):
+        li = self.li("Переохолодження", "uk")   # the Public Health Center page is not saved, the Red Cross leaflet is
+        self.assertIn('href="docs/Official%20Guides/%D0%A7%D0%B5%D1%80%D0%B2%D0%BE%D0%BD%D0%B8%D0%B9%20%D0%A5%D1%80%D0%B5%D1%81%D1%82%20-', li)
+        self.assertIn(".pdf", li)   # a PDF opens as the PDF, not in the reader
+        self.assertNotIn("las/?f=", li)
+
+    def test_the_start_page_never_writes_a_python_tuple_as_an_address(self):
+        self.assertNotIn('href="(', self.page)
+        self.assertNotIn("None", self.page)
+        for href in re.findall(r'href="([^"]*)"', self.page):
+            self.assertNotIn("%27", href)
+
+    def test_the_list_of_official_guides_follows_the_page_language(self):
+        uk = " ".join(blocks(self.page, "div", "uk"))
+        en = " ".join(blocks(self.page, "div", "en"))
+        self.assertIn("Як надати допомогу пораненому", uk)
+        self.assertIn("Переохолодження, перша допомога", uk)
+        self.assertNotIn("Tactical medicine", uk)
+        self.assertIn("Tactical medicine, how to stop bleeding", en)
+        self.assertIn("Rescue is in our hands", en)
+        self.assertNotIn("Як надати", en)
+        self.assertNotIn("Переохолодження", en)
+        self.assertIn('href="las/?f=docs/Official%20Guides/en/', en)
+        self.assertIn('href="docs/Official%20Guides/%D0%A7', uk)   # the PDF
+
+    def test_the_summary_counts_the_guides_of_each_language(self):
+        self.assertRegex(self.page, r'<span data-l="uk" data-t="home.guides.summary" data-p=\'\{"count": 3\}\'>')
+        self.assertRegex(self.page, r'<span data-l="en" data-t="home.guides.summary" data-p=\'\{"count": 2\}\'>')
+
+    def test_the_sources_are_headed_with_their_name_in_each_language(self):
+        self.assertIn("dovidka.info · Укриття, війна, перша допомога", self.page)
+        self.assertIn("dovidka.info · Shelter, war, first aid", self.page)
+
+
+class ReaderTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.kit = ServedKit()
+        cls.kit.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.kit.stop()
+
+    def test_the_reader_page_has_no_swedish_and_its_texts_are_keys(self):
+        page = read(self.kit, "/las/")
+        for swedish in ("Läs ", "Fråga AI", "Skriv ut", "Laddar", "Okänt", "hittades inte"):
+            self.assertNotIn(swedish, page)
+        self.assertIn('data-t="reader.', page)
+
+    def test_a_saved_guide_in_either_language_is_served_for_the_reader(self):
+        uk = read(self.kit, "/docs/Official%20Guides/dovidka.info%20-%20%D0%A2%D0%B0%D0%BA%D1%82%D0%B8%D1%87%D0%BD%D0%B0%20%D0%BC%D0%B5%D0%B4%D0%B8%D1%86%D0%B8%D0%BD%D0%B0%2C%20%D1%8F%D0%BA%20%D0%B7%D1%83%D0%BF%D0%B8%D0%BD%D0%B8%D1%82%D0%B8%20%D0%BA%D1%80%D0%BE%D0%B2%D0%BE%D1%82%D0%B5%D1%87%D1%83.md")
+        self.assertIn("Натисніть на рану.", uk)
+        en = read(self.kit, "/docs/Official%20Guides/en/dovidka.info%20-%20Tactical%20medicine%2C%20how%20to%20stop%20bleeding.md")
+        self.assertIn("Press on the wound.", en)
 
 
 class GuideListTest(unittest.TestCase):

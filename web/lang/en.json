@@ -43,5 +43,10 @@
  "lang.name": "English",
  "lang.short": "ENG",
  "lang.switch.label": "Language",
- "meta.locale": "en-GB"
+ "meta.locale": "en-GB",
+ "reader.ask": "Ask the AI",
+ "reader.error.missing": "The guide was not found. Run the installation again to fetch it.",
+ "reader.error.unknown": "Unknown document.",
+ "reader.loading": "Loading…",
+ "reader.print": "Print"
 }

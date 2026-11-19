@@ -43,5 +43,10 @@
  "lang.name": "Українська",
  "lang.short": "УКР",
  "lang.switch.label": "Мова",
- "meta.locale": "uk-UA"
+ "meta.locale": "uk-UA",
+ "reader.ask": "Запитати ШІ",
+ "reader.error.missing": "Посібника не знайдено. Запустіть встановлення ще раз, щоб завантажити його.",
+ "reader.error.unknown": "Невідомий документ.",
+ "reader.loading": "Завантаження…",
+ "reader.print": "Друкувати"
 }

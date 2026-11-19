@@ -55,6 +55,21 @@ class ServedKit:
         self.url = None
         self._proc = None
 
+    def saved_guides(self):
+        """{path under the guides folder: text or bytes} saved in the test kit. Names follow the real config
+        (config/country.json) unless the test runs another country, which has only its first print page."""
+        name = self.facts["official_guides"]["print_pages"][0]
+        saved = {name + ".md": "# %s\n\nPress hard on the wound.\n" % name.split(" - ", 1)[1]}
+        if self.country is None:
+            d = "dovidka.info - "
+            saved.update({
+                d + "Тактична медицина, як зупинити кровотечу.md": "# Тактична медицина\n\nДжерело: dovidka.info, https://x. Збережено 2026-11-19.\n\nНатисніть на рану.\n",
+                "en/" + d + "Tactical medicine, how to stop bleeding.md": "# Tactical medicine\n\nSource: dovidka.info, https://x. Saved 2026-11-19.\n\nPress on the wound.\n",
+                "Червоний Хрест - Переохолодження, перша допомога.pdf": b"%PDF-1.4\n%%EOF\n",
+                "en/" + d + "Rescue is in our hands, the rules of first aid.md": "# Rescue\n\nSource: dovidka.info, https://x. Saved 2026-11-19.\n\nCall 103.\n",
+            })
+        return saved
+
     def env(self):
         env = dict(os.environ)
         env.update({
@@ -75,13 +90,15 @@ class ServedKit:
                 json.dump(self.country, f, ensure_ascii=False)
         shutil.copytree(os.path.join(TESTS, "kit", "documents"), os.path.join(self.kit_dir, "documents"))
         shutil.copytree(os.path.join(TESTS, "kit", "tools"), os.path.join(self.kit_dir, "tools"))
-        # One saved Official Guide, the first the country config prints, so the guide pages have something to show.
+        # Saved Official Guides, as the guide saver leaves them: Ukrainian in the folder, English in en/ (a PDF is
+        # just bytes). The first the country config prints is always there, so the guide pages have something to show.
         guides = self.facts["official_guides"]
         folder = os.path.join(self.kit_dir, "documents", guides["folder"])
-        os.makedirs(folder, exist_ok=True)
-        name = guides["print_pages"][0]
-        with open(os.path.join(folder, name + ".md"), "w", encoding="utf-8") as f:
-            f.write("# %s\n\nPress hard on the wound.\n" % name.split(" - ", 1)[1])
+        for rel, text in self.saved_guides().items():
+            path = os.path.join(folder, *rel.split("/"))
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "wb") as f:
+                f.write(text if isinstance(text, bytes) else text.encode("utf-8"))
         shutil.copytree(os.path.join(REPO, "web"), self.web_dir, symlinks=True)
         data = os.path.join(self.web_dir, "map", "data")
         os.makedirs(data, exist_ok=True)
