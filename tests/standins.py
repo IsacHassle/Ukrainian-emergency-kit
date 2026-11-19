@@ -14,6 +14,8 @@ import http.server
 import json
 import os
 import re
+import shutil
+import tempfile
 import threading
 import time
 import urllib.parse
@@ -81,6 +83,12 @@ class StandInAI:
         self.chat_requests = []
         self.searched_workspaces = []
         self.aborted = 0
+        # The Book index's document store, shared by all workspaces as in the real app. Tests may put another
+        # kit's files in it (store_add); `uploads` lists the names uploaded, `embedded[workspace]` the files embedded.
+        self.storage = tempfile.mkdtemp(prefix="ek-store-")
+        os.makedirs(os.path.join(self.storage, "documents", "custom-documents"))
+        self.uploads = []
+        self.embedded = {}
         # What the planning call answers: the stand-alone question, Ukrainian titles, English titles.
         self.plan_reply = "SEARCH: how to stop bleeding\nUKRAINIAN: Зупинка кровотечі\nENGLISH: " + SOURCE
         self.passages = read_json(os.path.join(HERE, "kit", "book-passages.json"))
@@ -118,12 +126,33 @@ class StandInAI:
 
         class AnythingLLM(_Handler):
             def do_GET(self):
+                if self.path == "/api/ping":
+                    return self.send_json({"online": True})
+                if self.path == "/api/setup-complete":
+                    return self.send_json({"results": {"StorageDir": ai.storage}})
                 m = re.fullmatch(r"/api/workspace/([\w-]+)", self.path)
                 if m and m.group(1) in ai.workspaces:
-                    return self.send_json({"workspace": {"slug": m.group(1)}})
+                    docs = [{"docpath": d} for d in ai.embedded.get(m.group(1), [])]
+                    return self.send_json({"workspace": {"slug": m.group(1), "documents": docs}})
                 self.send_json({"workspace": None}, 404)
 
             def do_POST(self):
+                m = re.fullmatch(r"/api/workspace/([\w-]+)/upload", self.path)
+                if m:   # a file into the shared store, named like AnythingLLM names it
+                    raw = self.rfile.read(int(self.headers.get("Content-Length") or 0))
+                    name = re.search(rb'filename="((?:[^"\\]|\\.)*)"', raw).group(1).decode("utf-8")
+                    with lock:
+                        ai.uploads.append(name)
+                        n = len(ai.uploads)
+                    time.sleep(0.01)   # distinct modification times
+                    with open(os.path.join(ai.storage, "documents", "custom-documents", "%s-%d.json" % (re.sub(r"\W", "-", name), n)), "w") as f:
+                        f.write("{}")
+                    return self.send_body(b'{"success":true,"error":null}', "application/json")   # compact, as the real app writes it
+                m = re.fullmatch(r"/api/workspace/([\w-]+)/update-embeddings", self.path)
+                if m:
+                    with lock:
+                        ai.embedded.setdefault(m.group(1), []).extend(self.body_json().get("adds", []))
+                    return self.send_json({"workspace": {}})
                 body = self.body_json()
                 m = re.fullmatch(r"/api/v1/workspace/([\w-]+)/vector-search", self.path)
                 if m:
@@ -139,6 +168,11 @@ class StandInAI:
         self.ollama_port = self._ollama.port
         self.anythingllm_port = self._anythingllm.port
 
+    def store_add(self, name):
+        """Another kit's file in the shared store (as docpath "custom-documents/<name>")."""
+        with open(os.path.join(self.storage, "documents", "custom-documents", name), "w") as f:
+            f.write("{}")
+
     def start(self):
         self._ollama.start()
         self._anythingllm.start()
@@ -147,6 +181,7 @@ class StandInAI:
     def stop(self):
         self._ollama.stop()
         self._anythingllm.stop()
+        shutil.rmtree(self.storage, ignore_errors=True)
 
 
 class StandInLibrary:

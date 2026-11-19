@@ -11,7 +11,7 @@
 # Run:   bash scripts/embed-documents.sh
 # Watch: tail -f logs/embed.log
 
-A=http://localhost:3001/api
+A=http://${EK_ANYTHINGLLM:-localhost:3001}/api   # EK_ANYTHINGLLM: where the tests put a stand-in
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # the kit folder (where this repo is)
 # shellcheck source=country.sh
 . "$KIT/scripts/country.sh"   # the country's facts (config/country.json)
