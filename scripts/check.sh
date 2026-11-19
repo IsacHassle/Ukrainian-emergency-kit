@@ -1,101 +1,129 @@
 #!/bin/bash
-# Kontrollerar att Krislådan fungerar, utan internet. Gör det en gång i månaden,
-# helst med wifi avstängt. Visar en rad per del: ✅ fungerar, ⚠️ saknas eller fungerar inte.
+# Checks that the kit works, with no internet needed. Do it once a month, best with Wi-Fi turned off.
+# One line per part, each in both languages: ✅ works, ⚠️ missing or not working, ℹ️ for your information.
+# Exit code 0 when nothing needs attention, 1 otherwise.
 #
-# Kör: dubbelklicka på "Kontrollera Krislåda.command", eller: bash scripts/kontroll.sh
+# Run: double-click "Перевірити - Check.command", or: bash scripts/check.sh
+# For tests: EK_APPS (the apps folder), EK_OLLAMA and EK_ANYTHINGLLM ("host:port"), EK_WEB_PORT, EK_DEV (where
+# USB receivers show up, /dev) and EK_NO_PAUSE (do not wait for an app to start) point the check at stand-ins.
 set -u
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source=country.sh
 . "$KIT/scripts/country.sh"   # the country's facts (config/country.json)
+# shellcheck source=say.sh
+. "$KIT/scripts/say.sh"
+APPS="${EK_APPS:-/Applications}"
+OLLAMA_ADDR="${EK_OLLAMA:-127.0.0.1:11434}"
+ANYTHINGLLM_ADDR="${EK_ANYTHINGLLM:-localhost:3001}"
+WEB_PORT="${EK_WEB_PORT:-8091}"
+DEV="${EK_DEV:-/dev}"
 OK=0; BAD=0
-ok()  { echo "  ✅ $*"; OK=$((OK + 1)); }
-bad() { echo "  ⚠️  $*"; BAD=$((BAD + 1)); }
-section() { printf '\n\033[1m%s\033[0m\n' "$*"; }
+ok()   { echo "  ✅ $1 / $2"; OK=$((OK + 1)); }
+bad()  { echo "  ⚠️  $1 / $2"; BAD=$((BAD + 1)); }
+info() { echo "  ℹ️  $1 / $2"; }
+section() { printf '\n\033[1m%s / %s\033[0m\n' "$1" "$2"; }
 
-echo "$(country kit_name): kontroll $(date '+%Y-%m-%d %H:%M')"
+say "$(country kit_name.uk): перевірка $(date '+%Y-%m-%d %H:%M')" "$(country kit_name.en): check $(date '+%Y-%m-%d %H:%M')"
 if curl -fs -o /dev/null --max-time 3 https://www.google.com 2>/dev/null; then
-  echo "(Internet är på. Stäng gärna av wifi och kör igen, så vet du att allt fungerar utan internet.)"
+  say "(Інтернет увімкнено. Вимкніть Wi-Fi і запустіть перевірку ще раз, щоб переконатися, що все працює без інтернету)" \
+      "(The internet is on. Turn Wi-Fi off and run the check again to be sure everything works without it)"
 fi
 
-section "Bibliotek"
+section "Бібліотеки" "Libraries"
 want=$(sed 's/#.*//' "$KIT/config/libraries.txt" | awk '{print $1}' | grep -c .)
 have=0; missing=""
 while read -r url; do
   stem=$(basename "$url"); stem="${stem%_*}"
   if ls "$KIT/library/${stem}_"*.zim >/dev/null 2>&1; then have=$((have + 1)); else missing="$missing $stem"; fi
 done < <(sed 's/#.*//' "$KIT/config/libraries.txt" | awk '{print $1}' | grep .)
-if [ "$have" = "$want" ]; then ok "Alla $want bibliotek finns ($(du -sh "$KIT/library" | cut -f1))"
-else bad "$have av $want bibliotek finns. Saknas:$missing. Kör installationen igen."; fi
-[ -x "$KIT/tools/kiwix-tools/kiwix-serve" ] && ok "kiwix-serve (visar biblioteken) finns" || bad "kiwix-serve saknas. Kör installationen igen."
+if [ "$have" = "$want" ]; then
+  size=$(du -sh "$KIT/library" | cut -f1)
+  ok "Усі бібліотеки є: $want ($size)" "All the Libraries are there: $want ($size)"
+else
+  bad "Бібліотек є $have з $want. Бракує:$missing. Запустіть встановлення ще раз" "$have of $want Libraries are there. Missing:$missing. Run the installation again"
+fi
+if [ -x "$KIT/tools/kiwix-tools/kiwix-serve" ]; then ok "kiwix-serve (показує бібліотеки) на місці" "kiwix-serve (shows the Libraries) is there"
+else bad "kiwix-serve немає. Запустіть встановлення ще раз" "kiwix-serve is missing. Run the installation again"; fi
 
-section "Kartor"
+section "Мапа" "Map"
 for m in world $(country map.pmtiles); do
   f="$KIT/maps/$m.pmtiles"
-  if [ -f "$f" ] && [ "$(head -c 7 "$f")" = "PMTiles" ]; then ok "Karta: $m ($(du -h "$f" | cut -f1))"; else bad "Kartan $m saknas eller är trasig. Kör installationen igen."; fi
+  if [ -f "$f" ] && [ "$(head -c 7 "$f")" = "PMTiles" ]; then
+    size=$(du -h "$f" | cut -f1)
+    ok "Мапа $m ($size)" "Map $m ($size)"
+  else bad "Мапи $m немає або вона пошкоджена. Запустіть встановлення ще раз" "The map $m is missing or damaged. Run the installation again"; fi
 done
 if [ -f "$KIT/web/map/data/places.json.gz" ] && ls "$KIT/web/map/data/letters/"*.json.gz >/dev/null 2>&1; then
-  ok "Kartans sökning (orter, gator, adresser)"
-else bad "Kartans sökning saknas. Kör installationen igen."; fi
+  ok "Пошук по мапі (міста, вулиці, адреси)" "The map search (towns, streets, addresses)"
+else bad "Пошуку по мапі немає. Запустіть встановлення ще раз" "The map search is missing. Run the installation again"; fi
 
-if [ -f "$KIT/tools/certs/server.crt" ]; then ok "https för mobilens GPS (certifikat finns)"
-else echo "  ℹ️  https för mobilens GPS skapas när du startar Krislådan första gången."; fi
+if [ -f "$KIT/tools/certs/server.crt" ]; then ok "https для GPS телефона (сертифікат є)" "https for the phone's GPS (the certificate is there)"
+else info "https для GPS телефона створиться, коли ви вперше запустите валізу" "https for the phone's GPS is made the first time you start the kit"; fi
 
-gpsdev=$(ls /dev/cu.usbmodem* /dev/cu.usbserial* /dev/cu.SLAB_USBtoUART* /dev/cu.wchusbserial* 2>/dev/null | head -1)
+gpsdev=$(ls "$DEV"/cu.usbmodem* "$DEV"/cu.usbserial* "$DEV"/cu.SLAB_USBtoUART* "$DEV"/cu.wchusbserial* 2>/dev/null | head -1)
 if [ -n "$gpsdev" ]; then
-  fix=$(curl -fs --max-time 3 http://localhost:8091/ai-api/gps 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print('ja' if d.get('fix') else 'nej')" 2>/dev/null)
+  g=$(basename "$gpsdev")
+  fix=$(curl -fs --max-time 3 "http://localhost:$WEB_PORT/ai-api/gps" 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print('yes' if d.get('fix') else 'no')" 2>/dev/null)
   case "$fix" in
-    ja) ok "USB GPS-mottagare inkopplad och har position ($(basename "$gpsdev"))" ;;
-    nej) ok "USB GPS-mottagare inkopplad ($(basename "$gpsdev")), söker satelliter. Ställ den vid ett fönster." ;;
-    *) ok "USB GPS-mottagare inkopplad ($(basename "$gpsdev")). Starta Krislådan och tryck 📍 på kartan för att testa." ;;
+    yes) ok "USB GPS-приймач підключено й має позицію ($g)" "A USB GPS receiver is connected and has a position ($g)" ;;
+    no) ok "USB GPS-приймач підключено ($g), шукає супутники. Покладіть його біля вікна" "A USB GPS receiver is connected ($g), looking for satellites. Put it by a window" ;;
+    *) ok "USB GPS-приймач підключено ($g). Запустіть валізу й натисніть 📍 на мапі, щоб перевірити" "A USB GPS receiver is connected ($g). Start the kit and press 📍 on the map to test it" ;;
   esac
 else
-  echo "  ℹ️  Ingen USB GPS-mottagare inkopplad. Med en sådan visar kartan var du är utan internet (se guiden)."
+  info "USB GPS-приймач не підключено. З ним мапа показує, де ви, без інтернету (див. посібник)" "No USB GPS receiver is connected. With one the map shows where you are with no internet (see the guide)"
 fi
 
-section "Dokument"
-n=$(find "$KIT/documents" -type f \( -name '*.pdf' -o -name '*.md' \) | wc -l | tr -d ' ')
-# The Official Guides (saved by scripts/fetch-pages.py): the texts, and the handbook as PDF. The rest of this
-# check is rewritten for Ukraine in its own ticket.
+section "Документи" "Documents"
+# The Official Guides (saved by scripts/fetch-pages.py): the texts, and the handbook as PDF.
 guides="$KIT/documents/$(country official_guides.folder)"
-sv=$(ls "$guides/"*.md 2>/dev/null | wc -l | tr -d ' ')
-[ "$sv" -gt 0 ] && ok "Офіційні посібники / Official Guides: $sv" || bad "Офіційних посібників немає. Запустіть встановлення з інтернетом / Official Guides missing. Run the installation with internet."
-ls "$guides/"*.pdf >/dev/null 2>&1 && ok "PDF: $(ls "$guides/"*.pdf | wc -l | tr -d ' ')" || bad "PDF-посібників немає / No PDF guides."
-[ "$n" -gt 100 ] && ok "Böcker och dokument: $n filer" || bad "Bara $n dokument. Kör installationen igen."
+n=$(find "$KIT/documents" -type f \( -name '*.pdf' -o -name '*.md' \) 2>/dev/null | wc -l | tr -d ' ')
+texts=$(ls "$guides/"*.md 2>/dev/null | wc -l | tr -d ' ')
+if [ "$texts" -gt 0 ]; then ok "Офіційні посібники: $texts" "Official Guides: $texts"
+else bad "Офіційних посібників немає. Запустіть встановлення з інтернетом" "No Official Guides. Run the installation with internet"; fi
+pdfs=$(ls "$guides/"*.pdf 2>/dev/null | wc -l | tr -d ' ')
+if [ "$pdfs" -gt 0 ]; then ok "Посібники в PDF: $pdfs" "Guides as PDF: $pdfs"
+else bad "PDF-посібників немає" "No PDF guides"; fi
+if [ "$n" -gt 100 ]; then ok "Книги й документи: файлів $n" "Books and documents: $n files"
+else bad "Документів лише $n. Запустіть встановлення ще раз" "Only $n documents. Run the installation again"; fi
 
-section "AI"
-OLLAMA=$(command -v ollama || echo /Applications/Ollama.app/Contents/Resources/ollama)
-if [ -d /Applications/Ollama.app ]; then
-  curl -fs -o /dev/null --max-time 3 http://127.0.0.1:11434/api/version || { open -g -a Ollama; sleep 8; }
-  if curl -fs -o /dev/null --max-time 3 http://127.0.0.1:11434/api/version; then
-    ok "AI-motorn Ollama är igång"
+section "ШІ" "AI"
+OLLAMA=$(command -v ollama || echo "$APPS/Ollama.app/Contents/Resources/ollama")
+if [ -d "$APPS/Ollama.app" ]; then
+  curl -fs -o /dev/null --max-time 3 "http://$OLLAMA_ADDR/api/version" || { open -g -a Ollama; [ -n "${EK_NO_PAUSE:-}" ] || sleep 8; }
+  if curl -fs -o /dev/null --max-time 3 "http://$OLLAMA_ADDR/api/version"; then
+    ok "Рушій ШІ Ollama працює" "The AI engine Ollama is running"
     for m in $(country ai.models.main) $(country ai.models.small) bge-m3; do
-      "$OLLAMA" show "$m" >/dev/null 2>&1 && ok "AI-modellen $m finns" || bad "AI-modellen $m saknas. Kör installationen igen."
+      if "$OLLAMA" show "$m" >/dev/null 2>&1; then ok "Модель ШІ $m є" "The AI model $m is there"
+      else bad "Моделі ШІ $m немає. Запустіть встановлення ще раз" "The AI model $m is missing. Run the installation again"; fi
     done
-    echo "  …frågar AI:n en testfråga (tar upp till en minut)"
-    answer=$(curl -fs --max-time 120 http://127.0.0.1:11434/api/chat -d "$(python3 -c 'import json,sys; print(json.dumps({"model": sys.argv[1], "stream": False, "think": False, "messages": [{"role": "user", "content": sys.argv[2]}]}))' "$(country ai.models.small)" "$(country ai.check.question)")" \
+    info "задаю ШІ тестове запитання (до хвилини)" "asking the AI a test question (up to a minute)"
+    answer=$(curl -fs --max-time 120 "http://$OLLAMA_ADDR/api/chat" -d "$(python3 -c 'import json,sys; print(json.dumps({"model": sys.argv[1], "stream": False, "think": False, "messages": [{"role": "user", "content": sys.argv[2]}]}))' "$(country ai.models.small)" "$(country ai.check.question)")" \
       | python3 -c "import json,sys; print(json.load(sys.stdin)['message']['content'])" 2>/dev/null)
     expect=$(country ai.check.expect)
-    if echo "$answer" | grep -q "$expect"; then ok "AI:n svarar (testfråga: $expect)"; else bad "AI:n svarade inte som väntat: ${answer:-inget svar}"; fi
-  else bad "AI-motorn Ollama startar inte. Öppna appen Ollama och kör kontrollen igen."; fi
-else bad "Appen Ollama saknas. Kör installationen igen (eller ./install.sh --utan-ai om du inte vill ha AI)."; fi
-if [ -d /Applications/AnythingLLM.app ]; then
-  if curl -fs -o /dev/null --max-time 3 http://localhost:3001/api/ping; then
-    docs=$(curl -fs "http://localhost:3001/api/workspace/$(country ai.workspace)" | python3 -c "import json,sys; print(len(json.load(sys.stdin)['workspace']['documents']))" 2>/dev/null || echo 0)
-    [ "$docs" -gt 100 ] && ok "Böckerna i AI:n (AnythingLLM): $docs dokument" || bad "Bara $docs dokument i AI:n. Kör: bash scripts/embed-documents.sh"
+    if echo "$answer" | grep -q "$expect"; then ok "ШІ відповідає (тестове запитання, очікуємо: $expect)" "The AI answers (test question, expecting: $expect)"
+    else bad "ШІ відповів не так, як очікувалося: ${answer:-без відповіді}" "The AI did not answer as expected: ${answer:-no answer}"; fi
+  else bad "Рушій ШІ Ollama не запускається. Відкрийте програму Ollama й повторіть перевірку" "The AI engine Ollama does not start. Open the Ollama app and run the check again"; fi
+else bad "Програми Ollama немає. Запустіть встановлення ще раз (або ./install.sh --no-ai, якщо ШІ не потрібен)" "The Ollama app is missing. Run the installation again (or ./install.sh --no-ai if you do not want the AI)"; fi
+if [ -d "$APPS/AnythingLLM.app" ]; then
+  if curl -fs -o /dev/null --max-time 3 "http://$ANYTHINGLLM_ADDR/api/ping"; then
+    docs=$(curl -fs "http://$ANYTHINGLLM_ADDR/api/workspace/$(country ai.workspace)" | python3 -c "import json,sys; print(len(json.load(sys.stdin)['workspace']['documents']))" 2>/dev/null || echo 0)
+    if [ "$docs" -gt 100 ]; then ok "Книги в ШІ (AnythingLLM): документів $docs" "The Books in the AI (AnythingLLM): $docs documents"
+    else bad "У ШІ лише $docs документів. Запустіть: bash scripts/embed-documents.sh" "Only $docs documents in the AI. Run: bash scripts/embed-documents.sh"; fi
   else
-    echo "  ℹ️  AnythingLLM är inte igång (startas av Starta Krislåda.command). Svar ur böckerna kontrolleras då inte."
+    info "AnythingLLM не запущено (його запускає «Запустити - Start.command»). Відповіді з книг тоді не перевіряються" "AnythingLLM is not running (\"Запустити - Start.command\" starts it). Answers from the Books are not checked then"
   fi
-else bad "Appen AnythingLLM saknas. Kör installationen igen."; fi
+else bad "Програми AnythingLLM немає. Запустіть встановлення ще раз" "The AnythingLLM app is missing. Run the installation again"; fi
 
-section "Utrymme och ström"
+section "Місце та живлення" "Space and power"
 free=$(df -h "$KIT" | awk 'NR==2 {print $4}')
-ok "Ledigt utrymme: $free"
+ok "Вільного місця: $free" "Free space: $free"
 batt=$(pmset -g batt 2>/dev/null | grep -o '[0-9]*%' | head -1)
-[ -n "$batt" ] && echo "  ℹ️  Batteri: $batt. Ladda Macen fullt och ha en powerbank redo."
+[ -n "$batt" ] && info "Батарея: $batt. Зарядіть Mac повністю й майте напоготові павербанк" "Battery: $batt. Charge the Mac fully and keep a power bank ready"
 
 echo
 if [ "$BAD" = 0 ]; then
-  printf '\033[1m✅ Allt fungerar (%s kontroller).\033[0m Starta Krislådan med "Starta Krislåda.command".\n' "$OK"
+  printf '\033[1m✅ Усе працює (перевірок: %s) / Everything works (%s checks).\033[0m Запустіть валізу: «Запустити - Start.command» / Start the kit: "Запустити - Start.command".\n' "$OK" "$OK"
 else
-  printf '\033[1m⚠️  %s saker behöver åtgärdas, %s fungerar.\033[0m Se raderna ovan.\n' "$BAD" "$OK"
+  printf '\033[1m⚠️  Потребують уваги: %s, працює: %s / %s need attention, %s work.\033[0m Дивіться рядки вище / See the lines above.\n' "$BAD" "$OK" "$BAD" "$OK"
 fi
+[ "$BAD" = 0 ]

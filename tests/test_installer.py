@@ -135,5 +135,86 @@ class WithoutTheAI(unittest.TestCase):
             kit.stop()
 
 
+class Start(unittest.TestCase):
+    def test_start_without_libraries_says_to_install_first_in_both_languages(self):
+        kit = InstallKit(ai=False)
+        try:
+            r = kit.run("scripts/share-library.sh")
+            self.assertNotEqual(r.returncode, 0)
+            self.assertRegex(r.stdout, r"Спершу встановіть валізу.* / No Libraries found")
+        finally:
+            kit.stop()
+
+
+class Check(unittest.TestCase):
+    """Check (scripts/check.sh) on an installed kit: what it reports, in both languages."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.kit = InstallKit()
+        assert cls.kit.install().returncode == 0
+        # The installed kit is tiny: give it the amount of Books a real one has, and the stand-in AI the answer
+        # the test question expects (the planning reply is what the stand-in Ollama answers to a plain question).
+        for i in range(101):
+            path = cls.kit.path("documents", "library", "Water Treatment", "book%d.md" % i)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w") as f:
+                f.write("x")
+        os.makedirs(cls.kit.path("documents", "Official Guides"), exist_ok=True)
+        with open(cls.kit.path("documents", "Official Guides", "x.pdf"), "w") as f:
+            f.write("%PDF")
+        cls.kit.ai.plan_reply = "112"
+        cls.kit.ai.embedded["emergency-kit"] = ["d%d" % i for i in range(101)]
+        cls.devs = os.path.join(cls.kit.root, "dev")
+        os.makedirs(cls.devs)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.kit.stop()
+
+    def check(self, **extra):
+        env = {"EK_DEV": self.devs}
+        env.update(extra)
+        return self.kit.run("scripts/check.sh", extra=env)
+
+    def test_a_working_kit_says_so_in_both_languages(self):
+        r = self.check()
+        self.assertEqual(r.returncode, 0, r.stdout)
+        self.assertIn("Усе працює", r.stdout)
+        self.assertIn("Everything works", r.stdout)
+        self.assertNotIn("⚠", r.stdout)
+        for line in lines(r.stdout):
+            if line.lstrip().startswith(("✅", "⚠", "ℹ")):
+                self.assertIn(" / ", line)
+        self.assertIn("The AI answers", r.stdout)
+
+    def test_it_names_what_is_missing(self):
+        os.rename(self.kit.path("maps", "ukraine.pmtiles"), self.kit.path("maps", "gone.pmtiles"))
+        stem = sorted(os.listdir(self.kit.path("library")))[0]
+        os.rename(self.kit.path("library", stem), self.kit.path("library", stem + ".gone"))
+        try:
+            r = self.check()
+        finally:
+            os.rename(self.kit.path("maps", "gone.pmtiles"), self.kit.path("maps", "ukraine.pmtiles"))
+            os.rename(self.kit.path("library", stem + ".gone"), self.kit.path("library", stem))
+        self.assertEqual(r.returncode, 1)
+        self.assertRegex(r.stdout, r"⚠️\s+Мапи ukraine немає.* / The map ukraine is missing")
+        self.assertRegex(r.stdout, r"⚠️\s+Бібліотек є \d+ з \d+\. Бракує:.* / \d+ of \d+ Libraries are there\. Missing:")
+        self.assertIn("need attention", r.stdout)
+
+    def test_a_missing_model_is_reported(self):
+        r = self.check(EK_FAKE_MODELS="gemma4:26b bge-m3 emergency")
+        self.assertRegex(r.stdout, r"Моделі ШІ emergency-small немає.* / The AI model emergency-small is missing")
+
+    def test_a_usb_gps_receiver_is_noticed(self):
+        open(os.path.join(self.devs, "cu.usbmodem1101"), "w").close()
+        try:
+            r = self.check()
+        finally:
+            os.remove(os.path.join(self.devs, "cu.usbmodem1101"))
+        self.assertIn("USB GPS-приймач підключено", r.stdout)
+        self.assertIn("A USB GPS receiver is connected", r.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()

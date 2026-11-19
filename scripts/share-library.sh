@@ -1,9 +1,8 @@
 #!/bin/bash
-# Starts the crisis kit: the offline library, the start page, the map, the
-# documents and the AI page, shared with every phone and laptop on the same Wi-Fi.
-# No internet needed. This is what "Starta Krislåda.command" runs.
+# Starts the kit: the offline Libraries, the start page, the map, the Official Guides and the AI page, shared with
+# every phone and laptop on the same Wi-Fi. No internet needed.
 #
-# Run:  bash scripts/share-library.sh   (this is what "Starta Krislåda.command" runs)
+# Run:  bash scripts/share-library.sh   (this is what "Запустити - Start.command" runs)
 # Stop: Ctrl+C (stops everything)
 #
 # The first time, macOS may ask whether kiwix-serve and Python may accept
@@ -12,6 +11,8 @@
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # the kit folder (where this repo is)
 # shellcheck source=country.sh
 . "$KIT/scripts/country.sh"   # the country's facts (config/country.json)
+# shellcheck source=say.sh
+. "$KIT/scripts/say.sh"
 LIB="$KIT/library"
 SERVE="$KIT/tools/kiwix-tools/kiwix-serve"
 # The ports can be chosen (EK_LIBRARY_PORT, EK_WEB_PORT) so a second kit or a test can run beside a kit
@@ -23,7 +24,7 @@ export EK_KIWIX="127.0.0.1:$LIB_PORT"   # tells the web server and the start pag
 shopt -s nullglob
 zims=("$LIB"/*.zim)
 if [ ${#zims[@]} -eq 0 ]; then
-  echo "Inga bibliotek hittades i $LIB. Kör installationen först (Installera Krislåda.command)."
+  say "У $LIB немає бібліотек. Спершу встановіть валізу («Встановити - Install.command»)" "No Libraries found in $LIB. Install the kit first (\"Встановити - Install.command\")"
   exit 1
 fi
 
@@ -37,7 +38,7 @@ LIB_PID=$!
 bash "$KIT/scripts/make-cert.sh" || true   # https for phones (GPS needs it); quick after the first time
 python3 "$KIT/scripts/serve-web.py" "$WEB_PORT" >/dev/null 2>&1 &
 WEB_PID=$!
-trap 'kill $LIB_PID $WEB_PID 2>/dev/null; echo; echo "  Stoppad."' EXIT
+trap 'kill $LIB_PID $WEB_PID 2>/dev/null; echo; say "  Зупинено" "  Stopped"' EXIT
 
 for i in $(seq 1 30); do curl -sf -o /dev/null "http://localhost:$LIB_PORT/catalog/v2/entries" && break; sleep 1; done
 python3 "$KIT/scripts/build-home.py" >/dev/null
@@ -45,17 +46,17 @@ python3 "$KIT/scripts/build-home.py" >/dev/null
 IP=$(ipconfig getifaddr en0 || ipconfig getifaddr en1)
 NAME=$(scutil --get LocalHostName 2>/dev/null)   # e.g. "Annas-MacBook-Air": stays the same when the IP changes
 echo ""
-echo "  $(country kit_name | tr '[:lower:]' '[:upper:]') är igång (${#zims[@]} bibliotek)."
+say "  $(country kit_name.uk | tr '[:lower:]' '[:upper:]') працює (бібліотек: ${#zims[@]})" "  $(country kit_name.en | tr '[:lower:]' '[:upper:]') is running (Libraries: ${#zims[@]})"
 echo ""
-echo "  På den här Macen:        http://localhost:$WEB_PORT"
-[ -n "$NAME" ] && echo "  På mobiler (samma wifi): http://$NAME.local:$WEB_PORT   (fungerar alltid på iPhone)"
-[ -n "$IP" ] && echo "                     eller: http://$IP:$WEB_PORT   (om den första inte fungerar, till exempel på Android)"
-[ -n "$NAME" ] && echo "  Med GPS på mobilen:      https://$NAME.local:$((WEB_PORT + 352))   (ställ in en gång: öppna /mobil/ på mobilen)"
+say "  На цьому Mac:           http://localhost:$WEB_PORT" "  On this Mac:             http://localhost:$WEB_PORT"
+[ -n "$NAME" ] && say "  На телефонах (та сама Wi-Fi): http://$NAME.local:$WEB_PORT (на iPhone працює завжди)" "  On phones (same Wi-Fi):  http://$NAME.local:$WEB_PORT (always works on iPhone)"
+[ -n "$IP" ] && say "  або за номером: http://$IP:$WEB_PORT (якщо перша адреса не працює, наприклад на Android)" "  or by number: http://$IP:$WEB_PORT (if the first address does not work, for example on Android)"
+[ -n "$NAME" ] && say "  GPS на телефоні: https://$NAME.local:$((WEB_PORT + 352)) (налаштуйте один раз: відкрийте /mobil/ на телефоні)" "  GPS on the phone: https://$NAME.local:$((WEB_PORT + 352)) (set up once: open /mobil/ on the phone)"
 echo ""
-echo "  Fråga AI:                http://localhost:$WEB_PORT/ai/"
-[ -n "$IP" ] && echo "  Fråga AI från mobilen:   http://$IP:$WEB_PORT/ai/"
+say "  Запитати ШІ: http://localhost:$WEB_PORT/ai/" "  Ask the AI: http://localhost:$WEB_PORT/ai/"
+[ -n "$IP" ] && say "  Запитати ШІ з телефона: http://$IP:$WEB_PORT/ai/" "  Ask the AI from a phone: http://$IP:$WEB_PORT/ai/"
 echo ""
-echo "  Låt det här fönstret vara öppet. Tryck Ctrl+C för att stänga av."
+say "  Не закривайте це вікно. Натисніть Ctrl+C, щоб вимкнути" "  Keep this window open. Press Ctrl+C to turn it off"
 echo ""
 [ "${1:-}" = "--open" ] && open "http://localhost:$WEB_PORT"
 wait $LIB_PID

@@ -8,9 +8,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Shell syntax
-        run: for f in install.sh hamta.sh scripts/*.sh *.command; do bash -n "$f" || exit 1; done
+        run: for f in install.sh get.sh scripts/*.sh *.command; do bash -n "$f" || exit 1; done
       - name: ShellCheck (errors only)
-        run: shellcheck -S error install.sh hamta.sh scripts/*.sh
+        run: shellcheck -S error install.sh get.sh scripts/*.sh
       - name: Python syntax
         run: python3 -m py_compile scripts/*.py
       - name: Config files
