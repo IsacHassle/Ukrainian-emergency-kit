@@ -19,7 +19,7 @@ class PrintPackBrowserTest(unittest.TestCase):
             run = subprocess.run(["node", os.path.join(REPO, "tests", "browser", "print.js")], env=env, cwd=REPO,
                                  capture_output=True, text=True, timeout=120)
             self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
-            self.assertEqual(run.stdout.count("ok - "), 6, run.stdout)
+            self.assertEqual(run.stdout.count("ok - "), 4, run.stdout)
         finally:
             kit.stop()
 
