@@ -30,6 +30,18 @@ class StyleTest(unittest.TestCase):
             self.assertEqual(LAYERS["boundaries-" + src]["filter"],
                              ["any", [">", "kind_detail", 2], ["all", ["<=", "kind_detail", 2], ["==", "disputed", True]]])
 
+    def test_the_national_border_is_clearly_stronger_than_an_oblast_line(self):
+        """Followup 3: the Swedish style drew the border as faintly as the oblast lines."""
+        def widths(layer):   # every width the line can have: a number, or the stops of an interpolation
+            w = layer["paint"]["line-width"]
+            return [w] if isinstance(w, (int, float)) else w[4::2]
+        grey = lambda layer: int(layer["paint"]["line-color"][1:3], 16)   # a grey: its first byte
+        for src in ("world", "area"):
+            country, oblast = LAYERS["boundaries_country-" + src], LAYERS["boundaries-" + src]
+            self.assertGreaterEqual(min(widths(country)), 2 * max(widths(oblast)), src)
+            self.assertLess(grey(country), grey(oblast) - 0x30, src)   # clearly darker
+            self.assertNotIn("line-dasharray", country["paint"], src)   # solid, where the oblast line is dashed
+
     def test_nothing_military_is_drawn(self):
         text = json.dumps(STYLE)
         self.assertNotIn("military", text)
