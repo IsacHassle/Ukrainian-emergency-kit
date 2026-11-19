@@ -742,24 +742,46 @@
  "map": {
   "regions": [
    {
-    "geofabrik": "europe/sweden",
-    "slug": "sweden",
+    "geofabrik": "europe/ukraine",
+    "slug": "ukraine",
     "detail": "full"
+   },
+   {
+    "geofabrik": "europe/moldova",
+    "slug": "moldova",
+    "detail": "full"
+   },
+   {
+    "geofabrik": "europe/poland",
+    "slug": "poland",
+    "detail": "border"
+   },
+   {
+    "geofabrik": "europe/slovakia",
+    "slug": "slovakia",
+    "detail": "border"
+   },
+   {
+    "geofabrik": "europe/hungary",
+    "slug": "hungary",
+    "detail": "border"
+   },
+   {
+    "geofabrik": "europe/romania",
+    "slug": "romania",
+    "detail": "border"
    }
   ],
-  "pmtiles": "sweden",
-  "bbox": [
-   10.5,
-   55.0,
-   24.3,
-   69.2
-  ],
+  "pmtiles": "ukraine",
+  "shape": "config/map-area.geojson",
+  "max_zoom": 15,
+  "world_max_zoom": 6,
   "search_release_repo": "IsacHassle/Swedish-doomsdaykit",
   "center": [
-   16.5,
-   62.5
+   31.2,
+   48.6
   ],
-  "zoom": 4.3,
+  "zoom": 5.2,
   "overview_label": {
    "uk": "Україна",
    "en": "Ukraine"
@@ -767,12 +789,34 @@
   "shortcuts": [
    {
     "label": {
-     "uk": "Стокгольм",
-     "en": "Stockholm"
+     "uk": "Київ",
+     "en": "Kyiv"
     },
     "center": [
-     18.0686,
-     59.3293
+     30.5234,
+     50.4501
+    ],
+    "zoom": 12
+   },
+   {
+    "label": {
+     "uk": "Львів",
+     "en": "Lviv"
+    },
+    "center": [
+     24.0297,
+     49.8397
+    ],
+    "zoom": 12
+   },
+   {
+    "label": {
+     "uk": "Одеса",
+     "en": "Odesa"
+    },
+    "center": [
+     30.7233,
+     46.4825
     ],
     "zoom": 12
    }
@@ -962,6 +1006,6 @@
   "ai.authorities, ai.example_source (07)",
   "radio (12)",
   "checklist.official_list.guide, checklist.official_list.source_prefix (12)",
-  "map.* except overview_label and nearest labels: regions, pmtiles, bbox, center, zoom, shortcuts, name_tags, labels, zoom_by_type, search_priority (08, 09)"
+  "map.* except regions, pmtiles, shape, max_zoom, world_max_zoom, center, zoom, shortcuts, overview_label and nearest labels: name_tags, labels, zoom_by_type, search_priority (09)"
  ]
 }

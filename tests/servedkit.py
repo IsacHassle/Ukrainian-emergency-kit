@@ -9,6 +9,13 @@ the web server is told (EK_* variables) to talk to the stand-ins in tests/standi
 ServedKit(country=facts) runs the kit with a different country config: `facts` is a function that takes the
 repo's country config (a dict) and returns the one to use. The stand-in AI then has exactly that config's
 models and Book index workspace, so a request with any other name fails.
+
+ServedKit(peer="192.168.1.50") makes every request look like it comes from that address, as a Visitor device
+on the Wi-Fi does (tests/peer_launcher.py); the default is the Kit Mac itself.
+
+ServedKit(env={...}) adds environment variables for the web server (for example KIT_GPS_DEVICE, a simulated
+USB receiver). kit.restart(peer=...) stops the web server and starts it again on the same kit folder, so a
+test can check what survives a restart, and who is asking can change between the two runs.
 """
 import json
 import os
@@ -35,7 +42,10 @@ def free_port():
 
 
 class ServedKit:
-    def __init__(self, ai_delay=0.0, country=None):
+    def __init__(self, ai_delay=0.0, country=None, peer=None, tiles=False, env=None):
+        self.peer = peer
+        self.extra_env = env or {}
+        self.tiles = tiles   # put a tiny map (tests/kit/maps) in the kit, as the world and the country's map file
         self.country = None
         with open(os.path.join(REPO, "config", "country.json"), encoding="utf-8") as f:
             facts = json.load(f)
@@ -80,6 +90,7 @@ class ServedKit:
         })
         if self.country:
             env["EK_COUNTRY"] = os.path.join(self.tmp, "country.json")
+        env.update(self.extra_env)
         return env
 
     def start(self):
@@ -99,6 +110,10 @@ class ServedKit:
             os.makedirs(os.path.dirname(path), exist_ok=True)
             with open(path, "wb") as f:
                 f.write(text if isinstance(text, bytes) else text.encode("utf-8"))
+        if self.tiles:
+            os.makedirs(os.path.join(self.kit_dir, "maps"))
+            for name in ("world", self.facts["map"]["pmtiles"]):
+                shutil.copy(os.path.join(TESTS, "kit", "maps", "tiny.pmtiles"), os.path.join(self.kit_dir, "maps", name + ".pmtiles"))
         shutil.copytree(os.path.join(REPO, "web"), self.web_dir, symlinks=True)
         data = os.path.join(self.web_dir, "map", "data")
         os.makedirs(data, exist_ok=True)
@@ -106,15 +121,35 @@ class ServedKit:
         # The start page is built from the Library, as share-library.sh does.
         subprocess.run([sys.executable, os.path.join(REPO, "scripts", "build-home.py")], env=self.env(), check=True,
                        stdout=subprocess.DEVNULL)
+        self._launch()
+        return self
+
+    def _launch(self):
         for attempt in range(5):
             self.port = free_port()
-            self._proc = subprocess.Popen([sys.executable, os.path.join(REPO, "scripts", "serve-web.py"), str(self.port)],
-                                          env=self.env(), stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+            env = self.env()
+            script = os.path.join(REPO, "scripts", "serve-web.py")
+            if self.peer:
+                env["EK_TEST_PEER"] = self.peer
+                script = os.path.join(TESTS, "peer_launcher.py")
+            self._proc = subprocess.Popen([sys.executable, script, str(self.port)],
+                                          env=env, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
             self.url = "http://127.0.0.1:%d" % self.port
             if self._wait_ready():
-                return self
+                return
             self._proc.kill()
         raise RuntimeError("the web server did not start: " + self._proc.stderr.read().decode())
+
+    def restart(self, peer=None):
+        """Stops the web server and starts it again on the same kit folder (peer: who the requests look like)."""
+        self._proc.terminate()
+        try:
+            self._proc.wait(5)
+        except subprocess.TimeoutExpired:
+            self._proc.kill()
+        self._proc.stderr.close()
+        self.peer = peer
+        self._launch()
 
     def _wait_ready(self):
         for _ in range(100):

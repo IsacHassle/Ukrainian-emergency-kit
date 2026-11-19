@@ -107,12 +107,12 @@ class ConfigIsValidTest(unittest.TestCase):
         self.assertNotEqual(code, 0)
         self.assertIn("emergency_numbers[1].label", out)
 
-    def test_a_map_box_the_wrong_way_round_is_refused(self):
+    def test_a_map_shape_that_is_not_a_closed_polygon_is_refused(self):
         c = real()
-        c["map"]["bbox"] = [24.3, 69.2, 10.5, 55.0]
+        c["map"]["shape"] = "config/country.json"
         code, out = check(c)
         self.assertNotEqual(code, 0)
-        self.assertIn("map.bbox", out)
+        self.assertIn("map.shape", out)
 
     def test_a_workspace_address_that_is_not_made_from_its_name_is_refused(self):
         c = real()
@@ -228,8 +228,9 @@ class ShellScriptsReadTheConfigTest(unittest.TestCase):
         self.assertEqual(shell(REPO, None, "country ai.base_models.small"), "gemma4:e4b")
         self.assertEqual(shell(REPO, None, "country ai.workspace"), "emergency-kit")
         self.assertEqual(shell(REPO, None, "country ai.workspace_name"), "Emergency Kit")
-        self.assertEqual(shell(REPO, None, "country map.pmtiles"), "sweden")
-        self.assertEqual(shell(REPO, None, "country map.bbox | paste -sd, -"), "10.5,55.0,24.3,69.2")
+        self.assertEqual(shell(REPO, None, "country map.pmtiles"), "ukraine")
+        self.assertEqual(shell(REPO, None, "country map.shape"), "config/map-area.geojson")
+        self.assertEqual(shell(REPO, None, "country map.max_zoom"), "15")
         self.assertEqual(shell(REPO, None, "country map.search_release_repo"), "IsacHassle/Swedish-doomsdaykit")
         self.assertEqual(shell(REPO, None, "country kit_name"), "Тривожна валіза")
         self.assertEqual(shell(REPO, None, "country ai.check.expect"), "112")
@@ -242,7 +243,7 @@ class ShellScriptsReadTheConfigTest(unittest.TestCase):
             self.assertEqual(shell(REPO, path, "country ai.models.main"), "alpha")
             self.assertEqual(shell(REPO, path, "country ai.workspace"), "ws-alpha")
             self.assertEqual(shell(REPO, path, "country kit_name"), "Testlådan")
-            self.assertEqual(shell(REPO, path, "country map.regions.0.slug"), "sweden")   # unchanged in testland
+            self.assertEqual(shell(REPO, path, "country map.regions.0.slug"), "ukraine")   # unchanged in testland
 
 
 if __name__ == "__main__":
