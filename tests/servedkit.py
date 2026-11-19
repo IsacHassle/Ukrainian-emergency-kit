@@ -5,7 +5,12 @@ touches a kit that is already running, the Ollama models or the AnythingLLM work
 the web server is told (EK_* variables) to talk to the stand-ins in tests/standins.py only.
 
     kit = ServedKit(); kit.start(); ... kit.url, kit.library_port ...; kit.stop()
+
+ServedKit(country=facts) runs the kit with a different country config: `facts` is a function that takes the
+repo's country config (a dict) and returns the one to use. The stand-in AI then has exactly that config's
+models and Book index workspace, so a request with any other name fails.
 """
+import json
 import os
 import shutil
 import socket
@@ -30,8 +35,15 @@ def free_port():
 
 
 class ServedKit:
-    def __init__(self, ai_delay=0.0):
-        self.ai = StandInAI(delay=ai_delay)
+    def __init__(self, ai_delay=0.0, country=None):
+        self.country = None
+        models = workspaces = None
+        if country:
+            with open(os.path.join(REPO, "config", "country.json"), encoding="utf-8") as f:
+                self.country = country(json.load(f))
+            models = list(self.country["ai"]["models"].values())
+            workspaces = [self.country["ai"]["workspace"]]
+        self.ai = StandInAI(delay=ai_delay, models=models, workspaces=workspaces)
         self.library = StandInLibrary()
         self.library_port = self.library.port
         self.tmp = tempfile.mkdtemp(prefix="ek-test-")
@@ -49,11 +61,16 @@ class ServedKit:
             "EK_ANYTHINGLLM": "127.0.0.1:%d" % self.ai.anythingllm_port,
             "EK_KIWIX": "127.0.0.1:%d" % self.library_port,
         })
+        if self.country:
+            env["EK_COUNTRY"] = os.path.join(self.tmp, "country.json")
         return env
 
     def start(self):
         self.ai.start()
         self.library.start()
+        if self.country:
+            with open(os.path.join(self.tmp, "country.json"), "w", encoding="utf-8") as f:
+                json.dump(self.country, f, ensure_ascii=False)
         shutil.copytree(os.path.join(TESTS, "kit", "documents"), os.path.join(self.kit_dir, "documents"))
         shutil.copytree(os.path.join(TESTS, "kit", "tools"), os.path.join(self.kit_dir, "tools"))
         shutil.copytree(os.path.join(REPO, "web"), self.web_dir, symlinks=True)

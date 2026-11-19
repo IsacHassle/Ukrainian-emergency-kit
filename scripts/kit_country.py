@@ -17,10 +17,11 @@ with open(PATH, encoding="utf-8") as _f:
     COUNTRY = json.load(_f)
 
 LANG = COUNTRY["default_language"]
+LOCALE = COUNTRY["locale"]   # for dates and times, like sv-SE
 
 # What a Visitor device's pages may read (served as /lib/country.js). Everything else is for the scripts
 # that build the kit or the start page, and stays on the Kit Mac.
-PAGE_KEYS = ("country", "default_language", "kit_name", "emergency_numbers", "radio", "checklist")
+PAGE_KEYS = ("country", "default_language", "locale", "kit_name", "emergency_numbers", "radio", "checklist")
 
 
 def text(value, lang=None):

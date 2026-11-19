@@ -59,6 +59,7 @@ def main():
         lang = "sv"
     elif not re.fullmatch(r"[a-z]{2,3}", lang):
         bad("default_language", "must be a language code like uk")
+    get("", c, "locale", str)
     texts("kit_name", get("", c, "kit_name", dict), lang)
 
     # The AI.

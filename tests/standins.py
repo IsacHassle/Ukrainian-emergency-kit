@@ -67,15 +67,16 @@ class StandInAI:
 
     Settings a test may change: `delay` (seconds between the words of an answer, to keep a request in
     the queue), `models` (what Ollama says is installed).
-    Things a test may read: `chat_requests` (every /api/chat body received), `aborted` (answers whose
-    reader went away before the end).
+    Things a test may read: `chat_requests` (every /api/chat body received), `searched_workspaces` (the
+    Book index workspace of every vector search), `aborted` (answers whose reader went away before the end).
     """
 
-    def __init__(self, delay=0.0):
+    def __init__(self, delay=0.0, models=None, workspaces=None):
         self.delay = delay
-        self.models = ["crisis", "crisis-small", "emergency", "emergency-small"]
-        self.workspaces = {"crisis", "emergency-kit"}
+        self.models = list(models) if models else ["crisis", "crisis-small", "emergency", "emergency-small"]
+        self.workspaces = set(workspaces) if workspaces else {"crisis", "emergency-kit"}
         self.chat_requests = []
+        self.searched_workspaces = []
         self.aborted = 0
         self.passages = read_json(os.path.join(HERE, "kit", "book-passages.json"))
         ai = self
@@ -119,7 +120,10 @@ class StandInAI:
 
             def do_POST(self):
                 body = self.body_json()
-                if re.fullmatch(r"/api/v1/workspace/[\w-]+/vector-search", self.path):
+                m = re.fullmatch(r"/api/v1/workspace/([\w-]+)/vector-search", self.path)
+                if m:
+                    with lock:
+                        ai.searched_workspaces.append(m.group(1))
                     if self.headers.get("Authorization") != "Bearer test-key":
                         return self.send_json({"error": "forbidden"}, 403)
                     return self.send_json({"results": ai.passages[:int(body.get("topN") or 6)]})

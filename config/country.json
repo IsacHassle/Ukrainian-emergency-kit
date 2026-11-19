@@ -1,6 +1,7 @@
 {
  "country": "sweden",
  "default_language": "sv",
+ "locale": "sv-SE",
  "kit_name": {
   "sv": "Krislåda",
   "en": "Crisis kit"
