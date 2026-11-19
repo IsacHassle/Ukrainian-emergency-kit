@@ -398,11 +398,35 @@ def gather(question, earlier=""):
     return out.get("books", []), out.get("libs", [])
 
 
-def system_prompt(base, passages, articles):
+# Letters and common words only one of the two Cyrillic languages uses, to tell a Russian message from a Ukrainian one.
+_UK_ONLY = re.compile(r"[іїєґ]", re.I)
+_RU_ONLY = re.compile(r"[ыэъё]", re.I)
+_UK_WORDS = {"що", "як", "мені", "можна", "треба", "дуже", "який", "яка", "коли", "тому", "це", "та", "і", "є", "дитина", "діти", "робити"}
+_RU_WORDS = {"что", "как", "мне", "можно", "нужно", "очень", "какой", "какая", "когда", "потому", "это", "и", "или", "делать", "ребёнок", "дети", "если"}
+
+
+def language_of(text):
+    """"Ukrainian", "Russian" or "English" for a question, or None when it cannot be told. Models drift into the
+    language of the excerpts (Ukrainian in a Ukrainian kit), so the answer's language is named outright."""
+    cyr = len(re.findall(r"[а-яіїєґё]", text, re.I))
+    lat = len(re.findall(r"[a-z]", text, re.I))
+    if lat > cyr:
+        return "English"
+    if not cyr:
+        return None
+    uk, ru = len(_UK_ONLY.findall(text)), len(_RU_ONLY.findall(text))
+    words = re.findall(r"[а-яіїєґё']+", text.lower())
+    uk += sum(w in _UK_WORDS for w in words)
+    ru += sum(w in _RU_WORDS for w in words)
+    return "Russian" if ru > uk else "Ukrainian"
+
+
+def system_prompt(base, passages, articles, language=None):
     """The AI's instructions plus what was found, numbered so the answer can name its sources."""
     if not passages and not articles:
         return base + ("\n\nEXCERPTS FOR THIS QUESTION\nNothing in the kit's books or libraries matched this question. "
-                       "Say so briefly, then answer carefully from what you know.")
+                       "Say so briefly, then answer carefully from what you know."
+                       + (f" The user's latest message is in {language}: write the whole answer in {language}." if language else ""))
     parts, n = [], 0
     for p in passages:
         n += 1
@@ -422,4 +446,5 @@ def system_prompt(base, passages, articles):
         "of the user's LATEST message (a Russian question gets a Russian answer, an English question an English one, "
         "a Ukrainian question a Ukrainian one; " + ai["answer_language"] + " if it is unclear), translate what you use, "
         "and never mix languages in one answer. "
+        + (f"The user's latest message is in {language}: write the whole answer in {language}. " if language else "") +
         "If the excerpts do not cover the question, say so and answer carefully.\n\n" + "\n\n".join(parts))

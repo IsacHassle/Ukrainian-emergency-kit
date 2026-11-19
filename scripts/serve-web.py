@@ -270,6 +270,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if clean[-1]["role"] != "user" or not asked[-1].strip():
                 return self.send_json({"error": "bad request"}, 400)
             passages, articles = kit_search.gather(asked[-1], asked[-2] if len(asked) > 1 else "")
+            language = kit_search.language_of(asked[-1])
+            if language:   # said again on the question itself, where a model listens best (never stored)
+                clean[-1] = {"role": "user", "content": clean[-1]["content"] + f"\n\n(Answer in {language}.)"}
             try:
                 base = open(PROMPT, encoding="utf-8").read()
             except OSError:
@@ -279,7 +282,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.stream(OLLAMA, "/api/chat", {
                 "model": kit_search.MODEL, "stream": True, "think": False, "keep_alive": "30m",
                 "options": kit_search.OPTIONS,
-                "messages": [{"role": "system", "content": kit_search.system_prompt(base, passages, articles)}] + clean,
+                "messages": [{"role": "system", "content": kit_search.system_prompt(base, passages, articles, language)}] + clean,
             }, first=json.dumps({"sources": sources}, ensure_ascii=False).encode() + b"\n")
 
         if action == "lending":  # the switch for Lent positions: only the Kit Mac itself may turn it

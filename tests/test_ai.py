@@ -138,6 +138,43 @@ class LanguageTest(unittest.TestCase):
         self.assertIn("never mix languages", tail)
 
 
+class NamingTheLanguageTest(unittest.TestCase):
+    """Models drift into the language of the excerpts, so the answer's language is named in the instructions and
+    on the question itself."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.kit = ServedKit()
+        cls.kit.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.kit.stop()
+
+    def sent(self, question):
+        before = len(self.kit.ai.chat_requests)
+        ask(self.kit, question)
+        return [r for r in self.kit.ai.chat_requests[before:] if r.get("stream")][0]["messages"]
+
+    def check(self, question, language):
+        messages = self.sent(question)
+        self.assertIn("The user's latest message is in %s" % language, messages[0]["content"])
+        self.assertIn("Answer in %s" % language, messages[-1]["content"])
+        self.assertTrue(messages[-1]["content"].startswith(question))   # the question itself is untouched
+
+    def test_ukrainian(self):
+        self.check("Я побачив у полі предмет, схожий на міну. Що робити?", "Ukrainian")
+
+    def test_russian(self):
+        self.check("Я увидел в поле предмет, похожий на мину. Что делать?", "Russian")
+
+    def test_russian_without_letters_only_russian_has(self):
+        self.check("Как наложить жгут, что можно использовать?", "Russian")
+
+    def test_english(self):
+        self.check("I saw something in a field that looks like a mine. What do I do?", "English")
+
+
 class InstructionsTest(unittest.TestCase):
     """The AI's instructions, as the AI receives them in From sources."""
 
