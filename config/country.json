@@ -1,30 +1,31 @@
 {
- "country": "sweden",
- "default_language": "sv",
- "locale": "sv-SE",
+ "country": "ukraine",
+ "default_language": "uk",
+ "locale": "uk-UA",
  "kit_name": {
-  "sv": "Krislåda",
-  "en": "Crisis kit"
+  "uk": "Тривожна валіза",
+  "en": "Emergency Kit"
  },
  "kit_description": {
-  "sv": "Sjukvård, AI på svenska och karta över Sverige, utan internet."
+  "uk": "Медична допомога, ШІ українською та мапа України, без інтернету.",
+  "en": "First aid, an AI that answers in Ukrainian and a map of Ukraine, without internet."
  },
  "ai": {
   "models": {
-   "main": "crisis",
-   "small": "crisis-small"
+   "main": "emergency",
+   "small": "emergency-small"
   },
   "base_models": {
    "main": "gemma4:26b",
    "small": "gemma4:e4b"
   },
-  "workspace": "crisis",
-  "workspace_name": "Crisis",
-  "answer_language": "Swedish",
-  "authorities": "the Swedish authorities' pages (1177, MCF, Livsmedelsverket, Krisinformation)",
-  "example_source": "1177 - Stoppa en blödning",
+  "workspace": "emergency-kit",
+  "workspace_name": "Emergency Kit",
+  "answer_language": "Ukrainian",
+  "authorities": "the Ukrainian authorities' pages (DSNS, MOZ)",
+  "example_source": "ДСНС - Як зупинити кровотечу",
   "check": {
-   "question": "Svara bara med siffrorna: vilket nummer ringer man vid nödsituation i Sverige?",
+   "question": "Відповідай лише цифрами: який номер набирати в разі надзвичайної ситуації в Україні?",
    "expect": "112"
   },
   "libraries": [
@@ -53,170 +54,137 @@
    "number": "112",
    "primary": true,
    "label": {
-    "sv": "nödsituation"
+    "uk": "єдиний номер екстрених служб",
+    "en": "all emergencies"
    },
    "print_label": {
-    "sv": "nödsituation"
+    "uk": "єдиний номер екстрених служб",
+    "en": "all emergencies"
    }
   },
   {
-   "number": "1177",
+   "number": "101",
    "label": {
-    "sv": "sjukvårdsråd"
+    "uk": "пожежно-рятувальна служба",
+    "en": "fire and rescue"
    },
    "print_label": {
-    "sv": "sjukvårdsrådgivning"
+    "uk": "пожежно-рятувальна служба",
+    "en": "fire and rescue"
    }
   },
   {
-   "number": "113 13",
+   "number": "102",
    "label": {
-    "sv": "information vid kris"
+    "uk": "поліція",
+    "en": "police"
    },
    "print_label": {
-    "sv": "information vid kris"
+    "uk": "поліція",
+    "en": "police"
    }
   },
   {
-   "number": "114 14",
+   "number": "103",
    "label": {
-    "sv": "polisen"
+    "uk": "швидка допомога",
+    "en": "ambulance"
    },
    "print_label": {
-    "sv": "polisen, ej akut"
+    "uk": "швидка допомога",
+    "en": "ambulance"
+   }
+  },
+  {
+   "number": "104",
+   "label": {
+    "uk": "аварійна служба газу",
+    "en": "gas emergency"
+   },
+   "print_label": {
+    "uk": "аварійна служба газу",
+    "en": "gas emergency"
    }
   }
  ],
  "radio": {
   "label": {
-   "sv": "Radio P4"
+   "uk": "Українське радіо",
+   "en": "Ukrainian Radio"
   },
   "print_label": {
-   "sv": "Sveriges Radio P4"
+   "uk": "Українське радіо (Суспільне)",
+   "en": "Ukrainian Radio (Suspilne)"
   }
  },
  "official_guides": {
   "folder": "library/Svenska myndigheter",
   "sources": [
    {
-    "id": "1177",
+    "id": "ДСНС",
     "label": {
-     "sv": "1177 · Första hjälpen och skador"
+     "uk": "ДСНС · Перша допомога, пожежі, укриття",
+     "en": "DSNS · First aid, fires, shelters"
     },
-    "host": "www.1177.se"
-   },
-   {
-    "id": "MCF",
-    "label": {
-     "sv": "MCF · Hemberedskap, varningar, skyddsrum, brand"
-    },
-    "host": "www.mcf.se"
-   },
-   {
-    "id": "Livsmedelsverket",
-    "label": {
-     "sv": "Livsmedelsverket · Vatten och mat"
-    },
-    "host": "www.livsmedelsverket.se"
-   },
-   {
-    "id": "Krisinformation",
-    "label": {
-     "sv": "Krisinformation.se"
-    },
-    "host": "www.krisinformation.se"
+    "host": "dsns.gov.ua"
    }
   ],
   "print_pages": [
-   "1177 - Hjärt-lungräddning",
-   "1177 - Hjärt-lungräddning på barn",
-   "1177 - Stabilt sidoläge",
-   "1177 - Om någon sätter i halsen",
-   "1177 - Stoppa en blödning",
-   "1177 - Chock",
-   "1177 - Brännskador",
-   "1177 - Förgiftning",
-   "1177 - Inandning av skadlig gas",
-   "1177 - Köldskador – förfrysning",
-   "MCF - Vad är VMA och hur går en varning till-",
-   "MCF - Utomhusvarning – Hesa Fredrik",
-   "MCF - Grunder i hemberedskap",
-   "MCF - Tillgång till vatten i kris",
-   "MCF - Tillgång till värme i kris",
-   "Livsmedelsverket - Dricksvatten i dunk",
-   "Livsmedelsverket - Laga mat under ett elavbrott"
+   "ДСНС - Перша допомога"
   ]
  },
  "emergency_topics": [
   {
    "article": "Cardiopulmonary_resuscitation",
    "label": {
-    "sv": "Hjärt-lungräddning",
+    "uk": "Серцево-легенева реанімація",
     "en": "CPR"
-   },
-   "official_guide": {
-    "sv": "1177 - Hjärt-lungräddning"
    },
    "first": 1
   },
   {
    "article": "Bleeding",
    "label": {
-    "sv": "Kraftig blödning",
+    "uk": "Сильна кровотеча",
     "en": "Severe bleeding"
-   },
-   "official_guide": {
-    "sv": "1177 - Stoppa en blödning"
    },
    "first": 2
   },
   {
    "article": "Tourniquet",
    "label": {
-    "sv": "Tryckförband, tourniquet",
+    "uk": "Джгут, тиснуча пов’язка",
     "en": "Tourniquet"
-   },
-   "official_guide": {
-    "sv": "MCF - Stoppa en blödning"
    }
   },
   {
    "article": "Choking",
    "label": {
-    "sv": "Luftvägsstopp",
+    "uk": "Закупорка дихальних шляхів",
     "en": "Choking"
-   },
-   "official_guide": {
-    "sv": "1177 - Om någon sätter i halsen"
    },
    "first": 3
   },
   {
    "article": "Shock_(circulatory)",
    "label": {
-    "sv": "Chock",
+    "uk": "Шок",
     "en": "Shock"
-   },
-   "official_guide": {
-    "sv": "1177 - Chock"
    },
    "first": 4
   },
   {
    "article": "Burn",
    "label": {
-    "sv": "Brännskada",
+    "uk": "Опік",
     "en": "Burn"
-   },
-   "official_guide": {
-    "sv": "1177 - Brännskador"
    },
    "first": 5
   },
   {
    "article": "Hypothermia",
    "label": {
-    "sv": "Nedkylning",
+    "uk": "Переохолодження",
     "en": "Hypothermia"
    },
    "first": 6
@@ -224,190 +192,157 @@
   {
    "article": "Frostbite",
    "label": {
-    "sv": "Förfrysning",
+    "uk": "Обмороження",
     "en": "Frostbite"
-   },
-   "official_guide": {
-    "sv": "1177 - Köldskador – förfrysning"
    }
   },
   {
    "article": "Heat_stroke",
    "label": {
-    "sv": "Värmeslag",
+    "uk": "Тепловий удар",
     "en": "Heat stroke"
-   },
-   "official_guide": {
-    "sv": "1177 - Värmeslag"
    }
   },
   {
    "article": "Anaphylaxis",
    "label": {
-    "sv": "Allergisk chock",
+    "uk": "Алергічний шок",
     "en": "Anaphylaxis"
-   },
-   "official_guide": {
-    "sv": "1177 - Allergisk chock – anafylaxi"
    },
    "first": 7
   },
   {
    "article": "Myocardial_infarction",
    "label": {
-    "sv": "Hjärtinfarkt",
+    "uk": "Інфаркт",
     "en": "Heart attack"
    }
   },
   {
    "article": "Stroke",
    "label": {
-    "sv": "Stroke",
+    "uk": "Інсульт",
     "en": "Stroke"
    }
   },
   {
    "article": "Bone_fracture",
    "label": {
-    "sv": "Benbrott",
+    "uk": "Перелом",
     "en": "Fracture"
    }
   },
   {
    "article": "Head_injury",
    "label": {
-    "sv": "Huvudskada",
+    "uk": "Травма голови",
     "en": "Head injury"
-   },
-   "official_guide": {
-    "sv": "1177 - Hjärnskakning"
    }
   },
   {
    "article": "Wound",
    "label": {
-    "sv": "Sår",
+    "uk": "Рани",
     "en": "Wounds"
-   },
-   "official_guide": {
-    "sv": "1177 - Behandling av stora sår"
    }
   },
   {
    "article": "Sepsis",
    "label": {
-    "sv": "Blodförgiftning",
+    "uk": "Сепсис",
     "en": "Sepsis"
    }
   },
   {
    "article": "Oral_rehydration_therapy",
    "label": {
-    "sv": "Uttorkning, diarré",
+    "uk": "Зневоднення, пронос",
     "en": "Dehydration"
    }
   },
   {
    "article": "Carbon_monoxide_poisoning",
    "label": {
-    "sv": "Kolmonoxid (aggregat, kaminer)",
+    "uk": "Чадний газ (генератор, пічки)",
     "en": "Carbon monoxide"
-   },
-   "official_guide": {
-    "sv": "1177 - Inandning av skadlig gas"
    },
    "first": 9
   },
   {
    "article": "Poisoning",
    "label": {
-    "sv": "Förgiftning",
+    "uk": "Отруєння",
     "en": "Poisoning"
-   },
-   "official_guide": {
-    "sv": "1177 - Förgiftning"
    },
    "first": 8
   },
   {
    "article": "Mushroom_poisoning",
    "label": {
-    "sv": "Svampförgiftning",
+    "uk": "Отруєння грибами",
     "en": "Mushroom poisoning"
    }
   },
   {
    "article": "Epileptic_seizure",
    "label": {
-    "sv": "Kramper",
+    "uk": "Судоми",
     "en": "Seizure"
    }
   },
   {
    "article": "Hypoglycemia",
    "label": {
-    "sv": "Lågt blodsocker",
+    "uk": "Низький цукор у крові",
     "en": "Hypoglycemia"
    }
   },
   {
    "article": "Asthma",
    "label": {
-    "sv": "Astma",
+    "uk": "Астма",
     "en": "Asthma"
    }
   },
   {
    "article": "Drowning",
    "label": {
-    "sv": "Drunkning",
+    "uk": "Утоплення",
     "en": "Drowning"
-   },
-   "official_guide": {
-    "sv": "1177 - Drunkningsolyckor"
    }
   },
   {
    "article": "Childbirth",
    "label": {
-    "sv": "Förlossning",
+    "uk": "Пологи",
     "en": "Childbirth"
    }
   },
   {
    "article": "Snakebite",
    "label": {
-    "sv": "Huggormsbett",
+    "uk": "Укус змії",
     "en": "Snakebite"
-   },
-   "official_guide": {
-    "sv": "1177 - Huggormsbett"
    }
   },
   {
    "article": "Tick-borne_encephalitis",
    "label": {
-    "sv": "Fästingar, TBE",
+    "uk": "Кліщі, кліщовий енцефаліт",
     "en": "Tick-borne encephalitis"
-   },
-   "official_guide": {
-    "sv": "1177 - Fästingbett"
    }
   },
   {
    "article": "Potassium_iodide",
    "label": {
-    "sv": "Strålning, jodtabletter",
+    "uk": "Радіація, йодид калію",
     "en": "Radiation, iodine"
-   },
-   "official_guide": {
-    "sv": "MCF - Varning kring Sveriges kärnkraftverk"
    }
   },
   {
    "article": "Panic_attack",
    "label": {
-    "sv": "Panikångest",
+    "uk": "Панічна атака",
     "en": "Panic attack"
    }
   }
@@ -415,91 +350,89 @@
  "books": [
   {
    "label": {
-    "sv": "Om krisen eller kriget kommer"
+    "uk": "Where There Is No Doctor",
+    "en": "Where There Is No Doctor"
    },
    "description": {
-    "sv": "Myndighetens råd, på svenska"
-   },
-   "path": "Om-krisen-eller-kriget-kommer.pdf"
-  },
-  {
-   "label": {
-    "sv": "In case of crisis or war"
-   },
-   "description": {
-    "sv": "The same brochure in English"
-   },
-   "path": "In-case-of-crisis-or-war.pdf"
-  },
-  {
-   "label": {
-    "sv": "Where There Is No Doctor"
-   },
-   "description": {
-    "sv": "The classic village health care handbook"
+    "uk": "Класичний посібник із медичної допомоги в селах і далеких місцях",
+    "en": "The classic village health care handbook"
    },
    "path": "library/Medical Library/Where there is no Doctor.pdf"
   },
   {
    "label": {
-    "sv": "First Aid (Field Manual)"
+    "uk": "First Aid (Field Manual)",
+    "en": "First Aid (Field Manual)"
    },
    "description": {
-    "sv": "Step-by-step first aid, US Army"
+    "uk": "Перша допомога крок за кроком, армія США",
+    "en": "Step-by-step first aid, US Army"
    },
    "path": "library/Military Medicine/First Aid (Field Manual).pdf"
   },
   {
    "label": {
-    "sv": "Survival and Austere Medicine"
+    "uk": "Survival and Austere Medicine",
+    "en": "Survival and Austere Medicine"
    },
    "description": {
-    "sv": "Medicine when there is no hospital"
+    "uk": "Медицина, коли немає лікарні",
+    "en": "Medicine when there is no hospital"
    },
    "path": "library/Medical Library/Survival and Austere Medicine.pdf"
   },
   {
    "label": {
-    "sv": "Family Guide to Emergency Health Care"
+    "uk": "Family Guide to Emergency Health Care",
+    "en": "Family Guide to Emergency Health Care"
    },
    "description": {
-    "sv": "Care at home for the family"
+    "uk": "Невідкладна допомога вдома для родини",
+    "en": "Care at home for the family"
    },
    "path": "library/Military Medicine/Family Guide to Emergency Health Care.pdf"
   },
   {
    "label": {
-    "sv": "Emergency Childbirth"
+    "uk": "Emergency Childbirth",
+    "en": "Emergency Childbirth"
    },
    "description": {
-    "sv": "Delivering a baby without a hospital"
+    "uk": "Пологи без лікарні",
+    "en": "Delivering a baby without a hospital"
    },
    "path": "library/Military Medicine/Emergency Childbirth.pdf"
   },
   {
    "label": {
-    "sv": "Where There Is No Dentist"
+    "uk": "Where There Is No Dentist",
+    "en": "Where There Is No Dentist"
    },
    "description": {
-    "sv": "Tooth pain, infections, extractions"
+    "uk": "Зубний біль, інфекції, видалення зубів",
+    "en": "Tooth pain, infections, extractions"
    },
    "path": "library/Medical Library/Where There is No Dentist.pdf"
   },
   {
    "label": {
-    "sv": "Purifying Water During an Emergency"
+    "uk": "Purifying Water During an Emergency",
+    "en": "Purifying Water During an Emergency"
    },
    "description": {
-    "sv": "Making water safe to drink"
+    "uk": "Як зробити воду безпечною для пиття",
+    "en": "Making water safe to drink"
    },
    "path": "library/Water Treatment/Purifying Water During an Emergency.pdf"
   },
   {
    "label": {
-    "sv": "Bandaging and Splinting"
+    "uk": "Bandaging and Splinting",
+    "en": "Bandaging and Splinting"
    },
    "description": {
-    "sv": "Dressings, slings and splints"
+    "uk": "Пов’язки, косинки та шини",
+    "en": "Dressings, slings and splints"
    },
    "path": "library/Military Medicine/Bandaging and Splinting.pdf"
   }
@@ -517,172 +450,200 @@
  "library_groups": [
   {
    "heading": {
-    "sv": "Sjukvård"
+    "uk": "Медицина",
+    "en": "Medicine"
    },
    "libraries": [
     {
      "prefix": "wikipedia_en_medicine",
      "description": {
-      "sv": "Alla medicinska Wikipedia-artiklar, med bilder"
+      "uk": "Усі медичні статті Вікіпедії, із зображеннями",
+      "en": "All medical Wikipedia articles, with images"
      }
     },
     {
      "prefix": "mdwiki_en",
      "description": {
-      "sv": "Granskat medicinskt uppslagsverk"
+      "uk": "Перевірена медична енциклопедія",
+      "en": "Reviewed medical encyclopedia"
      }
     },
     {
      "prefix": "zimgit-medicine",
      "description": {
-      "sv": "Böcker: akutsjukvård, Where There Is No Doctor"
+      "uk": "Книги: невідкладна допомога, Where There Is No Doctor",
+      "en": "Books: emergency care, Where There Is No Doctor"
      }
     },
     {
      "prefix": "irp.fas.org_en_military-medicine",
      "description": {
-      "sv": "Fältsjukvård, trauma, blödning"
+      "uk": "Польова медицина, травми, кровотеча",
+      "en": "Field medicine, trauma, bleeding"
      }
     },
     {
      "prefix": "medlineplus",
      "description": {
-      "sv": "Sjukdomar och läkemedel, lättläst"
+      "uk": "Хвороби та ліки, простою мовою",
+      "en": "Diseases and medicines, in plain language"
      }
     },
     {
      "prefix": "nhs.uk_en_medicines",
      "description": {
-      "sv": "Läkemedel: vad de är till för, biverkningar"
+      "uk": "Ліки: для чого вони, побічні дії",
+      "en": "Medicines: what they are for, side effects"
      }
     },
     {
      "prefix": "wwwnc.cdc.gov",
      "description": {
-      "sv": "Smittsamma sjukdomar och utbrott"
+      "uk": "Інфекційні хвороби та спалахи",
+      "en": "Infectious diseases and outbreaks"
      }
     }
    ]
   },
   {
    "heading": {
-    "sv": "Vatten, mat och skydd"
+    "uk": "Вода, їжа й укриття",
+    "en": "Water, food and shelter"
    },
    "libraries": [
     {
      "prefix": "zimgit-water",
      "description": {
-      "sv": "Rena vatten: koka, filtrera, kemiskt"
+      "uk": "Очищення води: кип’ятіння, фільтри, хімія",
+      "en": "Purifying water: boiling, filters, chemicals"
      }
     },
     {
      "prefix": "zimgit-food-preparation",
      "description": {
-      "sv": "Förvara och laga mat utan el"
+      "uk": "Зберігання та приготування їжі без електрики",
+      "en": "Storing and cooking food without power"
      }
     },
     {
      "prefix": "zimgit-post-disaster",
      "description": {
-      "sv": "Skydd, sanitet, återuppbyggnad"
+      "uk": "Укриття, санітарія, відбудова",
+      "en": "Shelter, sanitation, rebuilding"
      }
     },
     {
      "prefix": "solar.lowtechmagazine",
      "description": {
-      "sv": "Värme och matlagning utan el"
+      "uk": "Тепло й готування без електрики",
+      "en": "Heat and cooking without power"
      }
     },
     {
      "prefix": "www.ready.gov",
      "description": {
-      "sv": "Beredskap för olika katastrofer"
+      "uk": "Підготовка до різних катастроф",
+      "en": "Preparing for different disasters"
      }
     },
     {
      "prefix": "cd3wdproject",
      "description": {
-      "sv": "Lågteknik: odling, vatten, energi, bygg"
+      "uk": "Прості технології: городництво, вода, енергія, будівництво",
+      "en": "Low technology: growing, water, energy, building"
      }
     },
     {
      "prefix": "appropedia",
      "description": {
-      "sv": "Hållbar självförsörjning, praktiska projekt"
+      "uk": "Сталий побут, практичні проєкти",
+      "en": "Sustainable living, practical projects"
      }
     },
     {
      "prefix": "cooking.stackexchange",
      "description": {
-      "sv": "Frågor och svar om matlagning"
+      "uk": "Запитання та відповіді про куховарство",
+      "en": "Questions and answers about cooking"
      }
     },
     {
      "prefix": "gardening.stackexchange",
      "description": {
-      "sv": "Frågor och svar om odling"
+      "uk": "Запитання та відповіді про городництво",
+      "en": "Questions and answers about gardening"
      }
     },
     {
      "prefix": "outdoors.stackexchange",
      "description": {
-      "sv": "Friluftsliv, skydd, värme"
+      "uk": "Життя просто неба, укриття, тепло",
+      "en": "Outdoor life, shelter, warmth"
      }
     },
     {
      "prefix": "zimgit-knots",
      "description": {
-      "sv": "Knopar och surrningar"
+      "uk": "Вузли та в’язання",
+      "en": "Knots and lashings"
      }
     }
    ]
   },
   {
    "heading": {
-    "sv": "Laga och kommunicera"
+    "uk": "Ремонт і зв’язок",
+    "en": "Repairs and communication"
    },
    "libraries": [
     {
      "prefix": "ifixit",
      "description": {
-      "sv": "Reparationsguider för allt"
+      "uk": "Посібники з ремонту всього",
+      "en": "Repair guides for everything"
      }
     },
     {
      "prefix": "mechanics.stackexchange",
      "description": {
-      "sv": "Bilreparationer"
+      "uk": "Ремонт автомобілів",
+      "en": "Car repair"
      }
     },
     {
      "prefix": "diy.stackexchange",
      "description": {
-      "sv": "Hus: värme, vatten, el"
+      "uk": "Дім: тепло, вода, електрика",
+      "en": "Home: heat, water, electricity"
      }
     },
     {
      "prefix": "ham.stackexchange",
      "description": {
-      "sv": "Amatörradio och nödkommunikation"
+      "uk": "Радіоаматорство та аварійний зв’язок",
+      "en": "Amateur radio and emergency communication"
      }
     }
    ]
   },
   {
    "heading": {
-    "sv": "Allmän kunskap"
+    "uk": "Загальні знання",
+    "en": "General knowledge"
    },
    "libraries": [
     {
-     "prefix": "wikipedia_sv_all",
+     "prefix": "wikipedia_uk_all",
      "description": {
-      "sv": "Svenska Wikipedia, med bilder"
+      "uk": "Українська Вікіпедія, із зображеннями",
+      "en": "Ukrainian Wikipedia, with images"
      }
     },
     {
      "prefix": "wikipedia_en_all",
      "description": {
-      "sv": "English Wikipedia, text only"
+      "uk": "Англійська Вікіпедія, лише текст",
+      "en": "English Wikipedia, text only"
      }
     }
    ]
@@ -690,44 +651,52 @@
  ],
  "search_languages": {
   "main": "eng",
-  "country": "swe"
+  "country": "ukr"
  },
  "checklist": {
   "official_list": {
    "guide": "MCF - Grunder i hemberedskap",
    "section": "Checklista",
    "heading": {
-    "sv": "Hemma (MCF)"
+    "uk": "Вдома (офіційний перелік)",
+    "en": "At home (official list)"
    },
    "source_prefix": "Källa: "
   },
   "additions": [
    {
-    "sv": "Krislådan installerad, och kontrollerad med Kontrollera Krislåda.command"
+    "uk": "Тривожну валізу встановлено й перевірено",
+    "en": "The Emergency Kit is installed and checked"
    },
    {
-    "sv": "Guiden och första hjälpen-utskriften i en pärm hos hemberedskapen"
+    "uk": "Посібник і друковані матеріали з першої допомоги лежать в одній теці вдома",
+    "en": "The guide and the first aid printout are in one folder at home"
    },
    {
-    "sv": "Organic Maps med Sverige, och Kiwix med de medicinska biblioteken, på mobilen"
+    "uk": "На телефоні є мапа України (Organic Maps) і медичні бібліотеки Kiwix",
+    "en": "The phone has a map of Ukraine (Organic Maps) and the medical Kiwix libraries"
    },
    {
-    "sv": "Batteri- eller vevradio, inställd på Sveriges Radio P4"
+    "uk": "Радіоприймач на батарейках або з ручним заводом, налаштований на Українське радіо",
+    "en": "A battery or hand-crank radio, tuned to Ukrainian Radio"
    },
    {
-    "sv": "Laddad powerbank eller batteripaket som räcker till Macen"
+    "uk": "Заряджений павербанк, якого вистачить для Mac",
+    "en": "A charged power bank that lasts for the Mac"
    },
    {
-    "sv": "USB GPS-mottagare till datorn (och en USB-C-adapter om datorn bara har USB-C), testad med Var är jag? på kartan"
+    "uk": "USB GPS-приймач для комп’ютера (і перехідник на USB-C, якщо в комп’ютері лише USB-C), перевірений кнопкою «Де я?» на мапі",
+    "en": "A USB GPS receiver for the computer (and a USB-C adapter if it only has USB-C), tested with Where am I? on the map"
    },
    {
-    "sv": "Familjen vet hur man öppnar Krislådan från mobilen (samma wifi)"
+    "uk": "Уся родина знає, як відкрити валізу з телефона (та сама Wi-Fi-мережа)",
+    "en": "The whole family knows how to open the kit from a phone (same Wi-Fi)"
    }
   ]
  },
  "ready_gov": {
   "skip_pattern": "hurricane|tornado|tsunami|volcano|earthquake|landslide|climate.change|full.suite",
-  "note": "US advice: in Sweden call 112, and follow Swedish authorities (MCF, Krisinformation.se, Sveriges Radio P4)."
+  "note": "US advice: in Ukraine call 112, and follow the Ukrainian authorities (DSNS)."
  },
  "map": {
   "regions": [
@@ -751,12 +720,14 @@
   ],
   "zoom": 4.3,
   "overview_label": {
-   "sv": "Sverige"
+   "uk": "Україна",
+   "en": "Ukraine"
   },
   "shortcuts": [
    {
     "label": {
-     "sv": "Stockholm"
+     "uk": "Стокгольм",
+     "en": "Stockholm"
     },
     "center": [
      18.0686,
@@ -870,7 +841,8 @@
   "nearest": [
    {
     "label": {
-     "sv": "Sjukhus"
+     "uk": "Лікарня",
+     "en": "Hospital"
     },
     "types": [
      "Sjukhus"
@@ -878,7 +850,8 @@
    },
    {
     "label": {
-     "sv": "Vårdcentral"
+     "uk": "Поліклініка",
+     "en": "Clinic"
     },
     "types": [
      "Vårdcentral",
@@ -887,7 +860,8 @@
    },
    {
     "label": {
-     "sv": "Apotek"
+     "uk": "Аптека",
+     "en": "Pharmacy"
     },
     "types": [
      "Apotek"
@@ -895,7 +869,8 @@
    },
    {
     "label": {
-     "sv": "Polis"
+     "uk": "Поліція",
+     "en": "Police"
     },
     "types": [
      "Polis"
@@ -903,7 +878,8 @@
    },
    {
     "label": {
-     "sv": "Brand"
+     "uk": "Пожежна частина",
+     "en": "Fire station"
     },
     "types": [
      "Brandstation"
@@ -911,7 +887,8 @@
    },
    {
     "label": {
-     "sv": "Vatten"
+     "uk": "Вода",
+     "en": "Water"
     },
     "types": [
      "Dricksvatten",
@@ -920,7 +897,8 @@
    },
    {
     "label": {
-     "sv": "Mat"
+     "uk": "Їжа",
+     "en": "Food"
     },
     "types": [
      "Livsmedel",
@@ -929,12 +907,22 @@
    },
    {
     "label": {
-     "sv": "Bensin"
+     "uk": "Пальне",
+     "en": "Fuel"
     },
     "types": [
      "Bensinstation"
     ]
    }
   ]
- }
+ },
+ "_placeholders": [
+  "Values below are still Sweden's and belong to later tickets; they are marked here so nobody ships them.",
+  "ai.authorities, ai.example_source (07)",
+  "radio (12)",
+  "official_guides.* and checklist.official_list.guide, checklist.official_list.source_prefix (06)",
+  "brochures, ready_gov.skip_pattern (06)",
+  "map.* except overview_label and nearest labels: regions, pmtiles, bbox, center, zoom, shortcuts, name_tags, labels, zoom_by_type, search_priority (08, 09)",
+  "libraries in ai.libraries and library_groups prefixes follow config/libraries.txt (05)"
+ ]
 }
