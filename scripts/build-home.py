@@ -62,7 +62,7 @@ def saved(code, stem):
     for ext in (".md", ".pdf"):
         if os.path.exists(os.path.join(DOCS, OFFICIAL_DIR, *(sub + stem + ext).split("/"))):
             rel = "docs/" + "/".join(urllib.request.quote(p) for p in (OFFICIAL_DIR + "/" + sub + stem + ext).split("/"))
-            return (("las/?f=" + rel) if ext == ".md" else rel, stem.split(" - ", 1)[0])
+            return (("read/?f=" + rel) if ext == ".md" else rel, stem.split(" - ", 1)[0])
     return None
 
 
@@ -339,8 +339,8 @@ TEMPLATE = r"""<!doctype html>
       <div class="inner">%GROUPS%</div></details>
     <details class="more"><summary><b data-t="home.prepare.title"></b><span data-t="home.prepare.summary"></span></summary>
       <div class="inner"><ul class="list rows">
-        <li><a href="skriv-ut/" data-t="home.prepare.print.title"></a><small data-t="home.prepare.print.text"></small></li>
-        <li><a href="checklista/" data-t="home.prepare.checklist.title"></a><small data-t="home.prepare.checklist.text"></small></li>
+        <li><a href="print/" data-t="home.prepare.print.title"></a><small data-t="home.prepare.print.text"></small></li>
+        <li><a href="checklist/" data-t="home.prepare.checklist.title"></a><small data-t="home.prepare.checklist.text"></small></li>
       </ul></div></details>
   </div>
 

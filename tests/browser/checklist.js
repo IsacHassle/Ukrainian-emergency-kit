@@ -19,7 +19,7 @@ const check = (cond, msg) => { if (!cond) throw new Error(msg); };
       return page;
     };
     const open = async page => {
-      await page.goto(url + '/checklista/', { waitUntil: 'load' });
+      await page.goto(url + '/checklist/', { waitUntil: 'load' });
       await page.waitForFunction(() => document.querySelectorAll('li input').length > 10);
     };
     const items = (page, list) => page.$$eval(`section[data-list=${list}] li`, els => els.map(e => e.textContent.trim()));

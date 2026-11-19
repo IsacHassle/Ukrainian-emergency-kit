@@ -155,7 +155,7 @@ class OtherCountryTest(unittest.TestCase):
         self.assertIn("Radio Test", page)
         self.assertIn("Testblödning", page)
         self.assertIn("TL1 · Testråd", page)   # the Official Guides, grouped by the config's sources
-        self.assertIn("las/?f=docs/Testguides/TL1%20-%20Stop%20bleeding.md", page)   # the topic opens its guide
+        self.assertIn("read/?f=docs/Testguides/TL1%20-%20Stop%20bleeding.md", page)   # the topic opens its guide
         for ukraine in ("<title>Тривожна", "Телефонуйте 112", "пожежно-рятувальна", "Українське радіо", "Джгут"):
             self.assertNotIn(ukraine, page)
 

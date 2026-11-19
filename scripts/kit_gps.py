@@ -7,7 +7,7 @@ background and keeps the latest position. No drivers, no internet.
 
 Set KIT_GPS_DEVICE=/dev/cu.something to use a specific device.
 
-Lent positions (a Visitor device or a phone sending its position, web/mobil/) are only accepted while lending
+Lent positions (a Visitor device or a phone sending its position, web/phone/) are only accepted while lending
 is turned on. The switch is turned on and off at the Kit Mac itself (serve-web.py checks who asks), and its
 state is the one thing kept on disk: the file `lending` in the kit folder. A Lent position itself stays in
 memory only, and is forgotten when lending is turned off.
@@ -25,7 +25,7 @@ BAUDS = [termios.B9600, termios.B4800, termios.B38400, termios.B115200]
 
 _lock = threading.Lock()
 _state = {"device": None, "fix": False}
-_phone = {}   # the last position a phone shared (web/mobil/), used when there is no USB receiver
+_phone = {}   # the last position a phone shared (web/phone/), used when there is no USB receiver
 PHONE_FRESH_S = 30
 KIT = os.environ.get("EK_KIT") or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # the kit folder
 LENDING_FILE = os.path.join(KIT, "lending")   # {"on": true}; missing or unreadable means off
@@ -75,13 +75,13 @@ def status():
         return s
     if phone and lending_on() and time.time() - phone["updated"] < PHONE_FRESH_S:
         age = round(time.time() - phone.pop("updated"), 1)
-        return {**phone, "device": s.get("device") or "mobil", "fix": True, "source": "phone", "age_s": age,
+        return {**phone, "device": s.get("device") or "phone", "fix": True, "source": "phone", "age_s": age,
                 "usb_device": s.get("device")}
     return s
 
 
 def share(lat, lon, accuracy_m):
-    """A phone on the Wi-Fi lends its GPS position (from web/mobil/). Raises LendingOff unless lending is on."""
+    """A phone on the Wi-Fi lends its GPS position (from web/phone/). Raises LendingOff unless lending is on."""
     if not lending_on():
         raise LendingOff()
     lat, lon = float(lat), float(lon)

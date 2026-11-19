@@ -1,4 +1,4 @@
-// The phone page (/mobil/) and the map's link to it, in headless Chrome. Called by tests/test_lending_browser.py
+// The phone page (/phone/) and the map's link to it, in headless Chrome. Called by tests/test_lending_browser.py
 // with EK_TEST_URL, EK_CHROME and EK_TEST_ROLE: "mac" (the Kit Mac) or "visitor" (a Visitor device).
 const puppeteer = require('puppeteer-core');
 
@@ -20,7 +20,7 @@ const check = (cond, msg) => { if (!cond) throw new Error(msg); };
     const text = sel => page.$eval(sel, e => e.textContent);
     const visible = sel => page.$eval(sel, e => !e.hidden && e.offsetParent !== null);
 
-    await page.goto(url + '/mobil/', { waitUntil: 'load' });
+    await page.goto(url + '/phone/', { waitUntil: 'load' });
     await page.waitForFunction(() => document.getElementById('lendingstate').textContent.length > 0);
 
     if (role === 'mac') {
@@ -60,12 +60,12 @@ const check = (cond, msg) => { if (!cond) throw new Error(msg); };
     // The map links to the phone page whatever the device (the link shows in the "no GPS" message).
     await page.goto(url + '/map/', { waitUntil: 'load' });
     const html = await page.content();
-    check(html.includes("a.href = '/mobil/'"), 'the map has no link to /mobil/');
+    check(html.includes("a.href = '/phone/'"), 'the map has no link to /phone/');
     ok('the map links to the phone page');
 
     // Not promoted on the start page.
     await page.goto(url + '/', { waitUntil: 'load' });
-    check(!(await page.$('a[href="mobil/"], a[href="/mobil/"]')), 'the start page links to /mobil/');
+    check(!(await page.$('a[href="phone/"], a[href="/phone/"]')), 'the start page links to /phone/');
     ok('the start page does not promote it');
 
     check(!errors.length, 'page errors: ' + errors.join('; '));

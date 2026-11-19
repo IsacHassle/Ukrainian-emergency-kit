@@ -42,7 +42,7 @@ const check = (cond, msg) => { if (!cond) throw new Error(msg); };
     // 2. The choice survives a reload and a later visit on the same device.
     await page.reload({ waitUntil: 'load' });
     check(await lang(page) === 'en' && await h1(page) === 'Emergency Kit', 'not kept over a reload');
-    await page.goto(url + '/checklista/', { waitUntil: 'load' });
+    await page.goto(url + '/checklist/', { waitUntil: 'load' });
     check(await lang(page) === 'en', 'not kept on another page');
     await page.goto(url + '/', { waitUntil: 'load' });
     await page.click('.langswitch [data-lang=uk]');
@@ -70,7 +70,7 @@ const check = (cond, msg) => { if (!cond) throw new Error(msg); };
 
     // 5. Every page has the switch and follows the language.
     page = await fresh();
-    for (const path of ['/', '/ai/', '/map/', '/checklista/', '/skriv-ut/', '/mobil/', '/las/']) {
+    for (const path of ['/', '/ai/', '/map/', '/checklist/', '/print/', '/phone/', '/read/']) {
       await page.goto(url + path, { waitUntil: 'load' });
       const n = await page.$$eval('.langswitch [data-lang]', els => els.map(e => e.textContent));
       check(n.join() === 'УКР,ENG', path + ' switch: ' + n);
@@ -97,23 +97,23 @@ const check = (cond, msg) => { if (!cond) throw new Error(msg); };
     const cpr = async () => await topic(await lang(page) === 'en' ? 'CPR' : 'Серцево-легенева');
     const bleeding = async () => await topic(await lang(page) === 'en' ? 'Severe bleeding' : 'Сильна кровотеча');
     check((await cpr()).endsWith('/viewer#wikipedia_uk_medicine_test_2026-01/Серцево-легенева_реанімація'), 'uk topic link ' + await cpr());
-    check((await bleeding()).includes('las/?f=docs/Official Guides/dovidka.info - Тактична медицина'), 'uk guide link ' + await bleeding());
+    check((await bleeding()).includes('read/?f=docs/Official Guides/dovidka.info - Тактична медицина'), 'uk guide link ' + await bleeding());
     await page.click('.langswitch [data-lang=en]');
-    check((await cpr()).includes('las/?f=docs/Official Guides/en/dovidka.info - Rescue is in our hands'), 'en topic opens the English guide ' + await cpr());
-    check((await bleeding()).includes('las/?f=docs/Official Guides/en/dovidka.info - Tactical medicine'), 'en guide link ' + await bleeding());
+    check((await cpr()).includes('read/?f=docs/Official Guides/en/dovidka.info - Rescue is in our hands'), 'en topic opens the English guide ' + await cpr());
+    check((await bleeding()).includes('read/?f=docs/Official Guides/en/dovidka.info - Tactical medicine'), 'en guide link ' + await bleeding());
     await page.click('.langswitch [data-lang=uk]');
     check((await cpr()).includes('wikipedia_uk_medicine'), 'uk topic link after switching back');
     ok('Emergency Topics open their Official Guide, else WikiMed, in the page language');
 
     // 8. The reader shows a saved guide, and its own texts follow the page language.
     page = await fresh();
-    await page.goto(url + '/las/?f=' + encodeURIComponent('docs/Official Guides/en/dovidka.info - Tactical medicine, how to stop bleeding.md'), { waitUntil: 'load' });
+    await page.goto(url + '/read/?f=' + encodeURIComponent('docs/Official Guides/en/dovidka.info - Tactical medicine, how to stop bleeding.md'), { waitUntil: 'load' });
     await page.waitForFunction(() => document.querySelector('#doc h1'));
     check((await page.$eval('#doc', e => e.textContent)).includes('Press on the wound.'), 'the English guide is not shown');
     check((await page.$eval('.tools', e => e.textContent)).includes('Друкувати'), 'the reader is not in Ukrainian by default');
     await page.click('.langswitch [data-lang=en]');
     check((await page.$eval('.tools', e => e.textContent)).includes('Print'), 'the reader did not switch to English');
-    await page.goto(url + '/las/?f=docs/Official%20Guides/missing.md', { waitUntil: 'load' });
+    await page.goto(url + '/read/?f=docs/Official%20Guides/missing.md', { waitUntil: 'load' });
     await page.waitForFunction(() => document.querySelector('#doc .err'));
     check((await page.$eval('#doc', e => e.textContent)).includes('not found'), 'the error is not in English: ' + await page.$eval('#doc', e => e.textContent));
     await page.click('.langswitch [data-lang=uk]');

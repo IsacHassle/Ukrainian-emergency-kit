@@ -36,7 +36,7 @@ const ok = name => console.log('ok - ' + name);
 
     if (expect) {
       const titleOf = async path => { await page.goto(url + path, { waitUntil: 'load' }); return page.title(); };
-      for (const path of ['/', '/ai/', '/map/', '/checklista/', '/skriv-ut/', '/mobil/']) {
+      for (const path of ['/', '/ai/', '/map/', '/checklist/', '/print/', '/phone/']) {
         const t = await titleOf(path);
         if (!t.includes(expect.kit) || t.includes('{kit}')) throw new Error(path + ' title: ' + t);
         const back = await page.$$eval('[data-kit]', els => els.map(e => e.textContent));
@@ -51,7 +51,7 @@ const ok = name => console.log('ok - ' + name);
       if (!danger.includes(expect.number)) throw new Error('danger line: ' + danger);
       ok('the AI page offers the config\'s models and its emergency number');
 
-      await page.goto(url + '/checklista/', { waitUntil: 'load' });
+      await page.goto(url + '/checklist/', { waitUntil: 'load' });
       await page.waitForFunction(t => document.querySelector('section[data-list=kit]').textContent.includes(t), {}, expect.checklist);
       ok('the checklist shows the config\'s own items');
 
@@ -61,7 +61,7 @@ const ok = name => console.log('ok - ' + name);
       if (!near) throw new Error('no nearest buttons');
       ok('the map shows the config\'s shortcuts and nearest categories');
 
-      await page.goto(url + '/skriv-ut/', { waitUntil: 'load' });
+      await page.goto(url + '/print/', { waitUntil: 'load' });
       await page.waitForFunction(n => document.querySelector('.nums') && document.querySelector('.nums').textContent.includes(n), {}, expect.number);
       ok('the printout shows the config\'s emergency numbers');
     }

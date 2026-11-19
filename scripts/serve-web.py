@@ -476,7 +476,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return self.send_json({"error": "could not save"}, 500)
             return self.send_json({"on": kit_gps.lending_on(), "kit_mac": True})
 
-        if action == "gps-share":  # a phone lends the Mac its GPS (web/mobil/), only while lending is on
+        if action == "gps-share":  # a phone lends the Mac its GPS (web/phone/), only while lending is on
             try:
                 kit_gps.share(body.get("lat"), body.get("lon"), body.get("accuracy"))
             except kit_gps.LendingOff:

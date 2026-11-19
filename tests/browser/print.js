@@ -15,7 +15,7 @@ const check = (cond, msg) => { if (!cond) throw new Error(msg); };
     page.on('pageerror', e => errors.push(String(e)));
     const text = () => page.$eval('#pack', e => e.innerText);
 
-    await page.goto(url + '/skriv-ut/', { waitUntil: 'load' });
+    await page.goto(url + '/print/', { waitUntil: 'load' });
     await page.waitForFunction(() => document.querySelector('#pack .cover'));
     let t = await text();
     check(t.includes('Тривожна валіза / Emergency Kit'), 'both names on the cover: ' + t.slice(0, 120));

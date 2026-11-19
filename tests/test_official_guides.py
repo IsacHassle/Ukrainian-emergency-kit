@@ -349,15 +349,15 @@ class StartPageGuidesTest(unittest.TestCase):
 
     def test_a_topic_opens_its_ukrainian_guide_in_the_reader_first_then_the_article(self):
         li = self.li("Сильна кровотеча, джгут", "uk")
-        self.assertIn('href="las/?f=docs/Official%20Guides/dovidka.info%20-%20%D0%A2%D0%B0%D0%BA%D1%82%D0%B8%D1%87%D0%BD%D0%B0', li)
-        self.assertLess(li.index("las/?f="), li.index("data-k="))
+        self.assertIn('href="read/?f=docs/Official%20Guides/dovidka.info%20-%20%D0%A2%D0%B0%D0%BA%D1%82%D0%B8%D1%87%D0%BD%D0%B0', li)
+        self.assertLess(li.index("read/?f="), li.index("data-k="))
         self.assertIn('<small class="links">dovidka.info · ', li)   # it names its source
         self.assertIn('data-t="home.urgent.article"', li)
         self.assertIn(viewer(LIB_UK, "Зупинка_кровотечі"), li)
 
     def test_the_english_page_opens_the_english_guide_and_never_a_ukrainian_one(self):
         li = self.li("Сильна кровотеча, джгут", "en")
-        self.assertIn('href="las/?f=docs/Official%20Guides/en/dovidka.info%20-%20Tactical%20medicine', li)
+        self.assertIn('href="read/?f=docs/Official%20Guides/en/dovidka.info%20-%20Tactical%20medicine', li)
         self.assertIn(viewer(LIB_EN, "Bleeding"), li)
         for page_li in blocks(self.page, "li", "en"):
             self.assertNotIn("%D0%", re.sub(r"data-k=\"[^\"]*\"", "", page_li), page_li)   # no Cyrillic address in a guide link
@@ -372,7 +372,7 @@ class StartPageGuidesTest(unittest.TestCase):
         li = self.li("Переохолодження", "uk")   # the Public Health Center page is not saved, the Red Cross leaflet is
         self.assertIn('href="docs/Official%20Guides/%D0%A7%D0%B5%D1%80%D0%B2%D0%BE%D0%BD%D0%B8%D0%B9%20%D0%A5%D1%80%D0%B5%D1%81%D1%82%20-', li)
         self.assertIn(".pdf", li)   # a PDF opens as the PDF, not in the reader
-        self.assertNotIn("las/?f=", li)
+        self.assertNotIn("read/?f=", li)
 
     def test_the_start_page_never_writes_a_python_tuple_as_an_address(self):
         self.assertNotIn('href="(', self.page)
@@ -390,7 +390,7 @@ class StartPageGuidesTest(unittest.TestCase):
         self.assertIn("Rescue is in our hands", en)
         self.assertNotIn("Як надати", en)
         self.assertNotIn("Переохолодження", en)
-        self.assertIn('href="las/?f=docs/Official%20Guides/en/', en)
+        self.assertIn('href="read/?f=docs/Official%20Guides/en/', en)
         self.assertIn('href="docs/Official%20Guides/%D0%A7', uk)   # the PDF
 
     def test_the_summary_counts_the_guides_of_each_language(self):
@@ -413,7 +413,7 @@ class ReaderTest(unittest.TestCase):
         cls.kit.stop()
 
     def test_the_reader_page_has_no_swedish_and_its_texts_are_keys(self):
-        page = read(self.kit, "/las/")
+        page = read(self.kit, "/read/")
         for swedish in ("Läs ", "Fråga AI", "Skriv ut", "Laddar", "Okänt", "hittades inte"):
             self.assertNotIn(swedish, page)
         self.assertIn('data-t="reader.', page)

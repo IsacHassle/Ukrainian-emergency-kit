@@ -29,51 +29,51 @@
 </head>
 <body>
 <main class="page">
-  <a class="back" href="/map/">← <span data-t="mobil.back"></span></a>
-  <h1 data-t="mobil.title"></h1>
-  <p class="meta" data-t="mobil.intro"></p>
+  <a class="back" href="/map/">← <span data-t="phone.back"></span></a>
+  <h1 data-t="phone.title"></h1>
+  <p class="meta" data-t="phone.intro"></p>
 
   <div class="box done" id="ready" hidden>
-    <h2 data-t="mobil.ready.title"></h2>
-    <p data-t="mobil.ready.text"></p>
+    <h2 data-t="phone.ready.title"></h2>
+    <p data-t="phone.ready.text"></p>
   </div>
 
   <div class="box" id="lending">
-    <h2 data-t="mobil.lending.title"></h2>
+    <h2 data-t="phone.lending.title"></h2>
     <p id="lendingstate"></p>
     <button type="button" id="lendingbtn" hidden></button>
     <p class="note" id="lendingnote"></p>
   </div>
 
   <div class="box" id="share" hidden>
-    <h2 data-t="mobil.share.title"></h2>
-    <p data-t="mobil.share.text"></p>
+    <h2 data-t="phone.share.title"></h2>
+    <p data-t="phone.share.text"></p>
     <button type="button" id="sharebtn"></button>
     <p class="note" id="sharestatus"></p>
   </div>
 
   <div id="setup">
-    <details class="more"><summary data-t="mobil.ios.title"></summary><div class="inner">
+    <details class="more"><summary data-t="phone.ios.title"></summary><div class="inner">
       <ol>
-        <li><a class="button" href="/ca.crt" data-t="mobil.cert.get"></a><br><span data-t="mobil.ios.step1"></span></li>
-        <li data-t="mobil.ios.step2"></li>
+        <li><a class="button" href="/ca.crt" data-t="phone.cert.get"></a><br><span data-t="phone.ios.step1"></span></li>
+        <li data-t="phone.ios.step2"></li>
         <li id="iosstep3"></li>
-        <li><a class="https" href="#"><code class="https-text"></code></a><br><span data-t="mobil.ios.step4"></span></li>
+        <li><a class="https" href="#"><code class="https-text"></code></a><br><span data-t="phone.ios.step4"></span></li>
       </ol>
     </div></details>
-    <details class="more"><summary data-t="mobil.android.title"></summary><div class="inner">
+    <details class="more"><summary data-t="phone.android.title"></summary><div class="inner">
       <ol>
-        <li><a class="button" href="/ca.crt" data-t="mobil.cert.get"></a></li>
+        <li><a class="button" href="/ca.crt" data-t="phone.cert.get"></a></li>
         <li id="andstep2"></li>
-        <li><a class="https-ip" href="#"><code class="https-ip-text"></code></a><br><span data-t="mobil.android.step3"></span></li>
+        <li><a class="https-ip" href="#"><code class="https-ip-text"></code></a><br><span data-t="phone.android.step3"></span></li>
       </ol>
     </div></details>
-    <p class="note" data-t="mobil.cert.note"></p>
-    <p class="box" id="nocert" hidden data-t="mobil.nocert"></p>
+    <p class="note" data-t="phone.cert.note"></p>
+    <p class="box" id="nocert" hidden data-t="phone.nocert"></p>
   </div>
 
-  <h2 style="margin-top:32px" data-t="mobil.without.title"></h2>
-  <p data-t="mobil.without.text"></p>
+  <h2 style="margin-top:32px" data-t="phone.without.title"></h2>
+  <p data-t="phone.without.text"></p>
 </main>
 <script>
 (() => {
@@ -91,18 +91,18 @@
   // Everything the page writes itself, redrawn when the language changes.
   const render = () => {
     const root = document.documentElement;
-    root.dataset.title = KIT.t('mobil.pagetitle');
+    root.dataset.title = KIT.t('phone.pagetitle');
     document.title = root.dataset.title.split('{kit}').join(COUNTRY.kit());
-    btn.textContent = watch !== null ? KIT.t('mobil.share.stop') : KIT.t('mobil.share.start');
+    btn.textContent = watch !== null ? KIT.t('phone.share.stop') : KIT.t('phone.share.start');
     btn.disabled = watch === null && !lending.on;
-    $('lendingstate').textContent = KIT.t(lending.on ? 'mobil.lending.on' : 'mobil.lending.off');
+    $('lendingstate').textContent = KIT.t(lending.on ? 'phone.lending.on' : 'phone.lending.off');
     const lb = $('lendingbtn');
     lb.hidden = !lending.kit_mac;
-    lb.textContent = KIT.t(lending.on ? 'mobil.lending.turnoff' : 'mobil.lending.turnon');
-    $('lendingnote').textContent = lending.kit_mac ? KIT.t('mobil.lending.keepernote') : (lending.on ? '' : KIT.t('mobil.lending.visitornote'));
+    lb.textContent = KIT.t(lending.on ? 'phone.lending.turnoff' : 'phone.lending.turnon');
+    $('lendingnote').textContent = lending.kit_mac ? KIT.t('phone.lending.keepernote') : (lending.on ? '' : KIT.t('phone.lending.visitornote'));
     const name = server.name ? server.name.replace(/\.local$/, '') : '';
-    $('iosstep3').textContent = KIT.t('mobil.ios.step3', { kit: COUNTRY.kit(), name: name || location.hostname });
-    $('andstep2').textContent = KIT.t('mobil.android.step2', { file: COUNTRY.slug + '.crt' });
+    $('iosstep3').textContent = KIT.t('phone.ios.step3', { kit: COUNTRY.kit(), name: name || location.hostname });
+    $('andstep2').textContent = KIT.t('phone.android.step2', { file: COUNTRY.slug + '.crt' });
     if (lastMsg) msg.textContent = lastMsg();
   };
 
@@ -127,24 +127,24 @@
     render();
   }
   btn.onclick = () => {
-    if (watch !== null) { stopSharing(); say(() => KIT.t('mobil.share.stopped')); return; }
-    say(() => KIT.t('mobil.share.searching'));
+    if (watch !== null) { stopSharing(); say(() => KIT.t('phone.share.stopped')); return; }
+    say(() => KIT.t('phone.share.searching'));
     watch = navigator.geolocation.watchPosition(p => {
       fetch('/ai-api/gps-share', { method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ lat: p.coords.latitude, lon: p.coords.longitude, accuracy: p.coords.accuracy }) })
         .then(async r => {
           if (r.status === 403) {   // lending is turned off: say why instead of failing quietly
             stopSharing(); readLending();
-            say(() => KIT.t('mobil.share.refused'));
+            say(() => KIT.t('phone.share.refused'));
             return;
           }
           if (!r.ok) throw 0;
           const at = new Date().toLocaleTimeString(KIT.locale);
-          say(() => KIT.t('mobil.share.sharing', { metres: Math.round(p.coords.accuracy), time: at }));
+          say(() => KIT.t('phone.share.sharing', { metres: Math.round(p.coords.accuracy), time: at }));
         })
-        .catch(() => say(() => KIT.t('mobil.share.unreachable')));
+        .catch(() => say(() => KIT.t('phone.share.unreachable')));
     }, err => {
-      say(() => err.code === 1 ? KIT.t('mobil.share.denied') : KIT.t('mobil.share.searching'));
+      say(() => err.code === 1 ? KIT.t('phone.share.denied') : KIT.t('phone.share.searching'));
     }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 60000 });
     render();
     keepAwake();

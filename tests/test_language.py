@@ -136,7 +136,7 @@ class ServedTextsTest(unittest.TestCase):
         self.assertIn("пожежно-рятувальна служба", page)
 
     def test_every_page_loads_the_language_layer_with_one_line(self):
-        for path in ("/", "/ai/", "/map/", "/checklista/", "/skriv-ut/", "/mobil/", "/las/"):
+        for path in ("/", "/ai/", "/map/", "/checklist/", "/print/", "/phone/", "/read/"):
             page = get(self.kit, path)
             self.assertEqual(page.count('src="/lib/lang.js"'), 1, path)
             self.assertIn('<html lang="uk"', page, path)

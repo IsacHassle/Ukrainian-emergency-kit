@@ -1,5 +1,5 @@
 // Turns the kit's Markdown documents into HTML (headings, lists, tables, bold, italics).
-// Used by the reader (web/las/) and the print pack (web/skriv-ut/).
+// Used by the reader (web/read/) and the print pack (web/print/).
 window.renderMarkdown = function (src, opts) {
   opts = opts || {};
   const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

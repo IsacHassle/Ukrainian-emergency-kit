@@ -65,7 +65,7 @@ class StartPageTopicsTest(unittest.TestCase):
     def test_a_topic_without_a_saved_guide_opens_the_article_in_each_page_language(self):
         li = item(self.page, "Серцево-легенева реанімація")
         self.assertIn('data-k="%s"' % viewer(UK, "Серцево-легенева_реанімація"), li)
-        self.assertNotIn("las/?f=", li)
+        self.assertNotIn("read/?f=", li)
         self.assertNotIn("data-t=", li)   # nothing to explain: the article exists in this language
 
     def test_a_topic_with_one_language_only_opens_that_article_in_both_and_says_so(self):

@@ -94,7 +94,7 @@ The offline map covers Ukraine and Moldova plus a strip of about 100 km into Pol
 
 - **Search** for a town, village, street or address, for example *Khreshchatyk 22, Kyiv*. *Київ*, *Kyiv* and *Kiev* all work. If the map data has no house number, the pin is placed between the neighbouring houses and the map says the position is approximate.
 - **Nearest** buttons list the nearest hospitals, pharmacies, fire stations, water and more from the centre of the map (or from you, when your position is known).
-- **Where am I?** shows your position on the map with no internet. **The Mac has no GPS of its own**: plug in a **USB GPS receiver** (search for "USB GPS"; most use a u-blox chip) and, if the computer only has USB-C, an adapter. The first time, the receiver may need a few minutes by a window or outdoors. With no receiver you can lend a phone's position: open `/mobil/` on the phone, follow the steps for iPhone or Android, then turn lending on at the Mac. Lending stays off until the owner or the person running the Community Point turns it on.
+- **Where am I?** shows your position on the map with no internet. **The Mac has no GPS of its own**: plug in a **USB GPS receiver** (search for "USB GPS"; most use a u-blox chip) and, if the computer only has USB-C, an adapter. The first time, the receiver may need a few minutes by a window or outdoors. With no receiver you can lend a phone's position: open `/phone/` on the phone, follow the steps for iPhone or Android, then turn lending on at the Mac. Lending stays off until the owner or the person running the Community Point turns it on.
 - **Tap the map** to read off exact coordinates that you can pass on by radio or write down.
 
 ## Community Point (for the Keeper)
@@ -106,7 +106,7 @@ A **Community Point** is any place where a Kit Mac serves people outside your ho
 3. **The poster.** On the Mac itself, open `http://localhost:8091/poster/` (it does not open from phones). Type the Wi-Fi name and password and print: one A4 sheet with two QR codes (join the Wi-Fi, open the kit), the address written out and the emergency numbers. The password lives only in the open page and is never saved or sent. Check that a phone on the network opens the address, and put the poster where people see it.
 4. **The people.** Visitors join the Wi-Fi with the first code and open the kit with the second. What they see runs in their own browser; the Mac does the work.
 5. **The AI is the slowest part.** When many people are there, ask them to use the **Urgent** buttons and the Libraries first: those answer at once.
-6. **Lending a phone's position.** Lending is off until you turn it on **at the Mac itself** on the page `http://localhost:8091/mobil/`. Other devices cannot. Turn it off when you leave: every lent position is erased.
+6. **Lending a phone's position.** Lending is off until you turn it on **at the Mac itself** on the page `http://localhost:8091/phone/`. Other devices cannot. Turn it off when you leave: every lent position is erased.
 7. **Privacy.** Visitors' questions to the AI are never stored. There is nothing to wipe when the Mac passes to someone else.
 8. **Paper.** Keep this guide and the **Print** pack printed nearby, so that people have the advice even when the Mac's battery is empty.
 
