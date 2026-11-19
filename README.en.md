@@ -2,6 +2,8 @@
 
 [Українська](README.md) · English
 
+> **About the language.** The Ukrainian texts were prepared with AI by someone who does not speak Ukrainian, and no native speaker has checked them yet. If you see a mistake or an awkward phrase, [please tell us](https://github.com/IsacHassle/Ukrainian-emergency-kit/issues): every correction helps. Every text is shown beside its English one on the `/review/` page of a running kit.
+
 The Emergency Kit works on a Mac with no internet: official guides, medical libraries, a map of Ukraine and an AI that answers in Ukrainian. Everything runs on your own computer and nothing is sent anywhere.
 
 ## Install
@@ -10,7 +12,7 @@ You need: a Mac with an Apple chip (M1 or newer), **55 GB of free space** and in
 
 **Option 1: double-click.**
 
-1. Download the kit's archive, unpack it and double-click **"Встановити - Install.command"**. If macOS will not open it, right-click the file, choose **Open** and confirm.
+1. **[Download the kit's archive](https://github.com/IsacHassle/Ukrainian-emergency-kit/releases/latest/download/Emergency-Kit.zip)** (about 12 MB), unpack it and double-click **"Встановити - Install.command"**. If macOS will not open it, right-click the file, choose **Open** and confirm.
 2. A Terminal window opens. Every message in it is one line in both languages: "Завантажую бібліотеки / Downloading libraries". Keep the window open until you see **Готово / Done**.
 
 **Option 2: one line in Terminal.**
@@ -175,7 +177,7 @@ If something is marked ⚠️, running **Install** again usually helps: it downl
 - The Mac has no GPS of its own: you need a USB GPS receiver or a lent phone position.
 - The AI can be wrong. Check the sources under the answer, especially medicine doses.
 - The kit runs only on a Mac with an Apple chip. Windows and Android are not supported.
-- The Ukrainian texts are still waiting for a native speaker's review.
+- The Ukrainian texts were prepared with AI and no native speaker has checked them yet. Corrections are very welcome: [please tell us](https://github.com/IsacHassle/Ukrainian-emergency-kit/issues).
 
 ## Credits and licences
 
