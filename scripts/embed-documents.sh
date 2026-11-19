@@ -33,15 +33,24 @@ find "$DOCS" -mindepth 1 -type f \( -name '*.pdf' -o -name '*.md' -o -name '*.tx
 # Only Ukrainian Official Guides go into the index: the guides of another language are saved in a subfolder named by
 # the language code (scripts/fetch-pages.py, "indexed: false" in its saved.json), and are left out here.
 GUIDES="$DOCS/$(country official_guides.folder)"
+# AnythingLLM's document store (where it keeps what is uploaded)
+STORE=$(curl -s "$A/setup-complete" | python3 -c 'import json,sys; print(json.load(sys.stdin)["results"]["StorageDir"])')/documents/custom-documents
 awk '!seen[$0]++' /tmp/embed-order.$$ | while IFS= read -r f; do
   case "$f" in "$GUIDES"/?*/*) continue ;; esac   # a guide in a language subfolder (en/): for reading only
   grep -qF "$f	" "$DONE" && continue
   # Quote the name: curl treats commas and semicolons in a bare file name as separators.
   q=${f//\\/\\\\}; q=${q//\"/\\\"}
-  reply=$(curl -sf -X POST "$A/workspace/$WORKSPACE/upload" -F "file=@\"$q\"") || reply=""
-  loc=$(printf '%s' "$reply" | python3 -c 'import json,sys
-try: print(json.load(sys.stdin)["documents"][0]["location"].split("/storage/documents/")[-1])
-except Exception: pass')
+  # The reply says only "success", so find the file in the store: the one just written there.
+  mark=$(python3 -c 'import time; print(time.time())')
+  curl -sf -X POST "$A/workspace/$WORKSPACE/upload" -F "file=@\"$q\"" | grep -q '"success":true' || { echo "UPLOAD FAILED $(basename "$f")"; continue; }
+  loc=$(python3 - "$STORE" "$mark" <<'PY'
+import os, sys
+folder, mark = sys.argv[1], float(sys.argv[2])
+new = [(os.path.getmtime(os.path.join(folder, n)), n) for n in os.listdir(folder) if n.endswith(".json")]
+new = [x for x in new if x[0] >= mark - 1]
+print("custom-documents/" + max(new)[1] if new else "")
+PY
+)
   if [ -n "$loc" ]; then
     printf '%s\t%s\n' "$f" "$loc" >> "$DONE"; echo "UPLOADED $(basename "$f")"
   else
