@@ -206,6 +206,27 @@ class Check(unittest.TestCase):
         r = self.check(EK_FAKE_MODELS="gemma4:26b bge-m3 emergency")
         self.assertRegex(r.stdout, r"Моделі ШІ emergency-small немає.* / The AI model emergency-small is missing")
 
+    def saved_days_ago(self, days):
+        import datetime, json
+        path = self.kit.path("documents", "Official Guides", "saved.json")
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        data["saved"] = (datetime.date.today() - datetime.timedelta(days=days)).isoformat()
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+
+    def test_guides_are_warned_about_after_30_days_and_not_before(self):
+        self.saved_days_ago(30)
+        r = self.check()
+        self.assertNotRegex(r.stdout, r"Офіційним посібникам .* днів")
+        self.assertEqual(r.returncode, 0, r.stdout)
+        self.saved_days_ago(31)
+        r = self.check()
+        self.assertEqual(r.returncode, 1)
+        self.assertRegex(r.stdout, r"⚠️\s+Офіційні посібники збережено 31 день тому.*Оновити - Update.* / The Official Guides were saved 31 days ago.*Оновити - Update")
+        self.saved_days_ago(0)
+        self.assertEqual(self.check().returncode, 0)
+
     def test_a_usb_gps_receiver_is_noticed(self):
         open(os.path.join(self.devs, "cu.usbmodem1101"), "w").close()
         try:

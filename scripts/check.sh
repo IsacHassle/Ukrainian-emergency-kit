@@ -81,6 +81,21 @@ texts=$(ls "$guides/"*.md 2>/dev/null | wc -l | tr -d ' ')
 if [ "$texts" -gt 0 ]; then ok "Офіційні посібники: $texts" "Official Guides: $texts"
 else bad "Офіційних посібників немає. Запустіть встановлення з інтернетом" "No Official Guides. Run the installation with internet"; fi
 pdfs=$(ls "$guides/"*.pdf 2>/dev/null | wc -l | tr -d ' ')
+# How old the saved Official Guides are (scripts/fetch-pages.py writes the date it saved them in saved.json).
+# More than 30 days is a warning: the advice changes, and Update needs internet.
+saved_on=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['saved'])" "$guides/saved.json" 2>/dev/null || true)
+if [ "$texts" -gt 0 ]; then
+  age=$(python3 -c "import datetime,sys; print((datetime.date.today() - datetime.date.fromisoformat(sys.argv[1])).days)" "$saved_on" 2>/dev/null || true)
+  if [ -z "$age" ]; then
+    bad "Невідомо, коли збережено офіційні посібники. Двічі клацніть «Оновити - Update.command», коли є інтернет" "It is not known when the Official Guides were saved. Double-click \"Оновити - Update.command\" when you have internet"
+  elif [ "$age" -gt 30 ]; then
+    case $((age % 100)) in 11|12|13|14) uk_days="днів" ;; *) case $((age % 10)) in 1) uk_days="день" ;; 2|3|4) uk_days="дні" ;; *) uk_days="днів" ;; esac ;; esac
+    en_days=$([ "$age" = 1 ] && echo day || echo days)
+    bad "Офіційні посібники збережено $age $uk_days тому. Двічі клацніть «Оновити - Update.command», коли є інтернет" "The Official Guides were saved $age $en_days ago. Double-click \"Оновити - Update.command\" when you have internet"
+  else
+    ok "Офіційні посібники свіжі (збережено $saved_on)" "The Official Guides are up to date (saved $saved_on)"
+  fi
+fi
 if [ "$pdfs" -gt 0 ]; then ok "Посібники в PDF: $pdfs" "Guides as PDF: $pdfs"
 else bad "PDF-посібників немає" "No PDF guides"; fi
 if [ "$n" -gt 100 ]; then ok "Книги й документи: файлів $n" "Books and documents: $n files"
