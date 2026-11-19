@@ -377,8 +377,9 @@ def library_articles(uk_titles, en_titles, limit=4):
 
 # ---------- together ----------
 
-def gather(question, earlier=""):
-    """Searches both places. Returns (book passages, library articles)."""
+def gather(question, earlier="", cancelled=lambda: False):
+    """Searches both places. Returns (book passages, library articles). `cancelled()` says the visitor
+    left: the rest of the search is then skipped (the caller drops the result)."""
     out = {}
 
     def books(query):
@@ -389,6 +390,8 @@ def gather(question, earlier=""):
         jobs.append(threading.Thread(target=books, args=(question,), daemon=True))
         jobs[-1].start()
     search, uk_titles, en_titles = plan(question, earlier)
+    if cancelled():
+        return [], []
     if earlier:       # a follow-up ("and for a child?") searches with the rewritten, stand-alone question
         jobs.append(threading.Thread(target=books, args=(search,), daemon=True))
         jobs[-1].start()

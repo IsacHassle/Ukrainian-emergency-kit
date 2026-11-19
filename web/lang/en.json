@@ -1,6 +1,9 @@
 {
  "ai.ask.label": "Your question",
  "ai.ask.placeholder": "Describe the situation: who (age), what happened, when, what you see and what you have at home.",
+ "ai.busy.libraries": "Libraries: WikiMed and more",
+ "ai.busy.text": "The AI is busy: several people are already waiting for it. These answer at once:",
+ "ai.busy.topics": "Emergency Topics, on the start page",
  "ai.danger": "Life in danger? Call {number} first and open Urgent on the start page.",
  "ai.doing.reading": "Reading {count} sources",
  "ai.doing.searching": "Searching the sources",
@@ -69,6 +72,8 @@
  "ai.photo.remove": "Remove photo",
  "ai.photo.switched": "Photos work in {mode}, so I changed mode.",
  "ai.photo.unreadable": "Could not read the picture. Try taking a new one.",
+ "ai.queue.hint": "The AI answers one person at a time. Close the page to leave the queue.",
+ "ai.queue.place": "In the queue: your place is {n}.",
  "ai.seconds": "{n} s",
  "ai.send": "Send",
  "ai.sources": "Sources:",

@@ -301,9 +301,17 @@
 
     const box = add('div', 'msg ai');
     const t0 = Date.now(), used = mode;
-    let raw = '', sources = [], failed = null, shown = false, doing = used === 'books' ? t('ai.doing.searching') : t('ai.doing.thinking');
+    let raw = '', sources = [], failed = null, shown = false, place = 0, full = false, doing = used === 'books' ? t('ai.doing.searching') : t('ai.doing.thinking');
     box.innerHTML = `<div class="wait">${esc(doing)}… ${esc(t('ai.seconds', { n: 0 }))}</div>`;
-    const tick = setInterval(() => { if (!shown) box.querySelector('.wait').textContent = `${doing}… ${t('ai.seconds', { n: Math.round((Date.now() - t0) / 1000) })}`; }, 1000);
+    // While waiting in the queue the place (and a hint) replaces the "Thinking" line; redrawn every second, so a
+    // change of page language shows at once.
+    const drawWait = () => {
+      const w = box.querySelector('.wait');
+      if (shown || !w) return;
+      w.textContent = place ? `${t('ai.queue.place', { n: place })} ${t('ai.queue.hint')}`
+                            : `${doing}… ${t('ai.seconds', { n: Math.round((Date.now() - t0) / 1000) })}`;
+    };
+    const tick = setInterval(drawWait, 1000);
     const paint = () => { const v = visible(raw); if (v) { shown = true; box.innerHTML = md(v); } };
 
     const ctrl = new AbortController();
@@ -317,12 +325,16 @@
       if (!r.ok) { history.pop(); throw new Error('ollama'); }
       await readStream(r, line => {
         let d; try { d = JSON.parse(line); } catch { return; }
+        if (d.queue) { place = d.queue; drawWait(); }
+        if (d.busy) full = true;   // the AI is taken and 5 are waiting: nothing will be answered
+        if (d.sources || d.message) place = 0;
         if (d.sources) { sources = d.sources; doing = sources.length ? t('ai.doing.reading', { count: sources.length }) : t('ai.doing.thinking'); }
-        if (d.error) failed = d.error;
+        if (d.error) failed = d.error === 'not running' ? t('ai.error.engine') : d.error;
         if (d.message && d.message.content) { raw += d.message.content; paint(); }
       });
       if (raw) history.push({ role: 'assistant', content: visible(raw) });
       else history.pop();
+      if (full) q.value = text;   // give the question back, so it can be asked again later
     } catch (e) {
       if (e.name === 'AbortError') failed = 'stopped';
       else failed = t('ai.error.engine');
@@ -331,6 +343,12 @@
       busy = null; sendBtn.className = ''; renderSend();
     }
 
+    if (full) {   // busy: point to what answers at once, in the page language (data-t, so a language switch updates it)
+      box.innerHTML = `<div class="err" data-t="ai.busy.text">${esc(t('ai.busy.text'))}</div><ul class="busy">` +
+        `<li><a href="../" data-t="ai.busy.topics">${esc(t('ai.busy.topics'))}</a></li>` +
+        `<li><a href="${esc(KIWIX)}/" target="_blank" data-t="ai.busy.libraries">${esc(t('ai.busy.libraries'))}</a></li></ul>`;
+      return;
+    }
     if (!visible(raw)) box.innerHTML = '';
     if (failed === 'stopped') box.insertAdjacentHTML('beforeend', `<div class="meta">${esc(t('ai.stopped'))}</div>`);
     else if (failed) box.insertAdjacentHTML('beforeend', `<div class="err">${esc(String(failed))}</div>`);
